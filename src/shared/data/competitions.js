@@ -161,6 +161,32 @@ export const CABANG_LOMBA_LIST = [
   }
 ];
 
-// Daftar Master Awal Wali Kelas (Murni Kosong, Diisi Sesuai Tambahan Panitia / Input Wali Kelas)
-export const MASTER_WALI_KELAS = [];
+// Daftar Master Resmi Wali Kelas Pondok Pesantren Al-Falah Putak (24 Asatidz Resmi)
+export const MASTER_WALI_KELAS = [
+  { id: "wk-1794912189019", nama: "UST. IMAM QUSYAIRI,S.Pd", tingkat: "ulya", kelas: "Alfiyah Tsani Putri", kontak: "" },
+  { id: "wk-1794912254511", nama: "UST. AGUS MANSYUR AL-HAMID", tingkat: "ulya", kelas: "Alfiyah Awwal Putri", kontak: "" },
+  { id: "wk-1794912307969", nama: "UST. AGUNG PERMADI,S.Pd", tingkat: "ulya", kelas: "Imrithi A Putri", kontak: "" },
+  { id: "wk-1794912371168", nama: "USTZH. LINA LAFIFATUL 'ALIYAH", tingkat: "ulya", kelas: "Imrithi B Putri", kontak: "" },
+  { id: "wk-1794912404618", nama: "USTZH. LESTARI", tingkat: "wustho", kelas: "Jurumiyah A Putri", kontak: "" },
+  { id: "wk-1794912466616", nama: "USTZH. NUHA MAULA AFIFAH", tingkat: "wustho", kelas: "Jurumiyah C Putri", kontak: "" },
+  { id: "wk-1794912521021", nama: "USTZH. LILIS ASRIYANI", tingkat: "wustho", kelas: "Jurumiyah B Putri", kontak: "" },
+  { id: "wk-1794912614171", nama: "USTZH. ANISATUL KHOLISOH", tingkat: "wustho", kelas: "Jurumiyah A Putri", kontak: "" },
+  { id: "wk-1794912656252", nama: "USTZH. NIA ANISA DELA", tingkat: "wustho", kelas: "Matan Jurumiyah B Putri", kontak: "" },
+  { id: "wk-1794912691810", nama: "USTZH. FEBRI NUR AINI", tingkat: "wustho", kelas: "Matan Jurumiyah C Putri", kontak: "" },
+  { id: "wk-1794912760292", nama: "USTZH. SOFIANA NUR JANAH,S.Pd", tingkat: "wustho", kelas: "Sifir A Putri", kontak: "" },
+  { id: "wk-1794912799620", nama: "USTZH. SITI ROWIYAH", tingkat: "wustho", kelas: "Sifir B Putri", kontak: "" },
+  { id: "wk-1794913857614", nama: "UST. IRHAM SYAROF", tingkat: "wustho", kelas: "Matan Jurumiyah A Putra", kontak: "" },
+  { id: "wk-1794913889849", nama: "UST. ROBUL INSAN", tingkat: "wustho", kelas: "Jurumiyah C Putra", kontak: "" },
+  { id: "wk-1794913908878", nama: "UST. DANIL ALI SABILA", tingkat: "wustho", kelas: "Jurumiyah B Putra", kontak: "" },
+  { id: "wk-1794913946856", nama: "UST. RABIL AFRAJA", tingkat: "wustho", kelas: "Jurumiyah A Putra", kontak: "" },
+  { id: "wk-1794913990479", nama: "UST. MUHAMMAD MAJID", tingkat: "ulya", kelas: "Imrithi A Putra", kontak: "" },
+  { id: "wk-1794914021091", nama: "UST. MASRURO,S.Pd", tingkat: "ulya", kelas: "Imrithi B Putra", kontak: "" },
+  { id: "wk-1794914048548", nama: "UST. NURUL FALAH", tingkat: "ulya", kelas: "Alfiyah Awwal Putra", kontak: "" },
+  { id: "wk-1794914080366", nama: "UST. IMAM QURTHUBI,S.Pd", tingkat: "ulya", kelas: "Alfiyah Tsani Putra", kontak: "" },
+  { id: "wk-1794914311435", nama: "UST. ALDO FERDIANSYAH", tingkat: "wustho", kelas: "Sifir B Putra", kontak: "" },
+  { id: "wk-1794914366031", nama: "UST. TRI ESNANDI,S.Pd", tingkat: "wustho", kelas: "Sifir A Putra", kontak: "" },
+  { id: "wk-1794914401184", nama: "UST. SAMSUL ARIFIN,S.Pd", tingkat: "wustho", kelas: "Matan Jurumiyah B Putra", kontak: "" },
+  { id: "wk-1794914424489", nama: "UST. MUHAMMAD SENDI", tingkat: "wustho", kelas: "Matan Jurumiyah C Putra", kontak: "" }
+];
+
 

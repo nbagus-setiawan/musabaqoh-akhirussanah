@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import RegistrationForm from '../public/components/RegistrationForm';
-import { saveRegistration, saveWaliKelas } from '../shared/services/api';
+import { saveRegistration } from '../shared/services/api';
 
 export default function FormulirPage() {
   const navigate = useNavigate();
@@ -16,18 +16,6 @@ export default function FormulirPage() {
   });
 
   const handleFormSubmit = async (formData) => {
-    // Jika wali kelas belum terdaftar, otomatis simpan ke database lokal agar auto-complete di santri berikutnya
-    if (formData.isCustomWali && formData.waliKelas && formData.rawKelas) {
-      try {
-        saveWaliKelas({
-          nama: formData.waliKelas,
-          tingkat: formData.tingkatId,
-          kelas: formData.rawKelas,
-          kontak: formData.nomorWA
-        });
-      } catch (e) {}
-    }
-
     const savedEntry = await saveRegistration(formData);
     
     // Simpan data wali kelas & nomor WA agar tidak terhapus saat mendaftarkan santri berikutnya

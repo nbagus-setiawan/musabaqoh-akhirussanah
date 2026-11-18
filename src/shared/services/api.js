@@ -43,12 +43,14 @@ export const cleanDemoData = (list) => {
     }));
 };
 
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyg6odSPbv_pqXFD2qPTUROwooyWWmZ9N4Y4SZRAtfiBDb7FlKcy7cuIwVqiSFpXJSt/exec';
+
 export const getStoredGasUrl = () => {
-  return localStorage.getItem(GAS_URL_KEY) || import.meta.env.VITE_GAS_URL || '';
+  return localStorage.getItem(GAS_URL_KEY) || import.meta.env.VITE_GAS_URL || DEFAULT_GAS_URL;
 };
 
 export const setStoredGasUrl = (url) => {
-  localStorage.setItem(GAS_URL_KEY, url ? url.trim() : '');
+  localStorage.setItem(GAS_URL_KEY, url ? url.trim() : DEFAULT_GAS_URL);
 };
 
 export const getAdminPin = () => {
@@ -604,19 +606,27 @@ const DUMMY_TEACHER_NAMES = [
 export const getWaliKelasList = () => {
   try {
     const raw = localStorage.getItem(WALI_KELAS_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      if (Array.isArray(MASTER_WALI_KELAS) && MASTER_WALI_KELAS.length > 0) {
+        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(MASTER_WALI_KELAS));
+      }
+      return MASTER_WALI_KELAS || [];
+    }
     const list = JSON.parse(raw);
-    if (!Array.isArray(list)) return [];
+    if (!Array.isArray(list) || list.length === 0) {
+      return MASTER_WALI_KELAS || [];
+    }
     const realOnly = list.filter(item => {
       const nama = item.nama || '';
       return !DUMMY_TEACHER_NAMES.includes(nama);
     });
-    if (realOnly.length !== list.length) {
-      localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(realOnly));
+    if (realOnly.length === 0 && Array.isArray(MASTER_WALI_KELAS) && MASTER_WALI_KELAS.length > 0) {
+      localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(MASTER_WALI_KELAS));
+      return MASTER_WALI_KELAS;
     }
     return realOnly;
   } catch (e) {
-    return [];
+    return MASTER_WALI_KELAS || [];
   }
 };
 

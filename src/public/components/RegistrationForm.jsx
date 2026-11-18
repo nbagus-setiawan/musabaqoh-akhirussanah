@@ -99,16 +99,22 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
-  // Filter saran guru berdasarkan teks yang diketik (search-as-you-type)
+  // Filter saran guru berdasarkan teks yang diketik (search-as-you-type), atau tampilkan semua jika belum diketik
   const query = waliInput.trim().toLowerCase();
-  const suggestedWali = (query.length > 0 && Array.isArray(waliList))
-    ? waliList.filter(w => 
-        (w.nama && w.nama.toLowerCase().includes(query)) ||
-        (w.kelas && w.kelas.toLowerCase().includes(query))
-      )
+  const suggestedWali = Array.isArray(waliList)
+    ? (query.length > 0
+        ? waliList.filter(w => 
+            (w.nama && w.nama.toLowerCase().includes(query)) ||
+            (w.kelas && w.kelas.toLowerCase().includes(query))
+          )
+        : waliList)
     : [];
 
   // Auto-filled dari Wali Kelas
@@ -248,7 +254,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
 
     if (!val.trim()) {
       setSelectedWaliId('');
-      setShowSuggestions(false);
+      setShowSuggestions(true);
       setTingkat('');
       setTingkatName('');
       setKelasKategori('');
@@ -285,6 +291,11 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
       }
     } else {
       setSelectedWaliId('');
+      setTingkat('');
+      setTingkatName('');
+      setKelasKategori('');
+      setCabangLomba('');
+      setSubKategoriMHQ('');
     }
   };
 
@@ -314,7 +325,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
   const handleClearWali = () => {
     setWaliInput('');
     setSelectedWaliId('');
-    setShowSuggestions(false);
+    setShowSuggestions(true);
     setTingkat('');
     setTingkatName('');
     setKelasKategori('');
@@ -325,6 +336,9 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
       sessionStorage.removeItem('alfalah_saved_wali');
       localStorage.removeItem('alfalah_saved_wali');
     } catch (e) {}
+    if (waliInputRef.current) {
+      waliInputRef.current.focus();
+    }
   };
 
   const availableCabangLomba = CABANG_LOMBA_LIST.filter(c => {
@@ -342,7 +356,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
     if (!finalWaliName) {
       errors.wali = 'Nama Ustadz / Ustadzah Wali Kelas wajib diisi.';
     } else if (!tingkat || !kelasKategori) {
-      errors.wali = 'Harap tentukan Jenjang Tingkat dan Rombel Kelas santri di bawah nama wali kelas.';
+      errors.wali = 'Nama wali kelas belum cocok. Harap pilih dari daftar saran agar kelas terdeteksi otomatis.';
     }
     if (!cabangLomba) {
       errors.cabang = 'Harap pilih salah satu Cabang Perlombaan.';
@@ -531,7 +545,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 </label>
                 {suggestedWali.length > 0 && showSuggestions && (
                   <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    {suggestedWali.length} guru cocok
+                    {query.length > 0 ? `${suggestedWali.length} guru cocok` : `${suggestedWali.length} guru tersedia`}
                   </span>
                 )}
               </div>
@@ -546,14 +560,11 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                   ref={waliInputRef}
                   type="text"
                   list="daftar-wali-guru-list"
-                  placeholder="Ketik nama Ustadz / Ustadzah Wali Kelas..."
+                  placeholder="Ketik atau pilih nama Ustadz / Ustadzah..."
                   value={waliInput}
                   onChange={handleWaliInputChange}
-                  onFocus={() => {
-                    if (waliInput.trim().length > 0 && suggestedWali.length > 0) {
-                      setShowSuggestions(true);
-                    }
-                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onClick={() => setShowSuggestions(true)}
                   className={`w-full pl-9 pr-8 py-2.5 sm:py-3 rounded-xl border bg-white text-slate-900 outline-none text-xs sm:text-sm font-medium shadow-2xs placeholder:text-slate-400 min-h-[44px] sm:min-h-[46px] transition-all ${
                     formErrors.wali 
                       ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/30' 
@@ -581,17 +592,18 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                   </button>
                 )}
 
-                {/* Floating Autocomplete Suggestions Dropdown (Hanya muncul jika cocok saat diketik) */}
+                {/* Floating Autocomplete Suggestions Dropdown (Lengkap & Responsif di HP) */}
                 {showSuggestions && suggestedWali.length > 0 && (
                   <div className="absolute z-20 left-0 right-0 mt-1.5 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden max-h-56 overflow-y-auto animate-fadeIn">
                     <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-[10.5px] font-semibold text-slate-500 flex items-center justify-between">
-                      <span>Saran Wali Kelas:</span>
+                      <span>{query.length > 0 ? 'Saran Wali Kelas:' : 'Daftar Nama Wali Kelas:'}</span>
                       <span className="text-[10px] text-slate-400">Pilih untuk deteksi kelas</span>
                     </div>
                     {suggestedWali.map((guru) => (
                       <button
                         key={guru.id || guru.nama}
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectSuggestedGuru(guru)}
                         className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 flex items-center justify-between transition-colors border-b border-slate-100 last:border-0 cursor-pointer group"
                       >
@@ -620,25 +632,14 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
               )}
             </div>
 
-            {/* OPSI 1: Badge Auto-Detect Tingkat & Kelas jika Wali Terdaftar */}
-            {selectedWaliId && tingkat && kelasKategori ? (
+            {/* HASIL: Badge Auto-Detect Tingkat & Kelas dari Wali Kelas Terdaftar */}
+            {tingkat && kelasKategori ? (
               <div className="p-3 sm:p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-xl shadow-2xs space-y-2 animate-fadeIn">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 min-w-0">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span className="text-xs sm:text-[13px] font-bold text-emerald-900 tracking-tight truncate">
-                      Kelas Terdeteksi Otomatis
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedWaliId('');
-                    }}
-                    className="text-[10px] text-emerald-800 underline font-semibold hover:text-emerald-950 cursor-pointer"
-                  >
-                    Ganti Kelas Manual
-                  </button>
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span className="text-xs sm:text-[13px] font-bold text-emerald-900 tracking-tight truncate">
+                    Kelas Terdeteksi Otomatis
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-emerald-200/70">
@@ -661,98 +662,13 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 </div>
               </div>
             ) : (
-              /* OPSI 2: Pilihan Tingkat & Kelas Mandiri (Sangat Nyaman di HP / Jika Nama Belum Terdaftar) */
-              waliInput.trim() ? (
-                <div className="p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 animate-fadeIn">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-[13px] font-bold text-slate-800">
-                      Tentukan Jenjang & Kelas Santri:
-                    </span>
-                    <span className="text-[10px] text-[#075B45] font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Pilih Kelas
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        Jenjang / Tingkat <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        value={tingkat}
-                        onChange={(e) => {
-                          const newT = e.target.value;
-                          setTingkat(newT);
-                          const tObj = tingkatList.find(t => t.id === newT);
-                          setTingkatName(tObj ? tObj.name : newT);
-                          setKelasKategori('');
-                          setCabangLomba('');
-                          setSubKategoriMHQ('');
-                          if (formErrors.wali) {
-                            setFormErrors(prev => ({ ...prev, wali: '' }));
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white text-slate-900 outline-none focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/20 shadow-2xs cursor-pointer min-h-[42px]"
-                      >
-                        <option value="">-- Pilih Jenjang Tingkat --</option>
-                        {tingkatList.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        Rombel Belajar Kelas <span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        value={kelasKategori}
-                        disabled={!tingkat}
-                        onChange={(e) => {
-                          const newK = e.target.value;
-                          setKelasKategori(newK);
-                          const autoGender = getGenderFromKelas(newK);
-                          if (autoGender) {
-                            setJenisKelamin(autoGender);
-                          }
-                          if (formErrors.wali) {
-                            setFormErrors(prev => ({ ...prev, wali: '' }));
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white text-slate-900 outline-none focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/20 shadow-2xs cursor-pointer min-h-[42px] disabled:bg-slate-100 disabled:text-slate-400"
-                      >
-                        <option value="">{tingkat ? '-- Pilih Rombel Kelas --' : '-- Pilih Tingkat Terlebih Dahulu --'}</option>
-                        {tingkat && Array.isArray(subKelasData[tingkat]) && subKelasData[tingkat].map(k => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {kelasKategori && (
-                    <div className="flex items-center space-x-2 pt-1 text-[11px] text-slate-600">
-                      <span>Kategori Santri:</span>
-                      {getGenderFromKelas(kelasKategori) === 'P' && (
-                        <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                          Santri Putri
-                        </span>
-                      )}
-                      {getGenderFromKelas(kelasKategori) === 'L' && (
-                        <span className="font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                          Santri Putra
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                !formErrors.wali && (
-                  <p className="text-[11px] text-slate-500 pt-0.5">
-                    Silakan ketik atau pilih nama Ustadz / Ustadzah untuk mendeteksi kelas santri.
-                  </p>
-                )
+              !formErrors.wali && (
+                <p className="text-[11px] text-slate-500 pt-0.5">
+                  Silakan ketik atau pilih nama Ustadz / Ustadzah dari daftar saran untuk mendeteksi kelas santri secara otomatis.
+                </p>
               )
             )}
+
           </div>
 
           {/* ================= LANGKAH 2: PILIHAN CABANG LOMBA ================= */}
