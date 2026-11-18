@@ -106,7 +106,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
       setSubKelasData(fetchedSub);
       setSyncMessage({
         type: 'success',
-        text: 'Alhamdulillah! Berhasil menarik data rombel kelas dari Google Sheets.'
+        text: 'Alhamdulillah! Berhasil menarik data kelas diniyah dari Google Sheets.'
       });
       if (onRefresh) onRefresh();
     } catch (err) {
@@ -127,7 +127,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
       const res = await syncAllTingkatKelasToGas(subKelasData);
       setSyncMessage({
         type: 'success',
-        text: res.message || 'Alhamdulillah! Seluruh 38 rombel (Putra & Putri) berhasil dikirim & disinkronkan ke Google Sheets.'
+        text: res.message || 'Alhamdulillah! Seluruh 38 kelas diniyah (Putra & Putri) berhasil dikirim & disinkronkan ke Google Sheets.'
       });
     } catch (err) {
       setSyncMessage({
@@ -146,7 +146,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
     setTingkatList(getTingkatList());
     setSyncMessage({
       type: 'success',
-      text: 'Alhamdulillah! Seluruh rombel resmi Al-Falah Putak (Putra & Putri terpisah) berhasil dipulihkan.'
+      text: 'Alhamdulillah! Seluruh kelas diniyah resmi Al-Falah Putak (Putra & Putri terpisah) berhasil dipulihkan.'
     });
     if (onRefresh) onRefresh();
     setTimeout(() => setSyncMessage(null), 5000);
@@ -353,7 +353,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
     let trimmed = kelasNameInput.trim();
     if (!trimmed) {
-      setFormError('Nama kelas / rombel tidak boleh kosong.');
+      setFormError('Nama kelas diniyah tidak boleh kosong.');
       return;
     }
 
@@ -412,14 +412,14 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Tingkat Pendidikan & Rombel Kelas
+                  Tingkat Pendidikan & Kelas Diniyah
                 </h2>
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {stats.totalRombel} Rombel Terdaftar
+                  {stats.totalRombel} Kelas Terdaftar
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Kelola master jenjang pendidikan santri dan pembagian rombel kelas (Santri Putra & Santri Putri terpisah rapi).
+                Kelola master jenjang pendidikan santri dan pembagian kelas diniyah (Santri Putra & Santri Putri terpisah rapi).
               </p>
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             <button
               onClick={handlePushToSheets}
               disabled={isSyncingSheets}
-              title="Kirim seluruh rombel (Putra & Putri) ke Google Sheets"
+              title="Kirim seluruh kelas diniyah (Putra & Putri) ke Google Sheets"
               className="px-3.5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <ArrowUpToLine className={`w-4 h-4 text-teal-200 ${isSyncingSheets ? 'animate-bounce' : ''}`} />
@@ -461,7 +461,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             {/* Tombol Pulihkan Master */}
             <button
               onClick={handleResetToMaster}
-              title="Pulihkan seluruh rombel standar resmi Al-Falah Putak"
+              title="Pulihkan seluruh kelas diniyah standar resmi Al-Falah Putak"
               className="px-3 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-700" />
@@ -507,10 +507,10 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
       {/* 2. STATS STRIP RINGKAS (TIDAK MEMAKAN TEMPAT & BERSIH) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         
-        {/* Stat 1: Total Rombel */}
+        {/* Stat 1: Total Kelas Diniyah */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Rombel</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Kelas Diniyah</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalRombel}</span>
               <span className="text-[11px] text-slate-500 font-medium">Kelas</span>
@@ -537,10 +537,10 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           </div>
         </div>
 
-        {/* Stat 3: Rombel Putra */}
+        {/* Stat 3: Kelas Putra */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">Rombel Putra</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">Kelas Putra</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-xl sm:text-2xl font-black text-blue-900">{stats.putraRombel}</span>
               <span className="text-[11px] text-blue-700 font-medium">Kelas Pa</span>
@@ -552,10 +552,10 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           </div>
         </div>
 
-        {/* Stat 4: Rombel Putri */}
+        {/* Stat 4: Kelas Putri */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">Rombel Putri</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">Kelas Putri</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-xl sm:text-2xl font-black text-rose-900">{stats.putriRombel}</span>
               <span className="text-[11px] text-rose-700 font-medium">Kelas Pi</span>
@@ -644,7 +644,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari rombel (contoh: Sifir A Putra, Alfiyah, dll)..."
+              placeholder="Cari kelas (contoh: Sifir A Putra, Alfiyah, dll)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800 bg-slate-50/50 focus:bg-white transition-all"
@@ -673,7 +673,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                     ? 'bg-white text-emerald-800 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
-                title="Tampilan Kartu Rombel"
+                title="Tampilan Kartu Kelas"
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span className="hidden md:inline text-[11px]">Kartu</span>
@@ -740,7 +740,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                               {tingkat.name}
                             </h3>
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              {classes.length} Rombel
+                              {classes.length} Kelas
                             </span>
                           </div>
                           <p className="text-xs text-slate-500">{tingkat.desc}</p>
@@ -876,7 +876,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                   <tr>
                     <th className="py-4 px-4 w-14 text-center">No</th>
-                    <th className="py-4 px-4">Nama Kelas Rombel</th>
+                    <th className="py-4 px-4">Nama Kelas Diniyah</th>
                     <th className="py-4 px-4">Kategori Gender</th>
                     <th className="py-4 px-4">Jenjang Pendidikan</th>
                     <th className="py-4 px-4">Wali Kelas Pengampu</th>
@@ -890,7 +890,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                       <td colSpan="7" className="py-16 text-center text-slate-400">
                         <div className="max-w-xs mx-auto space-y-2">
                           <School className="w-10 h-10 text-slate-300 mx-auto" />
-                          <p className="font-bold text-slate-700 text-sm">Tidak ada rombel ditemukan</p>
+                          <p className="font-bold text-slate-700 text-sm">Tidak ada kelas ditemukan</p>
                           <p className="text-xs text-slate-400">Coba sesuaikan kata kunci pencarian atau filter jenjang/gender.</p>
                         </div>
                       </td>
@@ -1016,7 +1016,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="text-slate-500 font-medium flex items-center gap-2 flex-wrap justify-center sm:justify-start">
                 <span>
-                  Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari <strong className="text-slate-800">{filteredRombel.length}</strong> rombel
+                  Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari <strong className="text-slate-800">{filteredRombel.length}</strong> kelas
                 </span>
                 <span className="text-slate-300">•</span>
                 <div className="flex items-center space-x-1">
@@ -1103,10 +1103,10 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    {modalMode === 'add' ? 'Tambah Kelas Rombel Baru' : 'Edit Nama Kelas Rombel'}
+                    {modalMode === 'add' ? 'Tambah Kelas Diniyah Baru' : 'Edit Nama Kelas Diniyah'}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    {modalMode === 'add' ? 'Tambahkan sub-kelas baru (Putra / Putri)' : 'Perbarui nama rombel belajar santri'}
+                    {modalMode === 'add' ? 'Tambahkan sub-kelas baru (Putra / Putri)' : 'Perbarui nama kelas diniyah santri'}
                   </p>
                 </div>
               </div>
@@ -1175,7 +1175,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
               {/* Input Nama Kelas */}
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-                  Nama Kelas / Rombel Belajar <span className="text-rose-500">*</span>
+                  Nama Kelas Diniyah <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1212,7 +1212,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                   type="submit"
                   className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
                 >
-                  {modalMode === 'add' ? 'Simpan Rombel' : 'Perbarui Rombel'}
+                  {modalMode === 'add' ? 'Simpan Kelas' : 'Perbarui Kelas'}
                 </button>
               </div>
 
@@ -1222,7 +1222,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
         </div>
       )}
 
-      {/* 6. MODAL KONFIRMASI HAPUS ROMBEL */}
+      {/* 6. MODAL KONFIRMASI HAPUS KELAS DINIYAH */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4 text-center relative overflow-hidden">
@@ -1234,10 +1234,10 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             
             <div>
               <h3 className="text-base font-bold text-slate-900">
-                Hapus Kelas Rombel?
+                Hapus Kelas Diniyah?
               </h3>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                Apakah Anda yakin ingin menghapus rombel <strong>"{deleteTarget.namaKelas}"</strong>? Rombel ini tidak akan muncul lagi di opsi formulir pendaftaran.
+                Apakah Anda yakin ingin menghapus kelas diniyah <strong>"{deleteTarget.namaKelas}"</strong>? Kelas ini tidak akan muncul lagi di opsi formulir pendaftaran.
               </p>
             </div>
 
@@ -1254,7 +1254,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                 onClick={handleDelete}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors shadow-xs cursor-pointer"
               >
-                Ya, Hapus Rombel
+                Ya, Hapus Kelas
               </button>
             </div>
           </div>

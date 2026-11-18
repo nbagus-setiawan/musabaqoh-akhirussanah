@@ -109,7 +109,7 @@ export default function AdminPengaturan({ onRefresh }) {
 
         setTestResult({
           success: true,
-          message: `Alhamdulillah! Terhubung ke ${ssName}. Ketiga sheet resmi aktif & tersinkronisasi: "Pendaftaran" (${santriCount} data santri), "Data_Guru" (${guruCount} wali kelas), dan "Tingkat_dan_Kelas" (${kelasCount} rombel).`
+          message: `Alhamdulillah! Terhubung ke ${ssName}. Ketiga sheet resmi aktif & tersinkronisasi: "Pendaftaran" (${santriCount} data santri), "Data_Guru" (${guruCount} wali kelas), dan "Tingkat_dan_Kelas" (${kelasCount} kelas diniyah).`
         });
         addActivityLog('Tes Koneksi Sheets', `Koneksi 3 sheet sukses tersambung ke ${ssName}`, 'system');
       } else {
@@ -202,7 +202,7 @@ export default function AdminPengaturan({ onRefresh }) {
         { name: 'Nama_Lengkap', desc: 'Nama Santri' },
         { name: 'Jenis_Kelamin', desc: 'L (Putra) / P (Putri)' },
         { name: 'Tingkat', desc: 'Ula / Wustho / Ulya / MHQ' },
-        { name: 'Kelas_Kategori', desc: 'Rombel Belajar' },
+        { name: 'Kelas_Kategori', desc: 'Kelas Diniyah' },
         { name: 'Cabang_Lomba', desc: '10 Cabang Musabaqah' },
         { name: 'Nomor_WA', desc: 'Nomor WhatsApp Aktif' },
         { name: 'Status', desc: 'Pending / Terverifikasi / Ditolak' },
@@ -219,20 +219,20 @@ export default function AdminPengaturan({ onRefresh }) {
         { name: 'ID_Guru', desc: 'ID Unik Guru (wk-1, dst)' },
         { name: 'Nama_Guru', desc: 'Nama Lengkap Asatidz' },
         { name: 'Tingkat', desc: 'Jenjang (ula / wustho / ulya)' },
-        { name: 'Kelas_Diampu', desc: 'Rombel Kelas yang Diampu' },
+        { name: 'Kelas_Diampu', desc: 'Kelas Diniyah yang Diampu' },
         { name: 'Kontak_WA', desc: 'Nomor WhatsApp Aktif' }
       ]
     },
     {
       id: 'Tingkat_dan_Kelas',
       title: 'Sheet 3: "Tingkat_dan_Kelas"',
-      tag: 'Master Jenjang & Rombel',
+      tag: 'Master Jenjang & Kelas Diniyah',
       totalCols: 4,
-      desc: 'Menyimpan daftar jenjang pendidikan pesantren dan rombongan belajar (kelas) yang dipertandingkan.',
+      desc: 'Menyimpan daftar jenjang pendidikan pesantren dan kelas diniyah yang dipertandingkan.',
       columns: [
         { name: 'Kode_Tingkat', desc: 'Kode (ula, wustho, ulya, mhq_juz)' },
         { name: 'Nama_Tingkat', desc: 'Nama Lengkap Jenjang' },
-        { name: 'Nama_Kelas_Rombel', desc: 'Nama Kelas / Rombel' },
+        { name: 'Nama_Kelas_Rombel', desc: 'Nama Kelas Diniyah' },
         { name: 'Keterangan', desc: 'Keterangan Jenjang' }
       ]
     }

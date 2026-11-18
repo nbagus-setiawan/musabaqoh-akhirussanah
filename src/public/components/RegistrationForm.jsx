@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   UserCheck, 
   CheckCircle2, 
@@ -20,7 +20,10 @@ import {
   Layers,
   Award,
   ShieldCheck,
-  X
+  X,
+  CheckCircle,
+  HelpCircle,
+  MinusCircle
 } from 'lucide-react';
 import { 
   getWaliKelasList, 
@@ -40,7 +43,7 @@ import {
 
 const STORAGE_DRAFT_KEY = 'alfalah_multistep_draft_v1';
 
-export default function RegistrationForm({ onSubmitSuccess, initialWaliData = null }) {
+export default function RegistrationForm({ onSubmitSuccess }) {
   // State Master Data
   const [waliList, setWaliList] = useState(() => {
     const list = getWaliKelasList();
@@ -120,7 +123,10 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
   // Track Cabang yang Dilewati
   const [skippedSteps, setSkippedSteps] = useState({});
 
-  // 1. Muat Data Guru & Rombel dari Google Sheets jika tersedia
+  // Tab filter di Ringkasan Step 12: 'all' | 'filled' | 'skipped'
+  const [summaryFilterTab, setSummaryFilterTab] = useState('all');
+
+  // 1. Muat Data Guru & Kelas Diniyah dari Google Sheets jika tersedia
   useEffect(() => {
     fetchWaliKelas().then(list => {
       if (Array.isArray(list) && list.length > 0) setWaliList(list);
@@ -257,6 +263,40 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
     if (waliInputRef.current) waliInputRef.current.focus();
   };
 
+  // Helper cek apakah langkah cabang lomba saat ini terisi minimal 1 data
+  const isCurrentStepFilled = (step) => {
+    switch (step) {
+      case 1:
+        return Boolean(waliInput.trim() && tingkat && kelasDiniyah && nomorWA.replace(/\D/g, '').length >= 9);
+      case 2: // MQK
+        return mqkSantri.some(n => n.trim().length > 0);
+      case 3: // PIDATO
+        return pidatoSantri.some(s => s.nama && s.nama.trim().length > 0);
+      case 4: // MC
+        return mcSantri.some(s => s.nama && s.nama.trim().length > 0);
+      case 5: // Syarhil
+        return syarhilRegu.some(r => (r.pensyarah && r.pensyarah.trim()) || (r.tilawah && r.tilawah.trim()) || (r.terjemah && r.terjemah.trim()));
+      case 6: // Tilawah
+        return tilawahSantri.some(n => n.trim().length > 0);
+      case 7: // Khot
+        return kaligrafiSantri.some(n => n.trim().length > 0);
+      case 8: // MHQ
+        return mhqSantri.some(s => s.nama && s.nama.trim().length > 0);
+      case 9: // Adzan
+        return adzanSantri.some(n => n.trim().length > 0);
+      case 10: // CCM
+        return ccmRegu.some(r => (r.anggota1 && r.anggota1.trim()) || (r.anggota2 && r.anggota2.trim()) || (r.anggota3 && r.anggota3.trim()));
+      case 11: // Kreasi Nadzom
+        return Boolean(kreasiNadzom.ketua && kreasiNadzom.ketua.trim().length > 0);
+      case 12: // Ringkasan
+        return allDelegates.length > 0;
+      default:
+        return true;
+    }
+  };
+
+  const isStepValid = isCurrentStepFilled(currentStep);
+
   // Navigasi Langkah
   const handleNextStep = () => {
     setFormError('');
@@ -276,8 +316,14 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
       return;
     }
 
-    // Untuk langkah 2 s.d. 11: Otomatis tandai cabang tidak dilewati jika ada santri yang diisi
+    // Untuk langkah 2 s.d. 11: HANYA BISA BERIKUTNYA JIKA SUDAH TERISI!
     if (currentStep >= 2 && currentStep <= 11) {
+      if (!isCurrentStepFilled(currentStep)) {
+        setFormError('Kolom nama santri masih kosong. Jika Kelas Diniyah ini tidak mengirimkan delegasi pada cabang ini, silakan klik tombol "Lewati" di bagian kanan atas.');
+        return;
+      }
+
+      // Tandai cabang ini tidak dilewati (karena terisi data)
       setSkippedSteps(prev => ({ ...prev, [currentStep]: false }));
       setCurrentStep(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -333,7 +379,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
     setCcmRegu(prev => prev.filter((_, idx) => idx !== index));
   };
 
-  // Kumpulkan Seluruh Santri Delegasi untuk Step 12 & Pengiriman Sekaligus
+  // Kumpulkan Seluruh Santri Delegasi yang Terisi
   const compileAllDelegates = () => {
     const list = [];
 
@@ -536,6 +582,91 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
 
   const allDelegates = compileAllDelegates();
 
+  // Daftar Status Ringkasan 10 Cabang Lomba (Terisi vs Dilewati/Kosong)
+  const branchesSummary = useMemo(() => {
+    return [
+      {
+        step: 2,
+        name: 'MQK (Musabaqoh Qiro\'atil Kutub)',
+        isFilled: isCurrentStepFilled(2) && !skippedSteps[2],
+        delegates: mqkSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
+      },
+      {
+        step: 3,
+        name: 'PIDATO (3 Bahasa)',
+        isFilled: isCurrentStepFilled(3) && !skippedSteps[3],
+        delegates: pidatoSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.bahasa }))
+      },
+      {
+        step: 4,
+        name: 'MC / Pembawa Acara (3 Bahasa)',
+        isFilled: isCurrentStepFilled(4) && !skippedSteps[4],
+        delegates: mcSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.bahasa }))
+      },
+      {
+        step: 5,
+        name: 'Syarhil Qur\'an (Regu)',
+        isFilled: isCurrentStepFilled(5) && !skippedSteps[5],
+        delegates: syarhilRegu.flatMap((r, rI) => {
+          const arr = [];
+          if (r.pensyarah.trim()) arr.push({ nama: r.pensyarah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Pensyarah` });
+          if (r.tilawah.trim()) arr.push({ nama: r.tilawah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Tilawah` });
+          if (r.terjemah.trim()) arr.push({ nama: r.terjemah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Terjemah` });
+          return arr;
+        })
+      },
+      {
+        step: 6,
+        name: 'Tilawah Al-Qur\'an',
+        isFilled: isCurrentStepFilled(6) && !skippedSteps[6],
+        delegates: tilawahSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
+      },
+      {
+        step: 7,
+        name: 'Khot / Kaligrafi',
+        isFilled: isCurrentStepFilled(7) && !skippedSteps[7],
+        delegates: kaligrafiSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
+      },
+      {
+        step: 8,
+        name: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
+        isFilled: isCurrentStepFilled(8) && !skippedSteps[8],
+        delegates: mhqSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.juz }))
+      },
+      {
+        step: 9,
+        name: 'Lomba Adzan',
+        isFilled: isCurrentStepFilled(9) && !skippedSteps[9],
+        delegates: adzanSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
+      },
+      {
+        step: 10,
+        name: 'Cerdas Cermat Musabaqoh (CCM)',
+        isFilled: isCurrentStepFilled(10) && !skippedSteps[10],
+        delegates: ccmRegu.flatMap((r, rI) => {
+          const arr = [];
+          const reguTitle = r.namaRegu || `Regu ${rI + 1}`;
+          if (r.anggota1.trim()) arr.push({ nama: r.anggota1.trim().toUpperCase(), detail: `${reguTitle} - Anggota 1` });
+          if (r.anggota2.trim()) arr.push({ nama: r.anggota2.trim().toUpperCase(), detail: `${reguTitle} - Anggota 2` });
+          if (r.anggota3.trim()) arr.push({ nama: r.anggota3.trim().toUpperCase(), detail: `${reguTitle} - Anggota 3` });
+          return arr;
+        })
+      },
+      {
+        step: 11,
+        name: 'Kreasi Nadzom (Regu)',
+        isFilled: isCurrentStepFilled(11) && !skippedSteps[11],
+        delegates: kreasiNadzom.ketua.trim() ? [{ nama: `${kreasiNadzom.ketua.trim().toUpperCase()} (Ketua)`, detail: `${kreasiNadzom.jumlahAnggota || '-'} Anggota` }] : []
+      }
+    ];
+  }, [
+    mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
+    kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, skippedSteps
+  ]);
+
+  const filledBranchesCount = branchesSummary.filter(b => b.isFilled).length;
+  const skippedBranchesCount = branchesSummary.filter(b => !b.isFilled).length;
+
   // Pengiriman Batch ke Database (Sekali Kirim)
   const handleSubmitAll = async () => {
     if (allDelegates.length === 0) {
@@ -609,36 +740,42 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
         {/* Garis Header Aksen Hijau Zamrud & Emas */}
         <div className="h-2 w-full bg-gradient-to-r from-[#075B45] via-[#D9B45B] to-[#075B45]"></div>
 
-        {/* Top Bar Progress & Tombol Lewati di Atas Kanan */}
-        <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#075B45] text-white text-[11px] font-bold">
+        {/* Top Bar Progress & Tombol Lewati di Atas Kanan - Rapi & Lega di Layar HP */}
+        <div className="px-3.5 sm:px-6 pt-3.5 pb-3 border-b border-slate-100 bg-slate-50/80 space-y-2">
+          
+          {/* Baris 1: Badge Langkah & Tombol Lewati di Kanan Atas */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className="px-2.5 py-1 rounded-full bg-[#075B45] text-white text-[11px] font-black shrink-0 shadow-2xs">
                 Langkah {currentStep} dari 12
               </span>
               {currentStep > 1 && kelasDiniyah && (
-                <span className="text-[11px] font-bold text-slate-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full truncate">
-                  Kelas Diniyah: {kelasDiniyah}
+                <span className="text-[11px] font-bold text-emerald-900 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full truncate max-w-[190px] sm:max-w-none">
+                  {kelasDiniyah}
                 </span>
               )}
             </div>
-            <h2 className="text-sm sm:text-base font-black text-slate-900 mt-1 truncate">
+
+            {/* Tombol Lewati di Atas Kanan (Hanya di langkah cabang 2 s.d. 11) */}
+            {currentStep >= 2 && currentStep <= 11 && (
+              <button
+                type="button"
+                onClick={handleSkipStep}
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-black transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
+                title="Lewati cabang ini jika kelas tidak mengirimkan delegasi"
+              >
+                <span>Lewati</span>
+                <FastForward className="w-3.5 h-3.5 text-amber-700" />
+              </button>
+            )}
+          </div>
+
+          {/* Baris 2: Judul Langkah Cabang Lomba */}
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
               {getStepTitle()}
             </h2>
           </div>
-
-          {/* Tombol Lewati di Atas Kanan (Hanya di langkah cabang 2 s.d. 11) */}
-          {currentStep >= 2 && currentStep <= 11 && (
-            <button
-              type="button"
-              onClick={handleSkipStep}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-amber-50 active:bg-amber-100 text-slate-600 hover:text-amber-800 text-xs font-bold transition-all border border-slate-200 shrink-0 cursor-pointer shadow-2xs"
-              title="Lewati cabang ini jika kelas tidak mengirimkan delegasi"
-            >
-              <span>Lewati</span>
-              <FastForward className="w-3.5 h-3.5 text-amber-600" />
-            </button>
-          )}
         </div>
 
         {/* Progress Bar Indikator Visual */}
@@ -805,8 +942,8 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: Musabaqoh Qiro'atil Kutub (MQK)
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}. Boleh mengisi 1, 2, atau 3 kolom di bawah ini:
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}. Boleh mengisi 1, 2, atau 3 kolom santri di bawah ini:
                 </p>
               </div>
 
@@ -814,7 +951,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 {[0, 1, 2].map((idx) => (
                   <div key={idx} className="space-y-1">
                     <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Utama)' : '(Tambahan - Opsional)'}
+                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut MQK)' : '(Opsional)'}
                     </label>
                     <input
                       type="text"
@@ -824,6 +961,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                         const updated = [...mqkSantri];
                         updated[idx] = e.target.value.toUpperCase();
                         setMqkSantri(updated);
+                        setFormError('');
                       }}
                       className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
                     />
@@ -842,7 +980,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: PIDATO (3 Pilihan Bahasa)
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Maksimal 3 santri delegasi. Tentukan pilihan bahasa (Indonesia, Arab, atau Inggris) untuk setiap santri:
                 </p>
               </div>
@@ -868,6 +1006,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...pidatoSantri];
                             updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
                             setPidatoSantri(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -903,7 +1042,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: MC / Pembawa Acara (3 Pilihan Bahasa)
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Maksimal 3 santri delegasi. Tentukan pilihan bahasa (Indonesia, Arab, atau Inggris) untuk setiap santri:
                 </p>
               </div>
@@ -929,6 +1068,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...mcSantri];
                             updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
                             setMcSantri(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -960,21 +1100,23 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
           {/* ========================================================= */}
           {currentStep === 5 && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-2">
+              
+              {/* Header Box dengan tombol Tambah Regu yang responsif dan lega di HP */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                     Cabang: Syarhil Qur'an (Per Regu)
                   </h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5">
+                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                     1 Regu terdiri dari 3 santri: Pensyarah, Tilawah, dan Terjemah.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddSyarhilRegu}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#075B45] text-xs font-bold flex items-center space-x-1 shrink-0 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-300 text-[#075B45] text-xs font-bold shrink-0 cursor-pointer shadow-2xs transition-all self-start sm:self-auto"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 text-[#075B45]" />
                   <span>Tambah Regu</span>
                 </button>
               </div>
@@ -1011,6 +1153,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...syarhilRegu];
                             updated[rIdx].pensyarah = e.target.value.toUpperCase();
                             setSyarhilRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1028,6 +1171,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...syarhilRegu];
                             updated[rIdx].tilawah = e.target.value.toUpperCase();
                             setSyarhilRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1045,6 +1189,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...syarhilRegu];
                             updated[rIdx].terjemah = e.target.value.toUpperCase();
                             setSyarhilRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1065,8 +1210,8 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: Tilawah Al-Qur'an
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}:
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}. Boleh mengisi 1, 2, atau 3 kolom santri:
                 </p>
               </div>
 
@@ -1074,7 +1219,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 {[0, 1, 2].map((idx) => (
                   <div key={idx} className="space-y-1">
                     <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Utama)' : '(Tambahan - Opsional)'}
+                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Tilawah)' : '(Opsional)'}
                     </label>
                     <input
                       type="text"
@@ -1084,6 +1229,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                         const updated = [...tilawahSantri];
                         updated[idx] = e.target.value.toUpperCase();
                         setTilawahSantri(updated);
+                        setFormError('');
                       }}
                       className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
                     />
@@ -1102,7 +1248,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: Khot / Kaligrafi
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}:
                 </p>
               </div>
@@ -1111,7 +1257,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 {[0, 1, 2].map((idx) => (
                   <div key={idx} className="space-y-1">
                     <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Utama)' : '(Tambahan - Opsional)'}
+                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Kaligrafi)' : '(Opsional)'}
                     </label>
                     <input
                       type="text"
@@ -1121,6 +1267,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                         const updated = [...kaligrafiSantri];
                         updated[idx] = e.target.value.toUpperCase();
                         setKaligrafiSantri(updated);
+                        setFormError('');
                       }}
                       className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
                     />
@@ -1139,7 +1286,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: MHQ (Musabaqoh Hifdzil Qur'an)
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Maksimal 3 santri delegasi. Pilih kategori juz (5, 10, 15, 20, 25, atau 30 Juz) untuk tiap santri:
                 </p>
               </div>
@@ -1165,6 +1312,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...mhqSantri];
                             updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
                             setMhqSantri(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1200,7 +1348,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: Lomba Adzan
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}:
                 </p>
               </div>
@@ -1219,7 +1367,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 {[0, 1, 2].map((idx) => (
                   <div key={idx} className="space-y-1">
                     <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Utama)' : '(Tambahan - Opsional)'}
+                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Adzan)' : '(Opsional)'}
                     </label>
                     <input
                       type="text"
@@ -1229,6 +1377,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                         const updated = [...adzanSantri];
                         updated[idx] = e.target.value.toUpperCase();
                         setAdzanSantri(updated);
+                        setFormError('');
                       }}
                       className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
                     />
@@ -1243,21 +1392,23 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
           {/* ========================================================= */}
           {currentStep === 10 && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-2">
+              
+              {/* Header Box dengan tombol Tambah Regu yang responsif dan lega di HP */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                     Cabang: Cerdas Cermat Musabaqoh (CCM)
                   </h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5">
+                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                     1 Regu terdiri dari 3 santri. Tersedia tombol Tambah Regu jika mengirim lebih dari 1 regu:
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddCcmRegu}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#075B45] text-xs font-bold flex items-center space-x-1 shrink-0 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-300 text-[#075B45] text-xs font-bold shrink-0 cursor-pointer shadow-2xs transition-all self-start sm:self-auto"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 text-[#075B45]" />
                   <span>Tambah Regu</span>
                 </button>
               </div>
@@ -1294,6 +1445,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...ccmRegu];
                             updated[rIdx].anggota1 = e.target.value.toUpperCase();
                             setCcmRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1311,6 +1463,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...ccmRegu];
                             updated[rIdx].anggota2 = e.target.value.toUpperCase();
                             setCcmRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1328,6 +1481,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                             const updated = [...ccmRegu];
                             updated[rIdx].anggota3 = e.target.value.toUpperCase();
                             setCcmRegu(updated);
+                            setFormError('');
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
                         />
@@ -1348,7 +1502,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                   Cabang: Kreasi Nadzom (Per Regu)
                 </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                   Isikan nama ketua tim / koordinator regu dan jumlah total anggota yang tampil:
                 </p>
               </div>
@@ -1362,14 +1516,17 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                     type="text"
                     placeholder="Nama lengkap ketua regu..."
                     value={kreasiNadzom.ketua || ''}
-                    onChange={(e) => setKreasiNadzom(prev => ({ ...prev, ketua: e.target.value.toUpperCase() }))}
+                    onChange={(e) => {
+                      setKreasiNadzom(prev => ({ ...prev, ketua: e.target.value.toUpperCase() }));
+                      setFormError('');
+                    }}
                     className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-800 block mb-1">
-                    Berapa Jumlah Anggota Regu? <span className="text-rose-500">*</span>
+                    Berapa Jumlah Anggota Regu?
                   </label>
                   <input
                     type="text"
@@ -1403,7 +1560,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
             <div className="space-y-4 animate-fadeIn">
               
               {/* Header Rekap Rombel Kelas Diniyah */}
-              <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
+              <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
                 <div>
                   <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                     REKAPITULASI PENDAFTARAN KELAS
@@ -1425,46 +1582,142 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                 </div>
               </div>
 
-              {allDelegates.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                  <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
-                  <p className="text-xs sm:text-sm font-bold text-slate-800">
-                    Belum ada santri yang diisi pada cabang lomba manapun
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Silakan klik tombol "Sebelumnya" untuk mengisi nama delegasi santri.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
-                    <span>Daftar Delegasi Santri per Cabang:</span>
-                    <span className="text-emerald-700">{allDelegates.length} peserta siap didaftarkan</span>
+              {/* Status Ringkasan 10 Cabang: Terisi vs Dilewati */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-emerald-800 block uppercase">Cabang Diikuti</span>
+                    <span className="text-xs font-black text-emerald-950">{filledBranchesCount} dari 10 Cabang</span>
                   </div>
+                </div>
 
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto bg-white shadow-2xs">
-                    {allDelegates.map((item, idx) => (
-                      <div key={idx} className="p-3 hover:bg-slate-50/80 flex items-center justify-between gap-2 text-xs">
-                        <div className="min-w-0 pr-2">
-                          <p className="font-black text-slate-900 truncate">
-                            {idx + 1}. {item.namaSantri}
-                          </p>
-                          <p className="text-[11px] text-slate-500 truncate">
-                            <span className="font-bold text-[#075B45]">{item.cabangLomba}</span> • {item.label}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0">
-                          Siap Kirim
-                        </span>
-                      </div>
-                    ))}
+                <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 flex items-center space-x-2">
+                  <FastForward className="w-4 h-4 text-amber-700 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-amber-800 block uppercase">Cabang Dilewati</span>
+                    <span className="text-xs font-black text-amber-950">{skippedBranchesCount} Cabang</span>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Filter Tab Ringkasan */}
+              <div className="flex items-center space-x-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setSummaryFilterTab('all')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    summaryFilterTab === 'all'
+                      ? 'bg-[#075B45] text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Semua Cabang (10)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryFilterTab('filled')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    summaryFilterTab === 'filled'
+                      ? 'bg-emerald-800 text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Terisi ({filledBranchesCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryFilterTab('skipped')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    summaryFilterTab === 'skipped'
+                      ? 'bg-amber-800 text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Dilewati ({skippedBranchesCount})
+                </button>
+              </div>
+
+              {/* Daftar Seluruh 10 Cabang (Terisi & Dilewati) */}
+              <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                {branchesSummary
+                  .filter(b => {
+                    if (summaryFilterTab === 'filled') return b.isFilled;
+                    if (summaryFilterTab === 'skipped') return !b.isFilled;
+                    return true;
+                  })
+                  .map((b) => (
+                    <div 
+                      key={b.step} 
+                      className={`p-3 rounded-2xl border transition-all ${
+                        b.isFilled
+                          ? 'bg-white border-emerald-300 shadow-2xs'
+                          : 'bg-slate-50/80 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
+                        <div className="flex items-center space-x-1.5 min-w-0">
+                          {b.isFilled ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                          ) : (
+                            <MinusCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                          )}
+                          <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                            {b.name}
+                          </h4>
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0">
+                          {b.isFilled ? (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              {b.delegates.length} Santri
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                              Dilewati
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentStep(b.step);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`text-[10.5px] font-bold px-2 py-0.5 rounded-lg flex items-center space-x-1 transition-all cursor-pointer ${
+                              b.isFilled
+                                ? 'text-emerald-800 hover:bg-emerald-50'
+                                : 'text-[#075B45] hover:bg-emerald-50 font-black underline'
+                            }`}
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>{b.isFilled ? 'Ubah' : 'Isi Cabang Ini'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Detail Delegasi Santri */}
+                      {b.isFilled ? (
+                        <div className="pt-2 space-y-1">
+                          {b.delegates.map((d, dIdx) => (
+                            <div key={dIdx} className="flex items-center justify-between text-xs text-slate-700 bg-slate-50/70 px-2.5 py-1 rounded-lg">
+                              <span className="font-bold text-slate-900 truncate">{dIdx + 1}. {d.nama}</span>
+                              <span className="text-[10.5px] text-slate-500 shrink-0 ml-2">{d.detail}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="pt-1.5 text-[11px] text-slate-400 italic">
+                          Cabang ini dilewati (Kelas Diniyah tidak mengirimkan delegasi).
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p className="font-semibold text-slate-800">Ketentuan Pengiriman Sekali Kirim:</p>
-                <p>Seluruh santri di atas akan langsung didaftarkan serentak ke database panitia dalam 1 kali kirim tanpa perlu mengisi ulang formulir.</p>
+                <p className="font-bold text-slate-800">Ketentuan Pengiriman Sekali Kirim:</p>
+                <p>Seluruh santri pada cabang yang terisi di atas akan langsung didaftarkan serentak ke database panitia dalam 1 kali kirim tanpa perlu mengisi ulang formulir.</p>
               </div>
             </div>
           )}
@@ -1473,56 +1726,90 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
           {formError && (
             <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start space-x-2 animate-fadeIn">
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <span className="leading-tight font-medium">{formError}</span>
+              <span className="leading-tight font-semibold">{formError}</span>
             </div>
           )}
 
-          {/* Tombol Navigasi Bawah: SEBELUMNYA & BERIKUTNYA / KIRIM */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-6 gap-3">
-            {currentStep > 1 && (
+          {/* Hint jika langkah cabang masih kosong */}
+          {!isStepValid && currentStep >= 2 && currentStep <= 11 && (
+            <div className="mt-3 p-2.5 rounded-xl bg-amber-50/80 border border-amber-300 text-[11px] text-amber-900 flex items-center justify-between gap-2 animate-fadeIn">
+              <span className="leading-tight">
+                Kolom santri masih kosong. Isi nama santri untuk melanjutkan, atau:
+              </span>
               <button
                 type="button"
-                onClick={handlePrevStep}
-                disabled={isSubmitting}
-                className="px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center space-x-1.5 transition-all cursor-pointer min-h-[44px] disabled:opacity-50"
+                onClick={handleSkipStep}
+                className="underline font-bold text-amber-950 hover:text-black shrink-0 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Sebelumnya</span>
+                Lewati Cabang Ini
               </button>
-            )}
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={handleNextStep}
-              disabled={isSubmitting || (currentStep === 1 && (!tingkat || !kelasDiniyah))}
-              className={`ml-auto px-5 py-2.5 sm:px-7 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center space-x-2 transition-all cursor-pointer min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed ${
-                currentStep === 12
-                  ? 'bg-gradient-to-r from-[#075B45] to-[#054736] hover:from-[#054736] hover:to-[#033024] text-white border border-[#D9B45B]/50'
-                  : 'bg-[#075B45] hover:bg-[#054736] text-white'
-              }`}
-            >
-              {isSubmitting ? (
-                <span className="inline-flex items-center space-x-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Menyimpan Seluruh Delegasi...</span>
-                </span>
-              ) : currentStep === 1 ? (
-                <>
-                  <span>Lanjutkan ke Pengisian Delegasi</span>
-                  <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
-                </>
-              ) : currentStep === 12 ? (
-                <>
-                  <Send className="w-4 h-4 text-[#D9B45B]" />
-                  <span>Kirim Semua Pendaftaran Sekaligus</span>
-                </>
-              ) : (
-                <>
-                  <span>Berikutnya</span>
-                  <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
-                </>
-              )}
-            </button>
+          {/* Tombol Navigasi Bawah: SEBELUMNYA & BERIKUTNYA / KIRIM (RESPONSIF MOBILE) */}
+          <div className="pt-4 border-t border-slate-200 mt-6">
+            {currentStep === 12 ? (
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Sebelumnya</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={isSubmitting || allDelegates.length === 0}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] bg-gradient-to-r from-[#075B45] to-[#054736] hover:from-[#054736] hover:to-[#033024] text-white border border-[#D9B45B]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <span className="inline-flex items-center space-x-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      <span>Menyimpan Seluruh Delegasi...</span>
+                    </span>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#D9B45B]" />
+                      <span className="text-center">Kirim Semua Pendaftaran Sekaligus ({allDelegates.length} Santri)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="px-3.5 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Sebelumnya</span>
+                  </button>
+                )}
+
+                <div className="ml-auto flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    disabled={!isStepValid}
+                    className={`px-5 py-2.5 sm:px-7 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center space-x-2 transition-all min-h-[44px] ${
+                      isStepValid
+                        ? 'bg-[#075B45] hover:bg-[#054736] text-white cursor-pointer active:scale-95'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                    }`}
+                    title={!isStepValid ? 'Isi minimal 1 santri atau klik tombol Lewati di kanan atas' : 'Lanjut ke langkah berikutnya'}
+                  >
+                    <span>{currentStep === 1 ? 'Lanjutkan ke Pengisian Delegasi' : 'Berikutnya'}</span>
+                    <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
