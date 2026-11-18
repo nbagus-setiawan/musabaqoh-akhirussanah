@@ -78,86 +78,114 @@ export const getGenderFromKelas = (namaKelas) => {
   return null;
 };
 
-// 10 Cabang Perlombaan Resmi Al-Falah Putak
+export const PILIHAN_BAHASA = [
+  'Bahasa Indonesia',
+  'Bahasa Arab',
+  'Bahasa Inggris'
+];
+
+export const PILIHAN_JUZ_MHQ = [
+  '5 Juz',
+  '10 Juz',
+  '15 Juz',
+  '20 Juz',
+  '25 Juz',
+  '30 Juz'
+];
+
+// 10 Cabang Perlombaan Resmi Al-Falah Putak (Urutan Sesuai Alur 12 Langkah Pendaftaran)
 export const CABANG_LOMBA_LIST = [
   {
     id: 'mqk',
     name: 'MQK',
     fullName: 'MQK (Musabaqoh Qiro\'atil Kutub)',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba membaca, memahami, dan menerangkan kitab kuning.'
-  },
-  {
-    id: 'mhn',
-    name: 'MHN',
-    fullName: 'MHN (Musabaqoh Hifdzil Nadzom)',
-    tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba hafalan bait-bait nadzom gramatika & aqidah.'
+    description: 'Lomba membaca, memahami, dan menerangkan kitab kuning (Maksimal 3 Santri).',
+    type: 'individual',
+    maxSantri: 3
   },
   {
     id: 'pidato',
     name: 'PIDATO',
-    fullName: 'PIDATO',
+    fullName: 'PIDATO (3 Bahasa: Indonesia, Arab, Inggris)',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba orasi dakwah Islamiyah (Bahasa Arab/Indonesia/Inggris).'
+    description: 'Lomba orasi dakwah Islamiyah (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
+    type: 'language',
+    maxSantri: 3
   },
   {
     id: 'mc',
     name: 'MC',
-    fullName: 'MC (Master of Ceremony)',
+    fullName: 'MC (Master of Ceremony / Pembawa Acara 3 Bahasa)',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba pembawa acara formal & non-formal Islami.'
+    description: 'Lomba pembawa acara formal & non-formal Islami (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
+    type: 'language',
+    maxSantri: 3
   },
   {
     id: 'syarhil',
     name: 'Syarhil Qur\'an',
     fullName: 'Syarhil Qur\'an',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba beregu pensyarah, tilawah, dan penterjemah Al-Qur\'an.'
+    description: 'Lomba beregu pensyarah, tilawah, dan penterjemah Al-Qur\'an (Tersedia tombol Tambah Regu).',
+    type: 'regu',
+    membersPerRegu: 3
   },
   {
     id: 'tilawah',
     name: 'Tilawah',
-    fullName: 'Tilawah',
+    fullName: 'Tilawah Al-Qur\'an',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba seni membaca Al-Qur\'an dengan lagu dan tajwid.'
+    description: 'Lomba seni membaca Al-Qur\'an dengan lagu dan tajwid (Maksimal 3 Santri).',
+    type: 'individual',
+    maxSantri: 3
   },
   {
     id: 'kaligrafi',
     name: 'Khot/Kaligrafi',
-    fullName: 'Khot/Kaligrafi',
+    fullName: 'Khot / Kaligrafi',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba seni penulisan mushaf dan hiasan dekorasi kaligrafi.'
+    description: 'Lomba seni penulisan mushaf dan hiasan dekorasi kaligrafi (Maksimal 3 Santri).',
+    type: 'individual',
+    maxSantri: 3
   },
   {
     id: 'mhq',
-    name: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
-    fullName: 'MHQ (Musabaqoh Hifdzil Qur\'an 5, 10, 15, 20, 25, 30 Juz)',
+    name: 'MHQ',
+    fullName: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
     tingkatAllowed: ['ula', 'wustho', 'ulya', 'mhq_juz'],
     isMHQ: true,
-    juzCategories: [
-      '5 Juz',
-      '10 Juz',
-      '15 Juz',
-      '20 Juz',
-      '25 Juz',
-      '30 Juz'
-    ],
-    description: 'Lomba hafalan Al-Qur\'an kategori 5, 10, 15, 20, 25, dan 30 Juz.'
+    juzCategories: PILIHAN_JUZ_MHQ,
+    description: 'Lomba hafalan Al-Qur\'an pilihan 5, 10, 15, 20, 25, dan 30 Juz (Maksimal 3 Santri).',
+    type: 'mhq',
+    maxSantri: 3
   },
   {
     id: 'adzan',
     name: 'Adzan',
     fullName: 'Adzan',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba lantunan adzan subuh dan umum dengan makhroj & nada terbaik.'
+    genderExclusive: 'L',
+    description: 'Lomba lantunan adzan subuh dan umum (Khusus santri putra - Maksimal 3 Santri).',
+    type: 'individual',
+    maxSantri: 3
+  },
+  {
+    id: 'ccm',
+    name: 'CCM',
+    fullName: 'CCM (Cerdas Cermat Musabaqoh)',
+    tingkatAllowed: ['ula', 'wustho', 'ulya'],
+    description: 'Lomba cerdas cermat keagamaan & wawasan kepesantrenan beregu (Tersedia tombol Tambah Regu).',
+    type: 'regu',
+    membersPerRegu: 3
   },
   {
     id: 'kreasi_nadzom',
     name: 'Kreasi Nadzom',
     fullName: 'Kreasi Nadzom',
     tingkatAllowed: ['ula', 'wustho', 'ulya'],
-    description: 'Lomba kreasi aransemen lagu & lantunan nadzom pesantren.'
+    description: 'Lomba aransemen & kreasi nadzom pesantren beregu (Format Ketua Tim & Jumlah Anggota).',
+    type: 'kreasi_nadzom'
   }
 ];
 

@@ -155,7 +155,7 @@ export default function SuccessTicket({ registration, onRegisterAnother, onBackH
             <div className="min-w-0">
               <span className="text-[8.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
                 <GraduationCap className="w-3 h-3 text-emerald-800" />
-                <span>Kelas / Rombel</span>
+                <span>Kelas Diniyah</span>
               </span>
               <p className="text-xs font-bold text-slate-900 truncate mt-0.5" title={registration.Kelas_Kategori}>
                 {registration.Kelas_Kategori}

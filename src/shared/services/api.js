@@ -262,6 +262,90 @@ export const saveRegistration = async (formData) => {
 };
 
 /**
+ * Simpan Batch Pendaftaran Seluruh Delegasi Santri dari 1 Kelas Diniyah Sekaligus
+ * @param {Array} santriList Array of santri objects
+ * @param {Object} metadata { waliKelas, nomorWA, tingkat, kelasDiniyah, jenisKelamin }
+ */
+export const saveBatchRegistrations = async (santriList = [], metadata = {}) => {
+  if (!Array.isArray(santriList) || santriList.length === 0) {
+    throw new Error('Tidak ada data delegasi santri yang dikirimkan.');
+  }
+
+  const currentList = getLocalRegistrations();
+
+  // Cari ID angka tertinggi yang ada
+  const existingNums = currentList
+    .map(item => {
+      const match = (item.ID_Pendaftaran || '').match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    })
+    .filter(n => n > 0);
+  let nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : currentList.length + 1;
+
+  const now = new Date();
+  const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+  const newEntries = santriList.map((item) => {
+    const idPendaftaran = `AKH-${String(nextNum).padStart(3, '0')}`;
+    nextNum++;
+
+    return {
+      Timestamp: timestamp,
+      Wali_Kelas: metadata.waliKelas || item.waliKelas || '',
+      ID_Pendaftaran: idPendaftaran,
+      Nomor_Urut: '',
+      Nama_Lengkap: String(item.namaSantri || item.Nama_Lengkap || '').trim().toUpperCase(),
+      Jenis_Kelamin: item.jenisKelamin || metadata.jenisKelamin || 'L',
+      Tingkat: metadata.tingkatName || metadata.tingkat || item.tingkat || '',
+      Kelas_Kategori: item.kelasKategori || metadata.kelasDiniyah || metadata.kelasKategori || '',
+      Cabang_Lomba: item.cabangLomba || '',
+      Nomor_WA: metadata.nomorWA || item.nomorWA || '',
+      Status: 'Pending',
+      Catatan: item.catatan || ''
+    };
+  });
+
+  // Simpan ke local storage
+  const updatedList = [...newEntries, ...currentList];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+
+  // Trigger sinkronisasi otomatis seketika (<1ms) ke seluruh komponen & tab aktif
+  notifyDataChanged('registrations', newEntries);
+
+  // Catat ke Log Aktivitas
+  addActivityLog(
+    'Pendaftaran Batch Delegasi',
+    `${newEntries.length} santri delegasi didaftarkan oleh ${metadata.waliKelas} (${metadata.kelasDiniyah || metadata.kelasKategori || 'Kelas Diniyah'})`,
+    'registration'
+  );
+
+  // Kirim ke Google Apps Script di background
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    Promise.allSettled(
+      newEntries.map(entry =>
+        fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'register',
+            ...entry
+          }),
+          keepalive: true
+        })
+      )
+    ).catch(e => console.warn('Sync batch ke GAS gagal:', e));
+  }
+
+  return {
+    success: true,
+    count: newEntries.length,
+    entries: newEntries,
+    metadata
+  };
+};
+
+/**
  * Update Status Verifikasi Santri (Riil)
  */
 export const updateStatus = async (idPendaftaran, newStatus) => {
