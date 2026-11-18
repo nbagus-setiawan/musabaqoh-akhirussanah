@@ -23,7 +23,8 @@ import {
   X,
   CheckCircle,
   HelpCircle,
-  MinusCircle
+  MinusCircle,
+  GraduationCap
 } from 'lucide-react';
 import { 
   getWaliKelasList, 
@@ -1561,26 +1562,57 @@ export default function RegistrationForm({ onSubmitSuccess }) {
           {currentStep === 12 && (
             <div className="space-y-4 animate-fadeIn">
               
-              {/* Header Rekap Rombel Kelas Diniyah */}
-              <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
-                <div>
-                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
-                    REKAPITULASI PENDAFTARAN KELAS
-                  </span>
-                  <h3 className="text-sm sm:text-base font-black text-emerald-950">
-                    Kelas Diniyah: {kelasDiniyah}
-                  </h3>
-                  <p className="text-xs text-emerald-800 mt-0.5">
-                    Wali Kelas: <span className="font-bold">{waliInput}</span> • WA: {nomorWA}
-                  </p>
+              {/* Header Rekap Kelas Diniyah - Rapi, Proporsional & Elegan di Mobile */}
+              <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border border-emerald-300/80 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3">
+                {/* Baris Atas: Label Rekapitulasi & Stat Badge Total Santri */}
+                <div className="flex items-center justify-between gap-2 border-b border-emerald-200/60 pb-2.5">
+                  <div className="flex items-center space-x-1.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-950 truncate">
+                      Rekapitulasi Pendaftaran Kelas
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5 bg-[#075B45] text-white px-2.5 py-1 rounded-xl text-xs font-black shadow-2xs shrink-0">
+                    <Users className="w-3.5 h-3.5 text-[#D9B45B]" />
+                    <span>{allDelegates.length} Total Santri</span>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-xl sm:text-2xl font-black text-[#075B45] block leading-none">
-                    {allDelegates.length}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                    Total Santri
-                  </span>
+
+                {/* Baris Bawah: Identitas Kelas Diniyah & Wali Kelas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-100 flex items-center space-x-2.5 shadow-2xs">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-800 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4 text-emerald-800" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Kelas Diniyah
+                      </span>
+                      <p className="font-black text-[#075B45] text-xs sm:text-sm truncate">
+                        {kelasDiniyah}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-100 flex items-center space-x-2.5 shadow-2xs">
+                    <div className="w-8 h-8 rounded-lg bg-teal-100/70 text-teal-800 flex items-center justify-center shrink-0">
+                      <UserCheck className="w-4 h-4 text-teal-800" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Wali Kelas Pengampu
+                      </span>
+                      <p className="font-bold text-slate-800 text-xs truncate">
+                        {waliInput}
+                      </p>
+                      {nomorWA && (
+                        <span className="text-[10.5px] font-mono text-slate-500 block truncate">
+                          WA: {nomorWA}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1589,7 +1621,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <div className="p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-emerald-800 block uppercase">Cabang Diikuti</span>
+                    <span className="text-[9.5px] font-bold text-emerald-800 block uppercase">Cabang Diikuti</span>
                     <span className="text-xs font-black text-emerald-950">{filledBranchesCount} dari 10 Cabang</span>
                   </div>
                 </div>
@@ -1597,18 +1629,18 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 flex items-center space-x-2">
                   <FastForward className="w-4 h-4 text-amber-700 shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-amber-800 block uppercase">Cabang Dilewati</span>
+                    <span className="text-[9.5px] font-bold text-amber-800 block uppercase">Cabang Dilewati</span>
                     <span className="text-xs font-black text-amber-950">{skippedBranchesCount} Cabang</span>
                   </div>
                 </div>
               </div>
 
-              {/* Filter Tab Ringkasan */}
-              <div className="flex items-center space-x-1.5 pt-1">
+              {/* Filter Tab Ringkasan (Smooth Horizontal Scroll di Mobile) */}
+              <div className="flex items-center space-x-1.5 pt-1 overflow-x-auto pb-1 scrollbar-none">
                 <button
                   type="button"
                   onClick={() => setSummaryFilterTab('all')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                     summaryFilterTab === 'all'
                       ? 'bg-[#075B45] text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1619,7 +1651,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <button
                   type="button"
                   onClick={() => setSummaryFilterTab('filled')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                     summaryFilterTab === 'filled'
                       ? 'bg-emerald-800 text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1630,7 +1662,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <button
                   type="button"
                   onClick={() => setSummaryFilterTab('skipped')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                     summaryFilterTab === 'skipped'
                       ? 'bg-amber-800 text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1657,25 +1689,27 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                           : 'bg-slate-50/80 border-slate-200'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
-                        <div className="flex items-center space-x-1.5 min-w-0">
+                      <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div className="flex items-start space-x-1.5 min-w-0 flex-1">
                           {b.isFilled ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
                           ) : (
-                            <MinusCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                            <MinusCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                           )}
-                          <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate">
-                            {b.name}
-                          </h4>
+                          <div className="min-w-0">
+                            <h4 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+                              {b.name}
+                            </h4>
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 shrink-0">
+                        <div className="flex items-center space-x-1.5 shrink-0">
                           {b.isFilled ? (
-                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            <span className="text-[9.5px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
                               {b.delegates.length} Santri
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                            <span className="text-[9.5px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md">
                               Dilewati
                             </span>
                           )}
@@ -1686,14 +1720,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                               setCurrentStep(b.step);
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className={`text-[10.5px] font-bold px-2 py-0.5 rounded-lg flex items-center space-x-1 transition-all cursor-pointer ${
+                            className={`text-[10.5px] font-bold px-2 py-1 rounded-lg flex items-center space-x-1 transition-all cursor-pointer ${
                               b.isFilled
-                                ? 'text-emerald-800 hover:bg-emerald-50'
-                                : 'text-[#075B45] hover:bg-emerald-50 font-black underline'
+                                ? 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+                                : 'text-[#075B45] bg-emerald-50/80 hover:bg-emerald-100 font-bold'
                             }`}
                           >
                             <Edit3 className="w-3 h-3" />
-                            <span>{b.isFilled ? 'Ubah' : 'Isi Cabang Ini'}</span>
+                            <span>{b.isFilled ? 'Ubah' : 'Isi'}</span>
                           </button>
                         </div>
                       </div>
