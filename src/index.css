@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --alfalah-dark: #054736;
+  --alfalah: #075B45;
+  --alfalah-light: #087F5B;
+  --alfalah-soft: #EAF4F0;
+  --alfalah-accent: #D9B45B;
+}
+
+/* Fallback & Custom Utility Classes untuk memastikan warna selalu keluar */
+.bg-alfalah {
+  background-color: #075B45 !important;
+}
+
+.bg-alfalah-dark {
+  background-color: #054736 !important;
+}
+
+.bg-alfalah-soft {
+  background-color: #EAF4F0 !important;
+}
+
+.bg-alfalah-accent {
+  background-color: #D9B45B !important;
+}
+
+.text-alfalah {
+  color: #075B45 !important;
+}
+
+.text-alfalah-dark {
+  color: #054736 !important;
+}
+
+.text-alfalah-accent {
+  color: #D9B45B !important;
+}
+
+.border-alfalah {
+  border-color: #075B45 !important;
+}
+
+/* Background gradient hero khusus */
+.hero-gradient {
+  background: linear-gradient(180deg, #054736 0%, #075B45 50%, #033427 100%) !important;
+}
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-image: radial-gradient(rgba(217, 180, 91, 0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+/* Animasi Running Text Berjalan Resmi - Mulus & Berulang Tanpa Jeda */
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
