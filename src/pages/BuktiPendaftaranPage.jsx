@@ -135,7 +135,7 @@ export default function BuktiPendaftaranPage() {
       )}
 
       {/* TAMPILAN 1: REKAPITULASI KOLEKTIF KELAS DINIYAH */}
-      {viewMode === 'batch' && entries.length > 1 ? (
+      {viewMode === 'batch' && entries.length > 0 ? (
         <div className="space-y-4 animate-fadeIn">
           
           {/* Header Notifikasi Sukses */}

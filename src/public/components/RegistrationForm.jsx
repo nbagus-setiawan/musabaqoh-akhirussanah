@@ -263,6 +263,211 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     if (waliInputRef.current) waliInputRef.current.focus();
   };
 
+  // Kumpulkan Seluruh Santri Delegasi yang Terisi (Memoized sebelum validasi langkah)
+  const allDelegates = useMemo(() => {
+    const list = [];
+
+    // Step 2: MQK
+    if (!skippedSteps[2]) {
+      mqkSantri.forEach((nama, idx) => {
+        if (nama.trim()) {
+          list.push({
+            cabangId: 'mqk',
+            cabangLomba: 'MQK',
+            namaSantri: nama.trim().toUpperCase(),
+            kategoriDetail: kelasDiniyah,
+            label: `Santri ${idx + 1}`
+          });
+        }
+      });
+    }
+
+    // Step 3: PIDATO
+    if (!skippedSteps[3]) {
+      pidatoSantri.forEach((item, idx) => {
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'pidato',
+            cabangLomba: 'PIDATO',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            label: `Santri ${idx + 1} • ${item.bahasa}`,
+            catatan: `Bahasa: ${item.bahasa}`
+          });
+        }
+      });
+    }
+
+    // Step 4: MC
+    if (!skippedSteps[4]) {
+      mcSantri.forEach((item, idx) => {
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'mc',
+            cabangLomba: 'MC',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            label: `Santri ${idx + 1} • ${item.bahasa}`,
+            catatan: `Bahasa: ${item.bahasa}`
+          });
+        }
+      });
+    }
+
+    // Step 5: Syarhil Qur'an
+    if (!skippedSteps[5]) {
+      syarhilRegu.forEach((regu, rIdx) => {
+        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
+        if (regu.pensyarah && regu.pensyarah.trim()) {
+          list.push({
+            cabangId: 'syarhil',
+            cabangLomba: 'Syarhil Qur\'an',
+            namaSantri: regu.pensyarah.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Pensyarah`,
+            catatan: `${reguTitle} - Pensyarah`
+          });
+        }
+        if (regu.tilawah && regu.tilawah.trim()) {
+          list.push({
+            cabangId: 'syarhil',
+            cabangLomba: 'Syarhil Qur\'an',
+            namaSantri: regu.tilawah.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Tilawah`,
+            catatan: `${reguTitle} - Tilawah`
+          });
+        }
+        if (regu.terjemah && regu.terjemah.trim()) {
+          list.push({
+            cabangId: 'syarhil',
+            cabangLomba: 'Syarhil Qur\'an',
+            namaSantri: regu.terjemah.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Terjemah`,
+            catatan: `${reguTitle} - Terjemah`
+          });
+        }
+      });
+    }
+
+    // Step 6: Tilawah
+    if (!skippedSteps[6]) {
+      tilawahSantri.forEach((nama, idx) => {
+        if (nama.trim()) {
+          list.push({
+            cabangId: 'tilawah',
+            cabangLomba: 'Tilawah',
+            namaSantri: nama.trim().toUpperCase(),
+            kategoriDetail: kelasDiniyah,
+            label: `Santri ${idx + 1}`
+          });
+        }
+      });
+    }
+
+    // Step 7: Khot
+    if (!skippedSteps[7]) {
+      kaligrafiSantri.forEach((nama, idx) => {
+        if (nama.trim()) {
+          list.push({
+            cabangId: 'khot',
+            cabangLomba: 'Khot / Kaligrafi',
+            namaSantri: nama.trim().toUpperCase(),
+            kategoriDetail: kelasDiniyah,
+            label: `Santri ${idx + 1}`
+          });
+        }
+      });
+    }
+
+    // Step 8: MHQ
+    if (!skippedSteps[8]) {
+      mhqSantri.forEach((item, idx) => {
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'mhq',
+            cabangLomba: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${item.juz})`,
+            label: `Santri ${idx + 1} • Kategori ${item.juz}`,
+            catatan: `Kategori Hafalan: ${item.juz}`
+          });
+        }
+      });
+    }
+
+    // Step 9: Adzan
+    if (!skippedSteps[9]) {
+      adzanSantri.forEach((nama, idx) => {
+        if (nama.trim()) {
+          list.push({
+            cabangId: 'adzan',
+            cabangLomba: 'Adzan',
+            namaSantri: nama.trim().toUpperCase(),
+            kategoriDetail: kelasDiniyah,
+            label: `Santri ${idx + 1}`
+          });
+        }
+      });
+    }
+
+    // Step 10: CCM
+    if (!skippedSteps[10]) {
+      ccmRegu.forEach((regu, rIdx) => {
+        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
+        if (regu.anggota1 && regu.anggota1.trim()) {
+          list.push({
+            cabangId: 'ccm',
+            cabangLomba: 'CCM',
+            namaSantri: regu.anggota1.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Anggota 1`,
+            catatan: `${reguTitle} - Anggota 1`
+          });
+        }
+        if (regu.anggota2 && regu.anggota2.trim()) {
+          list.push({
+            cabangId: 'ccm',
+            cabangLomba: 'CCM',
+            namaSantri: regu.anggota2.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Anggota 2`,
+            catatan: `${reguTitle} - Anggota 2`
+          });
+        }
+        if (regu.anggota3 && regu.anggota3.trim()) {
+          list.push({
+            cabangId: 'ccm',
+            cabangLomba: 'CCM',
+            namaSantri: regu.anggota3.trim().toUpperCase(),
+            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            label: `${reguTitle} • Anggota 3`,
+            catatan: `${reguTitle} - Anggota 3`
+          });
+        }
+      });
+    }
+
+    // Step 11: Kreasi Nadzom
+    if (!skippedSteps[11] && kreasiNadzom.ketua.trim()) {
+      list.push({
+        cabangId: 'kreasi_nadzom',
+        cabangLomba: 'Kreasi Nadzom',
+        namaSantri: `${kreasiNadzom.ketua.trim().toUpperCase()} (Ketua Regu)`,
+        kategoriDetail: `${kelasDiniyah} (${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'})`,
+        label: `Ketua Regu • ${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'}`,
+        catatan: `Ketua: ${kreasiNadzom.ketua.trim().toUpperCase()}, Jumlah Anggota: ${kreasiNadzom.jumlahAnggota || '-'}. ${kreasiNadzom.catatan || ''}`
+      });
+    }
+
+    return list;
+  }, [
+    mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
+    kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
+    skippedSteps, kelasDiniyah
+  ]);
+
   // Helper cek apakah langkah cabang lomba saat ini terisi minimal 1 data
   const isCurrentStepFilled = (step) => {
     switch (step) {
@@ -378,209 +583,6 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     if (ccmRegu.length <= 1) return;
     setCcmRegu(prev => prev.filter((_, idx) => idx !== index));
   };
-
-  // Kumpulkan Seluruh Santri Delegasi yang Terisi
-  const compileAllDelegates = () => {
-    const list = [];
-
-    // Step 2: MQK
-    if (!skippedSteps[2]) {
-      mqkSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'mqk',
-            cabangLomba: 'MQK',
-            namaSantri: nama.trim().toUpperCase(),
-            kategoriDetail: kelasDiniyah,
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
-
-    // Step 3: PIDATO
-    if (!skippedSteps[3]) {
-      pidatoSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'pidato',
-            cabangLomba: 'PIDATO',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-            label: `Santri ${idx + 1} • ${item.bahasa}`,
-            catatan: `Bahasa: ${item.bahasa}`
-          });
-        }
-      });
-    }
-
-    // Step 4: MC
-    if (!skippedSteps[4]) {
-      mcSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'mc',
-            cabangLomba: 'MC',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-            label: `Santri ${idx + 1} • ${item.bahasa}`,
-            catatan: `Bahasa: ${item.bahasa}`
-          });
-        }
-      });
-    }
-
-    // Step 5: Syarhil Qur'an
-    if (!skippedSteps[5]) {
-      syarhilRegu.forEach((regu, rIdx) => {
-        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
-        if (regu.pensyarah && regu.pensyarah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.pensyarah.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Pensyarah`,
-            catatan: `${reguTitle} - Pensyarah`
-          });
-        }
-        if (regu.tilawah && regu.tilawah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.tilawah.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Tilawah`,
-            catatan: `${reguTitle} - Tilawah`
-          });
-        }
-        if (regu.terjemah && regu.terjemah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.terjemah.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Terjemah`,
-            catatan: `${reguTitle} - Terjemah`
-          });
-        }
-      });
-    }
-
-    // Step 6: Tilawah
-    if (!skippedSteps[6]) {
-      tilawahSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'tilawah',
-            cabangLomba: 'Tilawah',
-            namaSantri: nama.trim().toUpperCase(),
-            kategoriDetail: kelasDiniyah,
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
-
-    // Step 7: Khot/Kaligrafi
-    if (!skippedSteps[7]) {
-      kaligrafiSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'kaligrafi',
-            cabangLomba: 'Khot/Kaligrafi',
-            namaSantri: nama.trim().toUpperCase(),
-            kategoriDetail: kelasDiniyah,
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
-
-    // Step 8: MHQ
-    if (!skippedSteps[8]) {
-      mhqSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'mhq',
-            cabangLomba: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${item.juz})`,
-            label: `Santri ${idx + 1} • Kategori ${item.juz}`,
-            catatan: `Kategori Hafalan: ${item.juz}`
-          });
-        }
-      });
-    }
-
-    // Step 9: Adzan
-    if (!skippedSteps[9]) {
-      adzanSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'adzan',
-            cabangLomba: 'Adzan',
-            namaSantri: nama.trim().toUpperCase(),
-            kategoriDetail: kelasDiniyah,
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
-
-    // Step 10: CCM
-    if (!skippedSteps[10]) {
-      ccmRegu.forEach((regu, rIdx) => {
-        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
-        if (regu.anggota1 && regu.anggota1.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota1.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Anggota 1`,
-            catatan: `${reguTitle} - Anggota 1`
-          });
-        }
-        if (regu.anggota2 && regu.anggota2.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota2.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Anggota 2`,
-            catatan: `${reguTitle} - Anggota 2`
-          });
-        }
-        if (regu.anggota3 && regu.anggota3.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota3.trim().toUpperCase(),
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            label: `${reguTitle} • Anggota 3`,
-            catatan: `${reguTitle} - Anggota 3`
-          });
-        }
-      });
-    }
-
-    // Step 11: Kreasi Nadzom
-    if (!skippedSteps[11] && kreasiNadzom.ketua.trim()) {
-      list.push({
-        cabangId: 'kreasi_nadzom',
-        cabangLomba: 'Kreasi Nadzom',
-        namaSantri: `${kreasiNadzom.ketua.trim().toUpperCase()} (Ketua Regu)`,
-        kategoriDetail: `${kelasDiniyah} (${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'})`,
-        label: `Ketua Regu • ${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'}`,
-        catatan: `Ketua: ${kreasiNadzom.ketua.trim().toUpperCase()}, Jumlah Anggota: ${kreasiNadzom.jumlahAnggota || '-'}. ${kreasiNadzom.catatan || ''}`
-      });
-    }
-
-    return list;
-  };
-
-  const allDelegates = compileAllDelegates();
 
   // Daftar Status Ringkasan 10 Cabang Lomba (Terisi vs Dilewati/Kosong)
   const branchesSummary = useMemo(() => {
