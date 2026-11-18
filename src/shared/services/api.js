@@ -44,7 +44,7 @@ export const cleanDemoData = (list) => {
 };
 
 export const getStoredGasUrl = () => {
-  return localStorage.getItem(GAS_URL_KEY) || '';
+  return localStorage.getItem(GAS_URL_KEY) || import.meta.env.VITE_GAS_URL || '';
 };
 
 export const setStoredGasUrl = (url) => {

@@ -285,11 +285,6 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
       }
     } else {
       setSelectedWaliId('');
-      setTingkat('');
-      setTingkatName('');
-      setKelasKategori('');
-      setCabangLomba('');
-      setSubKategoriMHQ('');
     }
   };
 
@@ -347,7 +342,7 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
     if (!finalWaliName) {
       errors.wali = 'Nama Ustadz / Ustadzah Wali Kelas wajib diisi.';
     } else if (!tingkat || !kelasKategori) {
-      errors.wali = 'Nama Wali Kelas tidak terdaftar di database guru. Silakan pilih dari nama guru yang terdaftar.';
+      errors.wali = 'Harap tentukan Jenjang Tingkat dan Rombel Kelas santri di bawah nama wali kelas.';
     }
     if (!cabangLomba) {
       errors.cabang = 'Harap pilih salah satu Cabang Perlombaan.';
@@ -625,14 +620,25 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
               )}
             </div>
 
-            {/* HASIL: Badge Auto-Detect Tingkat & Kelas dari Wali Kelas Terdaftar */}
-            {tingkat && kelasKategori ? (
+            {/* OPSI 1: Badge Auto-Detect Tingkat & Kelas jika Wali Terdaftar */}
+            {selectedWaliId && tingkat && kelasKategori ? (
               <div className="p-3 sm:p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-xl shadow-2xs space-y-2 animate-fadeIn">
-                <div className="flex items-center space-x-1.5 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span className="text-xs sm:text-[13px] font-bold text-emerald-900 tracking-tight truncate">
-                    Kelas Terdeteksi
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5 min-w-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span className="text-xs sm:text-[13px] font-bold text-emerald-900 tracking-tight truncate">
+                      Kelas Terdeteksi Otomatis
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedWaliId('');
+                    }}
+                    className="text-[10px] text-emerald-800 underline font-semibold hover:text-emerald-950 cursor-pointer"
+                  >
+                    Ganti Kelas Manual
+                  </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-emerald-200/70">
@@ -644,21 +650,107 @@ export default function RegistrationForm({ onSubmitSuccess, initialWaliData = nu
                   </span>
                   {getGenderFromKelas(kelasKategori) === 'P' && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-600 text-white shadow-2xs">
-                      Kelas Putri ♀
+                      Kelas Putri
                     </span>
                   )}
                   {getGenderFromKelas(kelasKategori) === 'L' && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-sky-700 text-white shadow-2xs">
-                      Kelas Putra ♂
+                      Kelas Putra
                     </span>
                   )}
                 </div>
               </div>
             ) : (
-              !formErrors.wali && (
-                <p className="text-[11px] text-slate-500 pt-0.5">
-                  💡 Silakan ketik atau pilih nama Ustadz / Ustadzah untuk mendeteksi kelas santri secara otomatis.
-                </p>
+              /* OPSI 2: Pilihan Tingkat & Kelas Mandiri (Sangat Nyaman di HP / Jika Nama Belum Terdaftar) */
+              waliInput.trim() ? (
+                <div className="p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-[13px] font-bold text-slate-800">
+                      Tentukan Jenjang & Kelas Santri:
+                    </span>
+                    <span className="text-[10px] text-[#075B45] font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Pilih Kelas
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        Jenjang / Tingkat <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={tingkat}
+                        onChange={(e) => {
+                          const newT = e.target.value;
+                          setTingkat(newT);
+                          const tObj = tingkatList.find(t => t.id === newT);
+                          setTingkatName(tObj ? tObj.name : newT);
+                          setKelasKategori('');
+                          setCabangLomba('');
+                          setSubKategoriMHQ('');
+                          if (formErrors.wali) {
+                            setFormErrors(prev => ({ ...prev, wali: '' }));
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white text-slate-900 outline-none focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/20 shadow-2xs cursor-pointer min-h-[42px]"
+                      >
+                        <option value="">-- Pilih Jenjang Tingkat --</option>
+                        {tingkatList.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        Rombel Belajar Kelas <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={kelasKategori}
+                        disabled={!tingkat}
+                        onChange={(e) => {
+                          const newK = e.target.value;
+                          setKelasKategori(newK);
+                          const autoGender = getGenderFromKelas(newK);
+                          if (autoGender) {
+                            setJenisKelamin(autoGender);
+                          }
+                          if (formErrors.wali) {
+                            setFormErrors(prev => ({ ...prev, wali: '' }));
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white text-slate-900 outline-none focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/20 shadow-2xs cursor-pointer min-h-[42px] disabled:bg-slate-100 disabled:text-slate-400"
+                      >
+                        <option value="">{tingkat ? '-- Pilih Rombel Kelas --' : '-- Pilih Tingkat Terlebih Dahulu --'}</option>
+                        {tingkat && Array.isArray(subKelasData[tingkat]) && subKelasData[tingkat].map(k => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {kelasKategori && (
+                    <div className="flex items-center space-x-2 pt-1 text-[11px] text-slate-600">
+                      <span>Kategori Santri:</span>
+                      {getGenderFromKelas(kelasKategori) === 'P' && (
+                        <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                          Santri Putri
+                        </span>
+                      )}
+                      {getGenderFromKelas(kelasKategori) === 'L' && (
+                        <span className="font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                          Santri Putra
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                !formErrors.wali && (
+                  <p className="text-[11px] text-slate-500 pt-0.5">
+                    Silakan ketik atau pilih nama Ustadz / Ustadzah untuk mendeteksi kelas santri.
+                  </p>
+                )
               )
             )}
           </div>
