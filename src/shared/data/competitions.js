@@ -203,5 +203,5 @@ export const MASTER_WALI_KELAS = [
   { id: "ust-21", nama: "UST. NURUL FALAH", tingkat: "wustho", kelas: "Alfiyah Awwal Putra", kontak: "" },
   { id: "ust-22", nama: "UST. AGUS MANSYUR AL-HAMID", tingkat: "wustho", kelas: "Alfiyah Awwal Putri", kontak: "" },
   { id: "ust-23", nama: "UST. IMAM QURTHUBI,S.Pd", tingkat: "wustho", kelas: "Alfiyah Tsani Putra", kontak: "" },
-  { id: "ust-24", nama: "UST. IMAM QUSYAIRI,S.Pd", tingkat: "wustho", kelas: "Alfiyah Tsani Putri", kontak: "" }
+  { id: "ust-24", nama: "UST. IMAM QUSYAIRI", tingkat: "wustho", kelas: "Alfiyah Tsani Putri", kontak: "" }
 ];

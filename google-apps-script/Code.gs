@@ -89,6 +89,37 @@ const MASTER_ADMIN_AWAL = [
   ['ADM-001', 'admin', 'admin123', 'Ustadz Admin Panitia', 'Super Admin', 'Aktif']
 ];
 
+// DATA AWAL MASTER 24 USTADZ / WALI KELAS (URUT DARI ULA SIFIR HINGGA WUSTHO ALFIYAH)
+const MASTER_USTADZ_24 = [
+  // 1. Tingkat Ula (16 Ustadz / Ustadzah)
+  ['ust-01', 'UST. TRI ESNANDI,S.Pd', 'ula', 'Sifir A Putra', ''],
+  ['ust-02', 'USTZH. SOFIANA NUR JANAH,S.Pd', 'ula', 'Sifir A Putri', ''],
+  ['ust-03', 'UST. ALDO FERDIANSYAH', 'ula', 'Sifir B Putra', ''],
+  ['ust-04', 'USTZH. SITI ROWIYAH', 'ula', 'Sifir B Putri', ''],
+  ['ust-05', 'UST. IRHAM SYAROF', 'ula', 'Matan Jurumiyah A Putra', ''],
+  ['ust-06', 'USTZH. ANISATUL KHOLISOH', 'ula', 'Matan Jurumiyah A Putri', ''],
+  ['ust-07', 'UST. SAMSUL ARIFIN,S.Pd', 'ula', 'Matan Jurumiyah B Putra', ''],
+  ['ust-08', 'USTZH. NIA ANISA DELA', 'ula', 'Matan Jurumiyah B Putri', ''],
+  ['ust-09', 'UST. MUHAMMAD SENDI', 'ula', 'Matan Jurumiyah C Putra', ''],
+  ['ust-10', 'USTZH. FEBRI NUR AINI', 'ula', 'Matan Jurumiyah C Putri', ''],
+  ['ust-11', 'UST. RABIL AFRAJA', 'ula', 'Jurumiyah A Putra', ''],
+  ['ust-12', 'USTZH. LESTARI', 'ula', 'Jurumiyah A Putri', ''],
+  ['ust-13', 'UST. DANIL ALI SABILA', 'ula', 'Jurumiyah B Putra', ''],
+  ['ust-14', 'USTZH. LILIS ASRIYANI', 'ula', 'Jurumiyah B Putri', ''],
+  ['ust-15', 'UST. ROBUL INSAN', 'ula', 'Jurumiyah C Putra', ''],
+  ['ust-16', 'USTZH. NUHA MAULA AFIFAH', 'ula', 'Jurumiyah C Putri', ''],
+
+  // 2. Tingkat Wustho (8 Ustadz / Ustadzah)
+  ['ust-17', 'UST. MUHAMMAD MAJID', 'wustho', 'Imrithi A Putra', ''],
+  ['ust-18', 'UST. AGUNG PERMADI,S.Pd', 'wustho', 'Imrithi A Putri', ''],
+  ['ust-19', 'UST. MASRURO,S.Pd', 'wustho', 'Imrithi B Putra', ''],
+  ['ust-20', 'USTZH. LINA LAFIFATUL \'ALIYAH', 'wustho', 'Imrithi B Putri', ''],
+  ['ust-21', 'UST. NURUL FALAH', 'wustho', 'Alfiyah Awwal Putra', ''],
+  ['ust-22', 'UST. AGUS MANSYUR AL-HAMID', 'wustho', 'Alfiyah Awwal Putri', ''],
+  ['ust-23', 'UST. IMAM QURTHUBI,S.Pd', 'wustho', 'Alfiyah Tsani Putra', ''],
+  ['ust-24', 'UST. IMAM QUSYAIRI', 'wustho', 'Alfiyah Tsani Putri', '']
+];
+
 // DATA AWAL MASTER 30 KELAS DINIYAH RESMI
 const MASTER_TINGKAT_KELAS_30 = [
   // Tingkat Ula (16 Kelas Diniyah)
@@ -269,26 +300,34 @@ function inisialisasiEnamLembarKerja() {
 function isiMasterDataAwal() {
   // 1. Reset & Isi 30 Kelas Diniyah
   const sheetKelas = getSheetByName(SHEET_TINGKAT_KELAS);
-  const lastRow = sheetKelas.getLastRow();
-  if (lastRow > 1) {
-    sheetKelas.deleteRows(2, lastRow - 1);
+  const lastRowKelas = sheetKelas.getLastRow();
+  if (lastRowKelas > 1) {
+    sheetKelas.deleteRows(2, lastRowKelas - 1);
   }
   MASTER_TINGKAT_KELAS_30.forEach(row => sheetKelas.appendRow(row));
 
-  // 2. Cek Admin
+  // 2. Reset & Isi 24 Ustadz / Wali Kelas Sesuai Urutan Jenjang
+  const sheetUstadz = getSheetByName(SHEET_USTADZ);
+  const lastRowUstadz = sheetUstadz.getLastRow();
+  if (lastRowUstadz > 1) {
+    sheetUstadz.deleteRows(2, lastRowUstadz - 1);
+  }
+  MASTER_USTADZ_24.forEach(row => sheetUstadz.appendRow(row));
+
+  // 3. Cek Admin
   const sheetAdmin = getSheetByName(SHEET_ADMIN);
   if (sheetAdmin.getLastRow() <= 1) {
     MASTER_ADMIN_AWAL.forEach(row => sheetAdmin.appendRow(row));
   }
 
-  // 3. Cek Pengaturan
+  // 4. Cek Pengaturan
   const sheetPengaturan = getSheetByName(SHEET_PENGATURAN);
   if (sheetPengaturan.getLastRow() <= 1) {
     MASTER_PENGATURAN_AWAL.forEach(row => sheetPengaturan.appendRow(row));
   }
 
   formatSeluruhLembarKerja();
-  SpreadsheetApp.getActiveSpreadsheet().toast('Master 30 Kelas Diniyah dan Pengaturan berhasil dimuat.', 'Sukses', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Master 30 Kelas Diniyah, 24 Ustadz, dan Pengaturan berhasil dimuat urut.', 'Sukses', 5);
 }
 
 /**
