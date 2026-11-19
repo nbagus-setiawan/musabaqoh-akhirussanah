@@ -63,13 +63,13 @@ export default function AdminApp() {
       setGuruCount(Array.isArray(guru) ? guru.length : 0);
 
       const sub = await fetchTingkatKelas();
-      let totalRombel = 0;
+      let totalKelas = 0;
       if (sub && typeof sub === 'object') {
         Object.entries(sub).forEach(([k, arr]) => {
-          if (k !== 'mhq_juz' && Array.isArray(arr)) totalRombel += arr.length;
+          if (Array.isArray(arr)) totalKelas += arr.length;
         });
       }
-      setTingkatCount(totalRombel || 32);
+      setTingkatCount(totalKelas || 30);
     } catch (e) {
       console.error('Error load admin data:', e);
     }

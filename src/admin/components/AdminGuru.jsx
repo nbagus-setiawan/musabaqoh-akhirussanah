@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { 
   getWaliKelasList, 
+  fetchWaliKelas,
   saveWaliKelas, 
   deleteWaliKelas, 
   getSubKelasByTingkat,
@@ -59,12 +60,21 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
   // Delete Confirm Modal
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsRefreshing(true);
-    setGuruList(getWaliKelasList());
+    try {
+      const fresh = await fetchWaliKelas();
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setGuruList(fresh);
+      } else {
+        setGuruList(getWaliKelasList());
+      }
+    } catch (e) {
+      setGuruList(getWaliKelasList());
+    }
     setTingkatList(getTingkatList());
     setSubKelasData(getSubKelasByTingkat());
-    setTimeout(() => setIsRefreshing(false), 400);
+    setTimeout(() => setIsRefreshing(false), 300);
   };
 
   useEffect(() => {

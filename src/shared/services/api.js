@@ -1,4 +1,4 @@
-// Layanan Integrasi Google Sheets & Local Storage
+// Layanan Integrasi Database Google Sheets via Code.gs (Direct API & .env)
 // Musabaqah Akhirussanah YPPS Pondok Pesantren Al-Falah Putak
 
 import { 
@@ -9,63 +9,36 @@ import {
   getGenderFromKelas
 } from '../data/competitions';
 
-const STORAGE_KEY = 'akhirusanah_registrations_v1';
-const GAS_URL_KEY = 'akhirusanah_gas_url';
-const ADMIN_PIN_KEY = 'akhirusanah_admin_pin';
-const WALI_KELAS_KEY = 'akhirusanah_wali_kelas_v1';
-const SUB_KELAS_KEY = 'akhirusanah_subkelas_v1';
-const TINGKAT_LIST_KEY = 'akhirusanah_tingkat_v1';
-const ACTIVITY_LOGS_KEY = 'akhirusanah_activity_logs_v1';
-const JUARA_KEY = 'akhirusanah_juara_lomba_v1';
+// Kunci penyimpanan sesi
+const STORAGE_KEY = 'akhirusanah_registrations_v2';
+const WALI_KELAS_KEY = 'akhirusanah_ustadz_v2';
+const SUB_KELAS_KEY = 'akhirusanah_kelas_v2';
+const ACTIVITY_LOGS_KEY = 'akhirusanah_activity_logs_v2';
+const JUARA_KEY = 'akhirusanah_juara_v2';
 
-// Daftar nama data contoh lama yang wajib dibersihkan secara otomatis
-const DEMO_NAMES = [
-  'Muhammad Al-Fatih',
-  'Zahra Syarifah',
-  'Rizky Kurniawan'
-];
-
-/**
- * Pembersih Data Contoh Lama (Purge Dummy Data)
- * Memastikan cache lokal browser bersih 100% dan hanya memuat data riil
- */
-export const cleanDemoData = (list) => {
-  if (!Array.isArray(list)) return [];
-  return list
-    .filter(item => {
-      if (!item) return false;
-      const name = (item.Nama_Lengkap || '').trim();
-      return !DEMO_NAMES.includes(name);
-    })
-    .map(item => ({
-      ...item,
-      Nama_Lengkap: (item.Nama_Lengkap || '').trim().toUpperCase()
-    }));
-};
-
+// URL Google Apps Script dari .env (VITE_GAS_URL)
 export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyg6odSPbv_pqXFD2qPTUROwooyWWmZ9N4Y4SZRAtfiBDb7FlKcy7cuIwVqiSFpXJSt/exec';
 
 export const getStoredGasUrl = () => {
-  return localStorage.getItem(GAS_URL_KEY) || import.meta.env.VITE_GAS_URL || DEFAULT_GAS_URL;
+  return import.meta.env.VITE_GAS_URL || localStorage.getItem('akhirusanah_gas_url') || DEFAULT_GAS_URL;
 };
 
 export const setStoredGasUrl = (url) => {
-  localStorage.setItem(GAS_URL_KEY, url ? url.trim() : DEFAULT_GAS_URL);
+  localStorage.setItem('akhirusanah_gas_url', url ? url.trim() : DEFAULT_GAS_URL);
 };
 
 export const getAdminPin = () => {
-  return localStorage.getItem(ADMIN_PIN_KEY) || 'admin123';
+  return localStorage.getItem('akhirusanah_admin_pin') || 'admin123';
 };
 
 export const setAdminPin = (pin) => {
-  localStorage.setItem(ADMIN_PIN_KEY, pin);
+  localStorage.setItem('akhirusanah_admin_pin', pin);
 };
 
 // =========================================================================
-// REAL-TIME BROADCAST & AUTO-SYNC ENGINE
-// Memastikan semua tab, window, dan background sinkron seketika (<1ms) tanpa refresh
+// REAL-TIME BROADCAST ENGINE (Sinkronisasi Antar Tab Peramban)
 // =========================================================================
-const BROADCAST_CHANNEL_NAME = 'alfalah_realtime_sync_v1';
+const BROADCAST_CHANNEL_NAME = 'alfalah_realtime_sync_v2';
 let syncChannel = null;
 try {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -78,10 +51,8 @@ try {
 export const notifyDataChanged = (type = 'registrations', payload = null) => {
   if (typeof window === 'undefined') return;
 
-  // 1. Dispatch custom event di tab aktif saat ini
   window.dispatchEvent(new CustomEvent('alfalah_data_changed', { detail: { type, payload, timestamp: Date.now() } }));
 
-  // 2. Broadcast via BroadcastChannel ke seluruh tab/jendela lain
   if (syncChannel) {
     try {
       syncChannel.postMessage({ type, payload, timestamp: Date.now() });
@@ -98,117 +69,82 @@ export const subscribeDataChanged = (callback) => {
   const handleBroadcast = (e) => {
     if (callback) callback(e.data || { type: 'registrations' });
   };
-  const handleStorage = (e) => {
-    if (e.key === STORAGE_KEY || e.key === WALI_KELAS_KEY || e.key === SUB_KELAS_KEY) {
-      if (callback) callback({ type: 'storage_change', key: e.key });
-    }
-  };
 
   window.addEventListener('alfalah_data_changed', handleCustom);
-  window.addEventListener('storage', handleStorage);
   if (syncChannel) {
     syncChannel.addEventListener('message', handleBroadcast);
   }
 
   return () => {
     window.removeEventListener('alfalah_data_changed', handleCustom);
-    window.removeEventListener('storage', handleStorage);
     if (syncChannel) {
       syncChannel.removeEventListener('message', handleBroadcast);
     }
   };
 };
 
-/**
- * Ambil data lokal secara sinkron & instan (< 1ms)
- */
+// =========================================================================
+// 1. DATA PENDAFTARAN SANTRI (SHEET: Pendaftaran)
+// =========================================================================
+
 export const getLocalRegistrations = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? cleanDemoData(JSON.parse(raw)) : [];
+    return raw ? JSON.parse(raw) : [];
   } catch (e) {
     return [];
   }
 };
 
 /**
- * Sinkronisasi data Google Sheets di background tanpa memblokir antarmuka pengguna
+ * Mengambil seluruh data santri langsung dari Google Sheets tab Pendaftaran
  */
-let isSyncingBackground = false;
-export const syncRemoteRegistrationsSilently = async () => {
+export const fetchRegistrations = async (forceRemote = true) => {
   const gasUrl = getStoredGasUrl();
-  if (!gasUrl || isSyncingBackground) return;
+  if (!gasUrl) return getLocalRegistrations();
 
-  isSyncingBackground = true;
   try {
     const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
-        const remoteData = cleanDemoData(result.data);
-        const localData = getLocalRegistrations();
-
-        // Deteksi apakah ada santri baru atau perubahan data
-        const isDifferent = remoteData.length !== localData.length || 
-          JSON.stringify(remoteData.map(r => r.ID_Pendaftaran + (r.Status || '') + (r.Nomor_Urut || ''))) !==
-          JSON.stringify(localData.map(r => r.ID_Pendaftaran + (r.Status || '') + (r.Nomor_Urut || '')));
-
-        if (isDifferent) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
-          notifyDataChanged('registrations', remoteData);
-        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
+        return result.data;
       }
     }
-  } catch (e) {
-    // Silent background handling
-  } finally {
-    isSyncingBackground = false;
+  } catch (err) {
+    console.warn('Koneksi Google Sheets gagal saat fetchRegistrations, menggunakan cadangan lokal:', err);
   }
+
+  return getLocalRegistrations();
 };
 
-/**
- * Ambil Semua Data Pendaftaran Santri Riil
- * 1. Mengembalikan data lokal INSTAN (<1ms) tanpa loading lama
- * 2. Menjalankan sinkronisasi senyap dengan Google Sheets di latar belakang
- */
-export const fetchRegistrations = async (forceRemote = false) => {
-  const localData = getLocalRegistrations();
-
-  // Jika forceRemote diminta atau data lokal kosong, tarik remote
+export const syncRemoteRegistrationsSilently = async () => {
   const gasUrl = getStoredGasUrl();
-  if (gasUrl && (forceRemote || localData.length === 0)) {
-    try {
-      const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
-      const resp = await fetch(url, { method: 'GET' });
-      if (resp.ok) {
-        const result = await resp.json();
-        if (result.status === 'success' && Array.isArray(result.data)) {
-          const cleanedRealData = cleanDemoData(result.data);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedRealData));
-          return cleanedRealData;
+  if (!gasUrl) return;
+
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        const local = getLocalRegistrations();
+        if (JSON.stringify(result.data) !== JSON.stringify(local)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
+          notifyDataChanged('registrations', result.data);
         }
       }
-    } catch (err) {
-      console.warn('Gagal fetch dari Google Sheets, menggunakan data lokal:', err);
     }
-  }
-
-  // Jika data lokal sudah ada, jalankan pengecekan remote di background
-  if (gasUrl && !forceRemote && localData.length > 0) {
-    syncRemoteRegistrationsSilently();
-  }
-
-  return localData;
+  } catch (e) {}
 };
 
 /**
- * Simpan Pendaftaran Santri Baru (Data Riil)
+ * Simpan Pendaftaran Santri Baru Langsung ke Google Sheets
  */
 export const saveRegistration = async (formData) => {
   const currentList = getLocalRegistrations();
-  
-  // Format nomor urut ID unik otomatis berdasarkan jumlah riil
   const nextNum = currentList.length + 1;
   const idPendaftaran = `AKH-${String(nextNum).padStart(3, '0')}`;
   
@@ -219,7 +155,7 @@ export const saveRegistration = async (formData) => {
     Timestamp: timestamp,
     Wali_Kelas: formData.waliKelas || '',
     ID_Pendaftaran: idPendaftaran,
-    Nomor_Urut: '', // Kosong di awal, akan diundi oleh panitia
+    Nomor_Urut: '',
     Nama_Lengkap: (formData.namaSantri || '').trim().toUpperCase(),
     Jenis_Kelamin: formData.jenisKelamin || 'L',
     Tingkat: formData.tingkat || '',
@@ -230,41 +166,34 @@ export const saveRegistration = async (formData) => {
     Catatan: formData.catatan || ''
   };
 
-  // Simpan ke local storage
   const updatedList = [newEntry, ...currentList];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
-
-  // Trigger sinkronisasi otomatis seketika (<1ms) ke seluruh komponen & tab aktif
   notifyDataChanged('registrations', newEntry);
 
-  // Catat ke Log Aktivitas
   addActivityLog(
     'Pendaftaran Santri Baru',
     `Santri ${formData.namaSantri} didaftarkan oleh ${formData.waliKelas} (${formData.tingkat} - ${formData.cabangLomba})`,
     'registration'
   );
 
-  // Kirim ke Google Apps Script secara real-time di background tanpa memblokir respon UI
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'register',
-        ...newEntry
-      }),
-      keepalive: true
-    }).catch(e => console.warn('Koneksi background GAS gagal:', e));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'register', ...newEntry })
+      });
+    } catch (e) {
+      console.warn('Gagal kirim ke Google Sheets:', e);
+    }
   }
 
   return newEntry;
 };
 
 /**
- * Simpan Batch Pendaftaran Seluruh Delegasi Santri dari 1 Kelas Diniyah Sekaligus
- * @param {Array} santriList Array of santri objects
- * @param {Object} metadata { waliKelas, nomorWA, tingkat, kelasDiniyah, jenisKelamin }
+ * Simpan Batch Pendaftaran Delegasi Multi-Step Langsung ke Google Sheets
  */
 export const saveBatchRegistrations = async (santriList = [], metadata = {}) => {
   if (!Array.isArray(santriList) || santriList.length === 0) {
@@ -272,8 +201,6 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
   }
 
   const currentList = getLocalRegistrations();
-
-  // Cari ID angka tertinggi yang ada
   const existingNums = currentList
     .map(item => {
       const match = (item.ID_Pendaftaran || '').match(/\d+/);
@@ -305,36 +232,34 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
     };
   });
 
-  // Simpan ke local storage
   const updatedList = [...newEntries, ...currentList];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
-
-  // Trigger sinkronisasi otomatis seketika (<1ms) ke seluruh komponen & tab aktif
   notifyDataChanged('registrations', newEntries);
 
-  // Catat ke Log Aktivitas
   addActivityLog(
     'Pendaftaran Batch Delegasi',
-    `${newEntries.length} santri delegasi didaftarkan oleh ${metadata.waliKelas} (${metadata.kelasDiniyah || metadata.kelasKategori || 'Kelas Diniyah'})`,
+    `${newEntries.length} santri delegasi didaftarkan oleh ${metadata.waliKelas} (${metadata.kelasDiniyah || 'Kelas Diniyah'})`,
     'registration'
   );
 
-  // Kirim ke Google Apps Script di background
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    Promise.allSettled(
-      newEntries.map(entry =>
-        fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'register',
-            ...entry
-          }),
-          keepalive: true
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'batch_register',
+          Wali_Kelas: metadata.waliKelas || '',
+          Nomor_WA: metadata.nomorWA || '',
+          Tingkat: metadata.tingkatName || metadata.tingkat || '',
+          Kelas_Kategori: metadata.kelasDiniyah || '',
+          entries: newEntries
         })
-      )
-    ).catch(e => console.warn('Sync batch ke GAS gagal:', e));
+      });
+    } catch (e) {
+      console.warn('Sync batch ke Google Sheets gagal:', e);
+    }
   }
 
   return {
@@ -346,11 +271,10 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
 };
 
 /**
- * Update Status Verifikasi Santri (Riil)
+ * Update Status Santri Langsung ke Google Sheets
  */
 export const updateStatus = async (idPendaftaran, newStatus) => {
   const currentList = getLocalRegistrations();
-  const target = currentList.find(item => item.ID_Pendaftaran === idPendaftaran);
   const updated = currentList.map(item => {
     if (item.ID_Pendaftaran === idPendaftaran) {
       return { ...item, Status: newStatus };
@@ -359,923 +283,570 @@ export const updateStatus = async (idPendaftaran, newStatus) => {
   });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-
-  // Trigger sinkronisasi otomatis seketika (<1ms)
   notifyDataChanged('registrations', { idPendaftaran, newStatus });
 
-  // Catat ke Log Aktivitas
-  const santriName = target ? target.Nama_Lengkap : idPendaftaran;
   addActivityLog(
     'Perubahan Status Santri',
-    `Status ${santriName} (${idPendaftaran}) diubah menjadi "${newStatus}"`,
+    `Status santri ID ${idPendaftaran} diubah menjadi "${newStatus}"`,
     'status'
   );
 
-  // Kirim update ke Google Apps Script di background
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'update_single',
-        ID_Pendaftaran: idPendaftaran,
-        Status: newStatus
-      })
-    }).catch(e => console.warn('Sync status GAS failed:', e));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'update_single',
+          ID_Pendaftaran: idPendaftaran,
+          Status: newStatus
+        })
+      });
+    } catch (e) {
+      console.warn('Update status ke GAS gagal:', e);
+    }
   }
 
   return updated;
 };
 
 /**
- * Edit / Update Seluruh Data Pendaftaran Santri (Lengkap: Nama, Kelas, Cabang, WA, Wali Kelas, No Urut, Status, Catatan)
+ * Edit Santri Lengkap Langsung ke Google Sheets
  */
 export const updateRegistration = async (idPendaftaran, updatedFields) => {
   const currentList = getLocalRegistrations();
-  const target = currentList.find(item => item.ID_Pendaftaran === idPendaftaran) || {};
-  const sanitizedFields = { ...updatedFields };
-  if (sanitizedFields.Nama_Lengkap) {
-    sanitizedFields.Nama_Lengkap = sanitizedFields.Nama_Lengkap.trim().toUpperCase();
-  }
-
-  const updatedItem = {
-    ...target,
-    ...sanitizedFields,
-    ID_Pendaftaran: idPendaftaran
-  };
-
-  const updated = currentList.map(item => 
-    item.ID_Pendaftaran === idPendaftaran ? updatedItem : item
-  );
+  const updated = currentList.map(item => {
+    if (item.ID_Pendaftaran === idPendaftaran) {
+      return { ...item, ...updatedFields };
+    }
+    return item;
+  });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  notifyDataChanged('registrations', { idPendaftaran, updatedFields });
 
-  // Trigger sinkronisasi otomatis seketika (<1ms)
-  notifyDataChanged('registrations', updatedItem);
-
-  const santriName = updatedItem.Nama_Lengkap || idPendaftaran;
   addActivityLog(
-    'Edit Data Santri',
-    `Data santri ${santriName} (${idPendaftaran}) berhasil diedit oleh panitia`,
-    'registration'
+    'Update Data Santri',
+    `Data santri ${idPendaftaran} diperbarui`,
+    'update'
   );
 
-  // Sync perubahan langsung ke Google Sheets (Sheet Pendaftaran) di background
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'edit_santri',
-        ID_Pendaftaran: idPendaftaran,
-        ...updatedItem
-      })
-    }).catch(e => console.warn('Sync edit_santri GAS failed:', e));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'edit_santri',
+          ID_Pendaftaran: idPendaftaran,
+          ...updatedFields
+        })
+      });
+    } catch (e) {
+      console.warn('Update santri ke Google Sheets gagal:', e);
+    }
   }
 
-  return updatedItem;
+  return updated;
 };
 
 /**
- * Hapus Data Pendaftaran Santri
+ * Hapus Santri Langsung dari Google Sheets
  */
 export const deleteRegistration = async (idPendaftaran) => {
   const currentList = getLocalRegistrations();
-  const target = currentList.find(item => item.ID_Pendaftaran === idPendaftaran);
-  const updated = currentList.filter(item => item.ID_Pendaftaran !== idPendaftaran);
+  const filtered = currentList.filter(item => item.ID_Pendaftaran !== idPendaftaran);
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  notifyDataChanged('registrations', { deletedId: idPendaftaran });
 
-  // Trigger sinkronisasi otomatis seketika (<1ms)
-  notifyDataChanged('registrations', { idPendaftaran, action: 'delete' });
-
-  const santriName = target ? target.Nama_Lengkap : idPendaftaran;
-  addActivityLog(
-    'Hapus Data Santri',
-    `Data santri ${santriName} (${idPendaftaran}) dihapus oleh panitia`,
-    'status'
-  );
+  addActivityLog('Hapus Santri', `Santri ${idPendaftaran} dihapus dari pendaftaran`, 'delete');
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'delete_single',
-        ID_Pendaftaran: idPendaftaran
-      })
-    }).catch(e => console.warn('Sync delete GAS failed:', e));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'delete_santri',
+          ID_Pendaftaran: idPendaftaran
+        })
+      });
+    } catch (e) {
+      console.warn('Hapus santri di Google Sheets gagal:', e);
+    }
   }
 
-  return updated;
+  return filtered;
 };
 
-
 /**
- * FUNGSI PENENTU GENDER SANTRI
- * Mengecek apakah santri berstatus Putri (P atau mengandung kata putri)
+ * Undi Nomor Urut Seluruh Santri di Google Sheets
  */
+export const generateRandomQueueNumbers = async () => {
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      const resp = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'undi_nomor' })
+      });
+      if (resp.ok) {
+        // Ambil data terbaru hasil pengundian dari spreadsheet
+        const fresh = await fetchRegistrations(true);
+        return { success: true, count: fresh.length };
+      }
+    } catch (e) {
+      console.warn('Undi nomor via Google Sheets gagal:', e);
+    }
+  }
+
+  return { success: false, message: 'Gagal menghubungi Google Sheets.' };
+};
+
 export const isSantriPutri = (item) => {
   if (!item) return false;
-  const jk = String(item.Jenis_Kelamin || '').trim().toUpperCase();
-  const kelas = String(item.Kelas_Kategori || '').toLowerCase();
-  return jk === 'P' || kelas.includes('putri');
+  const jk = (item.Jenis_Kelamin || item.jenisKelamin || '').toUpperCase();
+  if (jk === 'P') return true;
+  const kelas = (item.Kelas_Kategori || item.kelasKategori || '').toLowerCase();
+  return kelas.includes('putri') || kelas.includes(' pi') || kelas.endsWith('pi');
 };
 
-/**
- * FUNGSI PENGOCOKAN / GENERATE NOMOR URUT ACAK (MULAI DARI 050)
- * Mengundi nomor urut pemanggilan kepada peserta yang statusnya sudah 'Terverifikasi'
- * Aturan Pemanggilan: Per cabang & per tingkat, acak berselang-seling dimulai dari PUTRI, lalu PUTRA, dst.
- * Dimulai dari startNumber (default: 50 -> "050")
- */
-export const generateRandomQueueNumbers = async (targetCategory = 'ALL', startNumber = 50) => {
-  const currentList = getLocalRegistrations();
-
-  // Filter peserta yang terverifikasi (dan jika targetCategory bukan ALL, filter sesuai cabang)
-  const eligibleIndices = [];
-  currentList.forEach((item, idx) => {
-    const isCategoryMatch = targetCategory === 'ALL' || item.Cabang_Lomba === targetCategory;
-    if (item.Status === 'Terverifikasi' && isCategoryMatch) {
-      eligibleIndices.push(idx);
-    }
-  });
-
-  if (eligibleIndices.length === 0) {
-    throw new Error('Tidak ada peserta dengan status "Terverifikasi" untuk diundi nomor urutnya!');
-  }
-
-  // Kelompokkan peserta berdasarkan Cabang & Tingkat agar pengundian tetap teratur per cabang dan per tingkat
-  const groupIndices = new Map();
-  eligibleIndices.forEach(idx => {
-    const item = currentList[idx];
-    const key = `${item.Cabang_Lomba || 'Umum'}___${item.Tingkat || 'Umum'}`;
-    if (!groupIndices.has(key)) {
-      groupIndices.set(key, []);
-    }
-    groupIndices.get(key).push(idx);
-  });
-
-  // Kumpulkan semua nomor urut yang sudah terpakai agar tidak ada nomor ganda di seluruh cabang & tingkat
-  const existingUsedNumbers = new Set(
-    currentList
-      .filter((_, idx) => !eligibleIndices.includes(idx))
-      .map(it => it.Nomor_Urut && String(it.Nomor_Urut).trim())
-      .filter(Boolean)
-  );
-
-  let currentStartNum = startNumber;
-  const updatesToSync = [];
-  const updatedList = [...currentList];
-
-  groupIndices.forEach((indices) => {
-    // Pisahkan Putri dan Putra
-    const putriIndices = [];
-    const putraIndices = [];
-
-    indices.forEach(idx => {
-      if (isSantriPutri(currentList[idx])) {
-        putriIndices.push(idx);
-      } else {
-        putraIndices.push(idx);
-      }
-    });
-
-    // Acak masing-masing grup secara independen dengan algoritma Fisher-Yates
-    for (let i = putriIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [putriIndices[i], putriIndices[j]] = [putriIndices[j], putriIndices[i]];
-    }
-    for (let i = putraIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [putraIndices[i], putraIndices[j]] = [putraIndices[j], putraIndices[i]];
-    }
-
-    // Gabungkan berselang-seling: Dimulai dari PUTRI, lalu PUTRA, lalu PUTRI, dst.
-    const interleavedIndices = [];
-    const maxLen = Math.max(putriIndices.length, putraIndices.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (i < putriIndices.length) interleavedIndices.push(putriIndices[i]);
-      if (i < putraIndices.length) interleavedIndices.push(putraIndices[i]);
-    }
-
-    // Siapkan pool nomor urut acak tanpa ada nomor ganda di seluruh sistem
-    const poolNumbers = [];
-    while (poolNumbers.length < interleavedIndices.length) {
-      const formatted = String(currentStartNum).padStart(3, '0');
-      if (!existingUsedNumbers.has(formatted)) {
-        poolNumbers.push(formatted);
-      }
-      currentStartNum++;
-    }
-
-    // Acak pool nomor urut dengan algoritma Fisher-Yates agar tidak berurutan
-    for (let i = poolNumbers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [poolNumbers[i], poolNumbers[j]] = [poolNumbers[j], poolNumbers[i]];
-    }
-
-    // Tetapkan nomor urut acak ke peserta hasil undian berselang-seling (Putri -> Putra)
-    interleavedIndices.forEach((listIdx, i) => {
-      const assignedNo = poolNumbers[i];
-      existingUsedNumbers.add(assignedNo);
-      updatedList[listIdx] = {
-        ...updatedList[listIdx],
-        Nomor_Urut: assignedNo
-      };
-      updatesToSync.push({
-        ID_Pendaftaran: updatedList[listIdx].ID_Pendaftaran,
-        Nomor_Urut: assignedNo,
-        Status: 'Terverifikasi'
-      });
-    });
-  });
-
-  // Simpan ke local storage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
-
-  // Trigger sinkronisasi otomatis seketika (<1ms) ke seluruh komponen & tab aktif
-  notifyDataChanged('registrations', { action: 'lottery', count: updatesToSync.length });
-
-  // Catat ke Log Aktivitas
-  addActivityLog(
-    'Pengundian Nomor Urut',
-    `Berhasil mengundi nomor urut untuk ${updatesToSync.length} santri terverifikasi (${targetCategory === 'ALL' ? 'Semua Cabang' : targetCategory}) berselang-seling (Putri - Putra) mulai nomor ${String(startNumber).padStart(3, '0')}`,
-    'lottery'
-  );
-
-  // Sync batch ke Google Apps Script
-  const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'batch_update',
-        updates: updatesToSync
-      })
-    }).catch(e => console.warn('Sync batch GAS failed:', e));
-  }
-
-  return { updatedList, countAssigned: updatesToSync.length };
-};
-
-// ==========================================
-// 1. ACTIVITY LOGS (RIWAYAT AKTIVITAS SISTEM)
-// ==========================================
-const INITIAL_LOGS = [
-  {
-    id: 'log-sys-1',
-    timestamp: '17/11/2026 08:00:00',
-    action: 'Inisialisasi Portal',
-    detail: 'Sistem Portal Pendaftaran Musabaqah Akhirussanah 1447 H / 2026 M Al-Falah Putak aktif.',
-    type: 'system'
-  }
-];
-
-export const getActivityLogs = () => {
-  try {
-    const raw = localStorage.getItem(ACTIVITY_LOGS_KEY);
-    if (!raw) return INITIAL_LOGS;
-    const parsed = JSON.parse(raw);
-    // Bersihkan log yang menyebutkan nama contoh
-    const cleaned = parsed.filter(l => {
-      const detail = l.detail || '';
-      return !DEMO_NAMES.some(name => detail.includes(name));
-    });
-    return cleaned.length > 0 ? cleaned : INITIAL_LOGS;
-  } catch (e) {
-    return INITIAL_LOGS;
-  }
-};
-
-export const addActivityLog = (action, detail, type = 'info') => {
-  const currentLogs = getActivityLogs();
-  const now = new Date();
-  const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-  
-  const newLog = {
-    id: 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-    timestamp,
-    action,
-    detail,
-    type
-  };
-
-  const updated = [newLog, ...currentLogs].slice(0, 100);
-  try {
-    localStorage.setItem(ACTIVITY_LOGS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.warn('Gagal simpan log aktivitas:', e);
-  }
-  return updated;
-};
-
-export const clearActivityLogs = () => {
-  localStorage.setItem(ACTIVITY_LOGS_KEY, JSON.stringify(INITIAL_LOGS));
-  return INITIAL_LOGS;
-};
-
-// ==========================================
-// 2. DATA GURU (CRUD WALI KELAS ASLI)
-const DUMMY_TEACHER_NAMES = [
-  'Ust. Ahmad Fauzan', 'Usth. Siti Maryam', 'Ust. M. Ridwan', 'Usth. Nur Aini',
-  'Ust. Muhammad Zaid', 'Usth. Anisa Rahma', 'Ust. Farhan Asy-Syafi\'i', 'Ust. Abdul Somad',
-  'Ust. Hasan Basri', 'Ust. Luqman Hakim', 'Ust. Subhan Al-Bantani', 'Ust. Dede Rosyada',
-  'Ust. Syamsul Huda', 'Usth. Fatimah Az-Zahra', 'Ust. Dr. K.H. Zainuddin', 'Ust. M. Nur Iskandar'
-];
+// =========================================================================
+// 2. MASTER DATA USTADZ / WALI KELAS (SHEET: Ustadz)
+// =========================================================================
 
 export const getWaliKelasList = () => {
   try {
     const raw = localStorage.getItem(WALI_KELAS_KEY);
-    if (!raw) {
-      if (Array.isArray(MASTER_WALI_KELAS) && MASTER_WALI_KELAS.length > 0) {
-        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(MASTER_WALI_KELAS));
-      }
-      return MASTER_WALI_KELAS || [];
-    }
-    const list = JSON.parse(raw);
-    if (!Array.isArray(list) || list.length === 0) {
-      return MASTER_WALI_KELAS || [];
-    }
-    const realOnly = list.filter(item => {
-      const nama = item.nama || '';
-      return !DUMMY_TEACHER_NAMES.includes(nama);
-    });
-    if (realOnly.length === 0 && Array.isArray(MASTER_WALI_KELAS) && MASTER_WALI_KELAS.length > 0) {
-      localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(MASTER_WALI_KELAS));
-      return MASTER_WALI_KELAS;
-    }
-    return realOnly;
+    return raw ? JSON.parse(raw) : MASTER_WALI_KELAS;
   } catch (e) {
-    return MASTER_WALI_KELAS || [];
+    return MASTER_WALI_KELAS;
   }
 };
 
+/**
+ * Mengambil master Ustadz / Wali Kelas langsung dari Google Sheets
+ */
 export const fetchWaliKelas = async () => {
   const gasUrl = getStoredGasUrl();
-  let localData = getWaliKelasList();
+  if (!gasUrl) return getWaliKelasList();
 
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_ustadz` : `${gasUrl}?action=get_ustadz`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && Array.isArray(result.data) && result.data.length > 0) {
+        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(result.data));
+        return result.data;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal ambil data Ustadz dari Google Sheets, menggunakan master lokal:', err);
+  }
+
+  return getWaliKelasList();
+};
+
+export const saveWaliKelas = async (ustadzData) => {
+  const list = getWaliKelasList();
+  const id = ustadzData.id || `ust-${Date.now()}`;
+  const newItem = { ...ustadzData, id };
+  const existingIdx = list.findIndex(u => u.id === id);
+
+  let updatedList;
+  if (existingIdx >= 0) {
+    updatedList = [...list];
+    updatedList[existingIdx] = newItem;
+  } else {
+    updatedList = [...list, newItem];
+  }
+
+  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(updatedList));
+  notifyDataChanged('wali_kelas', newItem);
+
+  const gasUrl = getStoredGasUrl();
   if (gasUrl) {
     try {
-      const url = gasUrl.includes('?') ? `${gasUrl}&action=get_guru` : `${gasUrl}?action=get_guru`;
-      const resp = await fetch(url, { method: 'GET' });
-      if (resp.ok) {
-        const result = await resp.json();
-        if (result.status === 'success' && Array.isArray(result.data)) {
-          const cleaned = result.data.filter(item => {
-            const nama = item.nama || '';
-            return !DUMMY_TEACHER_NAMES.includes(nama);
-          });
-          localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(cleaned));
-          return cleaned;
-        }
-      }
-    } catch (err) {
-      console.warn('Gagal fetch guru dari Google Sheets:', err);
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_ustadz', ...newItem })
+      });
+    } catch (e) {
+      console.warn('Simpan Ustadz ke Google Sheets gagal:', e);
     }
   }
 
-  return localData;
+  return updatedList;
 };
 
-export const saveWaliKelas = (data) => {
-  const current = getWaliKelasList();
-  let updated;
-  let savedItem;
-  if (data.id) {
-    savedItem = { ...data };
-    updated = current.map(item => item.id === data.id ? { ...item, ...data } : item);
-    addActivityLog('Edit Data Guru', `Memperbarui data wali kelas: ${data.nama} (${data.kelas})`, 'guru');
-  } else {
-    const newId = 'wk-' + Date.now();
-    savedItem = { ...data, id: newId };
-    updated = [...current, savedItem];
-    addActivityLog('Tambah Data Guru', `Menambahkan wali kelas baru: ${data.nama} (${data.kelas})`, 'guru');
-  }
-  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(updated));
-  notifyDataChanged('wali_kelas', updated);
+export const deleteWaliKelas = async (id) => {
+  const list = getWaliKelasList();
+  const filtered = list.filter(u => u.id !== id);
 
-  // Sync latar belakang ke Google Sheets
+  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(filtered));
+  notifyDataChanged('wali_kelas', { deletedId: id });
+
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'save_guru', ...savedItem })
-    }).catch(err => console.warn('GAS save_guru sync error:', err));
-  }
-
-  return updated;
-};
-
-export const deleteWaliKelas = (id) => {
-  const current = getWaliKelasList();
-  const target = current.find(item => item.id === id);
-  const updated = current.filter(item => item.id !== id);
-  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(updated));
-  notifyDataChanged('wali_kelas', updated);
-  if (target) {
-    addActivityLog('Hapus Data Guru', `Menghapus wali kelas: ${target.nama} (${target.kelas})`, 'guru');
-  }
-
-  // Sync latar belakang ke Google Sheets
-  const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'delete_guru', id })
-    }).catch(err => console.warn('GAS delete_guru sync error:', err));
-  }
-
-  return updated;
-};
-
-// ==========================================
-// 3. TINGKAT DAN KELAS (CRUD ROMBEL & TINGKAT)
-// ==========================================
-export const getTingkatList = () => {
-  try {
-    const raw = localStorage.getItem(TINGKAT_LIST_KEY);
-    if (!raw) return TINGKAT_LIST;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(TINGKAT_LIST_KEY, JSON.stringify(TINGKAT_LIST));
-      return TINGKAT_LIST;
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_ustadz', id })
+      });
+    } catch (e) {
+      console.warn('Hapus Ustadz di Google Sheets gagal:', e);
     }
-    return parsed;
-  } catch (e) {
-    return TINGKAT_LIST;
   }
+
+  return filtered;
 };
+
+export const syncAllWaliKelasToGas = async () => {
+  const list = getWaliKelasList();
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) throw new Error('URL Google Apps Script belum dikonfigurasi.');
+
+  for (const item of list) {
+    await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'save_ustadz', ...item })
+    });
+  }
+
+  return { success: true, count: list.length };
+};
+
+// =========================================================================
+// 3. MASTER TINGKAT DAN KELAS DINIYAH (SHEET: Tingkat_dan_Kelas)
+// =========================================================================
+
+export const getTingkatList = () => TINGKAT_LIST;
 
 export const getSubKelasByTingkat = () => {
   try {
     const raw = localStorage.getItem(SUB_KELAS_KEY);
-    if (!raw) {
-      localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(SUB_KELAS_BY_TINGKAT));
-      return SUB_KELAS_BY_TINGKAT;
-    }
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') {
-      localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(SUB_KELAS_BY_TINGKAT));
-      return SUB_KELAS_BY_TINGKAT;
-    }
-
-    // Hitung kelengkapan rombel di masing-masing 4 jenjang
-    const ulaCount = Array.isArray(parsed.ula) ? parsed.ula.length : 0;
-    const wusthoCount = Array.isArray(parsed.wustho) ? parsed.wustho.length : 0;
-    const ulyaCount = Array.isArray(parsed.ulya) ? parsed.ulya.length : 0;
-    const mhqCount = Array.isArray(parsed.mhq_juz) ? parsed.mhq_juz.length : 0;
-
-    // Deteksi jika ada format lama tanpa kata Putra/Putri
-    const hasPutraPutri = Object.entries(parsed).some(([key, arr]) => {
-      if (key === 'mhq_juz') return false;
-      return Array.isArray(arr) && arr.some(c => typeof c === 'string' && (c.includes('Putra') || c.includes('Putri')));
-    });
-
-    // Jika kosong, belum ada Putra/Putri, atau salah satu jenjang hilang/terpotong (contoh: ulya/mhq 0):
-    // Otomatis lengkapi dengan Master Resmi SUB_KELAS_BY_TINGKAT (38 Rombel & Kategori)
-    if (!hasPutraPutri || ulaCount < 8 || wusthoCount < 16 || ulyaCount < 8 || mhqCount < 6) {
-      const merged = {
-        ula: Array.from(new Set([...SUB_KELAS_BY_TINGKAT.ula, ...(parsed.ula || [])])),
-        wustho: Array.from(new Set([...SUB_KELAS_BY_TINGKAT.wustho, ...(parsed.wustho || [])])),
-        ulya: Array.from(new Set([...SUB_KELAS_BY_TINGKAT.ulya, ...(parsed.ulya || [])])),
-        mhq_juz: Array.from(new Set([...SUB_KELAS_BY_TINGKAT.mhq_juz, ...(parsed.mhq_juz || [])]))
-      };
-      localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(merged));
-      return merged;
-    }
-
-    return parsed;
+    return raw ? JSON.parse(raw) : SUB_KELAS_BY_TINGKAT;
   } catch (e) {
     return SUB_KELAS_BY_TINGKAT;
   }
 };
 
 /**
- * Reset / Pulihkan Data Tingkat dan Rombel Kelas ke Master Resmi (Putra & Putri Terpisah Lengkap)
- */
-export const resetTingkatKelasToMaster = () => {
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(SUB_KELAS_BY_TINGKAT));
-  localStorage.setItem(TINGKAT_LIST_KEY, JSON.stringify(TINGKAT_LIST));
-  addActivityLog('Reset Rombel Kelas', 'Memulihkan data master jenjang & rombel kelas standar Al-Falah Putak (Putra & Putri)', 'tingkat');
-  return SUB_KELAS_BY_TINGKAT;
-};
-
-/**
- * Ambil Master Tingkat dan Rombel Kelas Langsung dari Google Sheets (Sheet Tingkat_dan_Kelas)
+ * Mengambil daftar 30 Kelas Diniyah langsung dari Google Sheets
  */
 export const fetchTingkatKelas = async () => {
   const gasUrl = getStoredGasUrl();
-  let localData = getSubKelasByTingkat();
+  if (!gasUrl) return getSubKelasByTingkat();
 
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_tingkat_kelas` : `${gasUrl}?action=get_tingkat_kelas`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && Array.isArray(result.data) && result.data.length > 0) {
+        // Kelompokkan kelas berdasarkan kode tingkat (ula, wustho, mhq_juz)
+        const grouped = { ula: [], wustho: [], mhq_juz: [] };
+        result.data.forEach(item => {
+          const tId = String(item.kodeTingkat || 'ula').toLowerCase().trim();
+          if (!grouped[tId]) grouped[tId] = [];
+          if (item.namaKelas && !grouped[tId].includes(item.namaKelas)) {
+            grouped[tId].push(item.namaKelas);
+          }
+        });
+
+        localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+        return grouped;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal ambil data Kelas Diniyah dari Google Sheets, menggunakan master lokal:', err);
+  }
+
+  return getSubKelasByTingkat();
+};
+
+export const addKelasToTingkat = async (tingkatId, namaKelas, keterangan = '') => {
+  const grouped = getSubKelasByTingkat();
+  if (!grouped[tingkatId]) grouped[tingkatId] = [];
+  if (!grouped[tingkatId].includes(namaKelas)) {
+    grouped[tingkatId].push(namaKelas);
+  }
+
+  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  notifyDataChanged('sub_kelas', { tingkatId, namaKelas });
+
+  const gasUrl = getStoredGasUrl();
   if (gasUrl) {
     try {
-      const url = gasUrl.includes('?') ? `${gasUrl}&action=get_tingkat_kelas` : `${gasUrl}?action=get_tingkat_kelas`;
-      const resp = await fetch(url, { method: 'GET' });
-      if (resp.ok) {
-        const result = await resp.json();
-        // Pastikan respon sukses dan memiliki array data
-        if (result.status === 'success' && Array.isArray(result.data) && result.data.length > 0) {
-          const grouped = {
-            ula: [],
-            wustho: [],
-            ulya: [],
-            mhq_juz: []
-          };
-
-          result.data.forEach(item => {
-            const tId = (item.kodeTingkat || item.tingkatId || '').toLowerCase().trim();
-            const cName = (item.namaKelas || '').trim();
-            if (tId && cName) {
-              if (!grouped[tId]) {
-                grouped[tId] = [];
-              }
-              if (!grouped[tId].includes(cName)) {
-                grouped[tId].push(cName);
-              }
-            }
-          });
-
-          const totalExtracted = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
-
-          // Cek apakah data dari Sheets sudah berformat Putra/Putri
-          const hasPutraPutriExtracted = Object.entries(grouped).some(([key, arr]) => {
-            if (key === 'mhq_juz') return false;
-            return arr.some(c => c.includes('Putra') || c.includes('Putri'));
-          });
-
-          // Pastikan semua jenjang utama (Ula, Wustho, Ulya) lengkap
-          const isComplete = (grouped.ula?.length || 0) >= 8 && (grouped.wustho?.length || 0) >= 16 && (grouped.ulya?.length || 0) >= 8;
-
-          // PROTEKSI KRUSIAL:
-          // Hanya simpan jika data sheet > 0 DAN sudah menggunakan format Putra & Putri serta lengkap.
-          // Mencegah data web tertimpa kembali oleh format lama atau data terpotong dari Google Sheets.
-          if (totalExtracted > 0 && hasPutraPutriExtracted && isComplete) {
-            localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
-            return grouped;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Gagal fetch tingkat kelas dari Google Sheets:', err);
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_kelas', tingkatId, namaKelas, keterangan })
+      });
+    } catch (e) {
+      console.warn('Simpan kelas ke Google Sheets gagal:', e);
     }
   }
 
-  return localData;
+  return grouped;
 };
 
-/**
- * Kirim / Timpa Seluruh Data Master Tingkat dan Rombel Kelas ke Google Sheets (Sheet Tingkat_dan_Kelas)
- * Memastikan Google Sheets terisi rapi persis 100% sama dengan website
- */
-export const syncAllTingkatKelasToGas = async (overrideData = null) => {
-  const gasUrl = getStoredGasUrl();
-  if (!gasUrl) {
-    throw new Error('URL Google Apps Script belum dipasang di Pengaturan Panel Admin.');
+export const updateKelasInTingkat = async (tingkatId, oldName, newName, keterangan = '') => {
+  const grouped = getSubKelasByTingkat();
+  if (grouped[tingkatId]) {
+    grouped[tingkatId] = grouped[tingkatId].map(n => (n === oldName ? newName : n));
   }
 
-  const subKelas = overrideData || getSubKelasByTingkat();
-  const tingkatList = getTingkatList();
+  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  notifyDataChanged('sub_kelas', { tingkatId, oldName, newName });
 
-  const rows = [];
-  tingkatList.forEach(t => {
-    const classes = subKelas[t.id] || [];
-    classes.forEach(cName => {
-      let ket = t.desc || '';
-      if (cName.includes('Putra')) ket = `${t.name} (Santri Putra)`;
-      else if (cName.includes('Putri')) ket = `${t.name} (Santri Putri)`;
-
-      rows.push({
-        kodeTingkat: t.id,
-        namaTingkat: t.name,
-        namaKelas: cName,
-        keterangan: ket
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_kelas', namaKelas: oldName })
       });
-    });
-  });
-
-  const resp = await fetch(gasUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'sync_all_kelas',
-      data: rows
-    })
-  });
-
-  if (!resp.ok) {
-    throw new Error(`Koneksi HTTP Gagal (Status: ${resp.status})`);
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_kelas', tingkatId, namaKelas: newName, keterangan })
+      });
+    } catch (e) {
+      console.warn('Update kelas di Google Sheets gagal:', e);
+    }
   }
 
-  const result = await resp.json();
-  if (result.status === 'error') {
-    throw new Error(result.message || 'Gagal sinkronisasi rombel ke Google Sheets');
-  }
-
-  addActivityLog(
-    'Sinkronisasi Rombel ke Sheets',
-    `Menyinkronkan ${rows.length} rombel kelas ke Google Sheets`,
-    'tingkat'
-  );
-
-  return result;
+  return grouped;
 };
 
-export const addKelasToTingkat = (tingkatId, namaKelas) => {
-  const current = getSubKelasByTingkat();
-  const list = current[tingkatId] || [];
-  const trimmed = namaKelas.trim();
-  if (list.includes(trimmed)) {
-    throw new Error(`Kelas "${trimmed}" sudah terdaftar di tingkat ini.`);
+export const deleteKelasFromTingkat = async (tingkatId, namaKelas) => {
+  const grouped = getSubKelasByTingkat();
+  if (grouped[tingkatId]) {
+    grouped[tingkatId] = grouped[tingkatId].filter(n => n !== namaKelas);
   }
-  const updated = {
-    ...current,
-    [tingkatId]: [...list, trimmed]
-  };
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(updated));
-  notifyDataChanged('sub_kelas', updated);
-  addActivityLog('Tambah Rombel Kelas', `Menambahkan kelas "${trimmed}" ke tingkat ${tingkatId.toUpperCase()}`, 'tingkat');
 
-  // Sync latar belakang ke Google Sheets
+  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  notifyDataChanged('sub_kelas', { tingkatId, deletedKelas: namaKelas });
+
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    const tingkatObj = TINGKAT_LIST.find(t => t.id === tingkatId);
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'save_kelas',
-        tingkatId,
-        namaTingkat: tingkatObj ? tingkatObj.name : `Tingkat ${tingkatId.toUpperCase()}`,
-        namaKelas: trimmed
-      })
-    }).catch(err => console.warn('GAS save_kelas sync error:', err));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_kelas', namaKelas })
+      });
+    } catch (e) {
+      console.warn('Hapus kelas di Google Sheets gagal:', e);
+    }
   }
 
-  return updated;
+  return grouped;
 };
 
-export const updateKelasInTingkat = (tingkatId, oldName, newName) => {
-  const current = getSubKelasByTingkat();
-  const list = current[tingkatId] || [];
-  const trimmed = newName.trim();
-  const updatedList = list.map(k => k === oldName ? trimmed : k);
-  const updated = {
-    ...current,
-    [tingkatId]: updatedList
-  };
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(updated));
-  notifyDataChanged('sub_kelas', updated);
-  addActivityLog('Edit Rombel Kelas', `Mengubah nama kelas dari "${oldName}" menjadi "${trimmed}" pada tingkat ${tingkatId.toUpperCase()}`, 'tingkat');
+export const resetTingkatKelasToMaster = async () => {
+  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(SUB_KELAS_BY_TINGKAT));
+  notifyDataChanged('sub_kelas', SUB_KELAS_BY_TINGKAT);
 
-  // Sync latar belakang ke Google Sheets
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    const tingkatObj = TINGKAT_LIST.find(t => t.id === tingkatId);
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'save_kelas',
-        tingkatId,
-        namaTingkat: tingkatObj ? tingkatObj.name : `Tingkat ${tingkatId.toUpperCase()}`,
-        namaKelas: trimmed,
-        oldKelasName: oldName
-      })
-    }).catch(err => console.warn('GAS update_kelas sync error:', err));
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'sync_all_kelas' })
+      });
+    } catch (e) {
+      console.warn('Reset kelas ke Google Sheets gagal:', e);
+    }
   }
 
-  return updated;
+  return SUB_KELAS_BY_TINGKAT;
 };
 
-export const deleteKelasFromTingkat = (tingkatId, namaKelas) => {
-  const current = getSubKelasByTingkat();
-  const list = current[tingkatId] || [];
-  const updated = {
-    ...current,
-    [tingkatId]: list.filter(k => k !== namaKelas)
-  };
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(updated));
-  notifyDataChanged('sub_kelas', updated);
-  addActivityLog('Hapus Rombel Kelas', `Menghapus kelas "${namaKelas}" dari tingkat ${tingkatId.toUpperCase()}`, 'tingkat');
-
-  // Sync latar belakang ke Google Sheets
-  const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'delete_kelas',
-        tingkatId,
-        namaKelas
-      })
-    }).catch(err => console.warn('GAS delete_kelas sync error:', err));
-  }
-
-  return updated;
+export const syncAllTingkatKelasToGas = async () => {
+  return resetTingkatKelasToMaster();
 };
 
-// ==========================================
-// 4. MANAJEMEN JUARA LOMBA & KLASEMEN JUARA UMUM KELAS
-// ==========================================
+// =========================================================================
+// 4. JUARA LOMBA & KLASEMEN (SHEET: Juara_Lomba)
+// =========================================================================
 
-/**
- * Mengambil daftar data penetapan juara per cabang lomba
- * Format object: { [cabangKey]: { cabangLomba, tingkat, juara1: {...}, juara2: {...}, juara3: {...} } }
- */
 export const getJuaraList = () => {
   try {
     const raw = localStorage.getItem(JUARA_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? JSON.parse(raw) : [];
   } catch (e) {
-    return {};
+    return [];
   }
 };
 
-/**
- * Menyimpan / Memperbarui penetapan juara untuk cabang lomba tertentu
- */
-export const saveJuara = (cabangKey, dataJuara) => {
-  const current = getJuaraList();
-  const updated = {
-    ...current,
-    [cabangKey]: {
-      ...dataJuara,
-      updatedAt: new Date().toISOString()
+export const fetchJuaraLomba = async () => {
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return getJuaraList();
+
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_juara` : `${gasUrl}?action=get_juara`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        localStorage.setItem(JUARA_KEY, JSON.stringify(result.data));
+        return result.data;
+      }
     }
+  } catch (e) {
+    console.warn('Gagal ambil data Juara dari Google Sheets:', e);
+  }
+
+  return getJuaraList();
+};
+
+export const saveJuara = async (juaraItem) => {
+  const list = getJuaraList();
+  const idJuara = juaraItem.idJuara || `JUR-${Date.now()}`;
+  const newItem = { ...juaraItem, idJuara };
+
+  // Hitung poin sesuai peringkat juara (Juara 1: 5, Juara 2: 3, Juara 3: 1)
+  const rank = parseInt(newItem.juaraKe, 10) || 1;
+  const poin = SKEMA_POIN_JUARA[rank] ? SKEMA_POIN_JUARA[rank].poin : 1;
+  newItem.poin = poin;
+
+  const existingIdx = list.findIndex(j => j.idJuara === idJuara);
+  let updatedList;
+  if (existingIdx >= 0) {
+    updatedList = [...list];
+    updatedList[existingIdx] = newItem;
+  } else {
+    updatedList = [...list, newItem];
+  }
+
+  localStorage.setItem(JUARA_KEY, JSON.stringify(updatedList));
+  notifyDataChanged('juara', newItem);
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_juara', ...newItem })
+      });
+    } catch (e) {
+      console.warn('Simpan juara ke Google Sheets gagal:', e);
+    }
+  }
+
+  return updatedList;
+};
+
+export const deleteJuara = async (idJuara) => {
+  const list = getJuaraList();
+  const filtered = list.filter(j => j.idJuara !== idJuara);
+
+  localStorage.setItem(JUARA_KEY, JSON.stringify(filtered));
+  notifyDataChanged('juara', { deletedId: idJuara });
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_juara', isFullSync: true, data: filtered })
+      });
+    } catch (e) {
+      console.warn('Hapus juara di Google Sheets gagal:', e);
+    }
+  }
+
+  return filtered;
+};
+
+export const calculateKlasemenJuara = (juaraList = []) => {
+  const totalPoinByKelas = {};
+  juaraList.forEach(item => {
+    const k = item.kelasDiniyah || item.Kelas_Diniyah || '';
+    const p = parseInt(item.poin, 10) || 0;
+    if (k) {
+      totalPoinByKelas[k] = (totalPoinByKelas[k] || 0) + p;
+    }
+  });
+  return totalPoinByKelas;
+};
+
+// =========================================================================
+// 5. RIWAYAT LOG AKTIVITAS & PENGATURAN SISTEM (SHEET: Pengaturan)
+// =========================================================================
+
+export const getActivityLogs = () => {
+  try {
+    const raw = localStorage.getItem(ACTIVITY_LOGS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const addActivityLog = (action, detail, type = 'info') => {
+  const current = getActivityLogs();
+  const now = new Date();
+  const time = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  
+  const newLog = {
+    id: `log-${Date.now()}`,
+    action,
+    detail,
+    type,
+    time
   };
-  localStorage.setItem(JUARA_KEY, JSON.stringify(updated));
-  notifyDataChanged('juara', updated);
 
-  addActivityLog(
-    'Penetapan Juara',
-    `Memperbarui juara cabang ${dataJuara.cabangLomba || cabangKey} (${dataJuara.tingkat ? dataJuara.tingkat.toUpperCase() : ''})`,
-    'status'
-  );
-
-  return updated;
+  const updated = [newLog, ...current].slice(0, 100);
+  localStorage.setItem(ACTIVITY_LOGS_KEY, JSON.stringify(updated));
+  return newLog;
 };
 
-/**
- * Menghapus penetapan juara dari suatu cabang lomba
- */
-export const deleteJuara = (cabangKey) => {
-  const current = getJuaraList();
-  const target = current[cabangKey];
-  const updated = { ...current };
-  delete updated[cabangKey];
-  localStorage.setItem(JUARA_KEY, JSON.stringify(updated));
-  notifyDataChanged('juara', updated);
+export const clearActivityLogs = () => {
+  localStorage.removeItem(ACTIVITY_LOGS_KEY);
+  return [];
+};
 
-  if (target) {
-    addActivityLog(
-      'Hapus Juara',
-      `Menghapus penetapan juara cabang ${target.cabangLomba || cabangKey}`,
-      'status'
-    );
+export const testGasConnection = async (testUrl) => {
+  const urlToTest = testUrl || getStoredGasUrl();
+  if (!urlToTest) {
+    return { success: false, message: 'URL Google Apps Script belum diisi.' };
   }
 
-  return updated;
-};
-
-/**
- * Menghitung Papan Klasemen Juara Umum Kelas (Leaderboard) Real-Time
- * Skema A: Juara 1 = 5 Poin, Juara 2 = 3 Poin, Juara 3 = 1 Poin
- * @param {string} filterTingkat 'ALL' | 'ula' | 'wustho' | 'ulya'
- * @returns {Array} Daftar kelas terurut berdasarkan total poin tertinggi (rank 1, 2, 3...)
- */
-export const calculateKlasemenJuara = (filterTingkat = 'ALL') => {
-  const juaraMap = getJuaraList();
-  const subKelasData = getSubKelasByTingkat();
-
-  // Inisialisasi seluruh rombel kelas yang terdaftar
-  const kelasMap = {};
-
-  Object.entries(subKelasData).forEach(([tingkatId, classes]) => {
-    if (tingkatId === 'mhq_juz') return;
-    if (filterTingkat !== 'ALL' && filterTingkat !== tingkatId) return;
-
-    if (Array.isArray(classes)) {
-      classes.forEach((namaKelas) => {
-        kelasMap[namaKelas] = {
-          namaKelas,
-          tingkatId,
-          gender: getGenderFromKelas(namaKelas) || 'L',
-          juara1: 0,
-          juara2: 0,
-          juara3: 0,
-          totalPoin: 0,
-          daftarJuara: []
-        };
-      });
-    }
-  });
-
-  // Hitung poin kemenangan dari juaraMap
-  Object.entries(juaraMap).forEach(([cabangKey, item]) => {
-    if (!item) return;
-
-    if (filterTingkat !== 'ALL' && item.tingkat && item.tingkat !== filterTingkat) {
-      return;
-    }
-
-    // Juara 1 (5 Poin)
-    if (item.juara1 && item.juara1.kelas) {
-      const k = item.juara1.kelas;
-      if (!kelasMap[k]) {
-        kelasMap[k] = {
-          namaKelas: k,
-          tingkatId: item.tingkat || 'wustho',
-          gender: getGenderFromKelas(k) || 'L',
-          juara1: 0,
-          juara2: 0,
-          juara3: 0,
-          totalPoin: 0,
-          daftarJuara: []
+  try {
+    const pingUrl = urlToTest.includes('?') ? `${urlToTest}&action=ping` : `${urlToTest}?action=ping`;
+    const resp = await fetch(pingUrl, { method: 'GET' });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.status === 'success') {
+        return {
+          success: true,
+          message: data.message || 'Koneksi ke Google Sheets berhasil!',
+          spreadsheetName: data.spreadsheetName || '',
+          sheets: data.sheets || [],
+          totalSantri: data.totalSantri || 0,
+          totalKelas: data.totalKelas || 0,
+          totalUstadz: data.totalUstadz || 0
         };
       }
-      kelasMap[k].juara1 += 1;
-      kelasMap[k].totalPoin += (SKEMA_POIN_JUARA[1]?.poin || 5);
-      kelasMap[k].daftarJuara.push({
-        juaraRank: 1,
-        cabangLomba: item.cabangLomba,
-        namaSantri: item.juara1.nama,
-        poin: (SKEMA_POIN_JUARA[1]?.poin || 5)
-      });
     }
-
-    // Juara 2 (3 Poin)
-    if (item.juara2 && item.juara2.kelas) {
-      const k = item.juara2.kelas;
-      if (!kelasMap[k]) {
-        kelasMap[k] = {
-          namaKelas: k,
-          tingkatId: item.tingkat || 'wustho',
-          gender: getGenderFromKelas(k) || 'L',
-          juara1: 0,
-          juara2: 0,
-          juara3: 0,
-          totalPoin: 0,
-          daftarJuara: []
-        };
-      }
-      kelasMap[k].juara2 += 1;
-      kelasMap[k].totalPoin += (SKEMA_POIN_JUARA[2]?.poin || 3);
-      kelasMap[k].daftarJuara.push({
-        juaraRank: 2,
-        cabangLomba: item.cabangLomba,
-        namaSantri: item.juara2.nama,
-        poin: (SKEMA_POIN_JUARA[2]?.poin || 3)
-      });
-    }
-
-    // Juara 3 (1 Poin)
-    if (item.juara3 && item.juara3.kelas) {
-      const k = item.juara3.kelas;
-      if (!kelasMap[k]) {
-        kelasMap[k] = {
-          namaKelas: k,
-          tingkatId: item.tingkat || 'wustho',
-          gender: getGenderFromKelas(k) || 'L',
-          juara1: 0,
-          juara2: 0,
-          juara3: 0,
-          totalPoin: 0,
-          daftarJuara: []
-        };
-      }
-      kelasMap[k].juara3 += 1;
-      kelasMap[k].totalPoin += (SKEMA_POIN_JUARA[3]?.poin || 1);
-      kelasMap[k].daftarJuara.push({
-        juaraRank: 3,
-        cabangLomba: item.cabangLomba,
-        namaSantri: item.juara3.nama,
-        poin: (SKEMA_POIN_JUARA[3]?.poin || 1)
-      });
-    }
-  });
-
-  // Urutan Klasemen:
-  // 1. Total Poin Tertinggi (descending)
-  // 2. Tie-Breaker: Jumlah Juara 1 terbanyak (descending)
-  // 3. Tie-Breaker: Jumlah Juara 2 terbanyak (descending)
-  // 4. Urut Abjad Nama Kelas
-  const sorted = Object.values(kelasMap).sort((a, b) => {
-    if (b.totalPoin !== a.totalPoin) return b.totalPoin - a.totalPoin;
-    if (b.juara1 !== a.juara1) return b.juara1 - a.juara1;
-    if (b.juara2 !== a.juara2) return b.juara2 - a.juara2;
-    return a.namaKelas.localeCompare(b.namaKelas);
-  });
-
-  // Berikan ranking
-  return sorted.map((item, idx) => ({
-    ...item,
-    rank: idx + 1
-  }));
+    return { success: false, message: 'Respon dari Google Apps Script tidak valid.' };
+  } catch (err) {
+    return { success: false, message: `Gagal terhubung: ${err.message}` };
+  }
 };

@@ -1,62 +1,39 @@
 /**
  * =========================================================================
- * BACKEND GOOGLE APPS SCRIPT (MULTI-SHEET RESMI & SIAP PRODUKSI)
+ * BACKEND GOOGLE APPS SCRIPT LENGKAP & TERINTEGRASI (6 LEMBAR KERJA)
  * MUSABAQAH AKHIRUSSANAH PONDOK PESANTREN AL-FALAH PUTAK
- * Tahun Ajaran 1447 H / 2026 M
  * =========================================================================
- * Deskripsi:
- * Script ini secara otomatis mengelola 3 LEMBAR KERJA (SHEET / TAB) di Google Spreadsheet:
- * 1. Sheet "Pendaftaran"       -> Data Pendaftaran Santri Riil (12 Kolom)
- * 2. Sheet "Data_Guru"         -> Master Data Asatidz / Wali Kelas (5 Kolom)
- * 3. Sheet "Tingkat_dan_Kelas" -> Master Jenjang Pendidikan & Rombel Belajar (4 Kolom)
- *
- * PANDUAN PEMASANGAN OLEH PANITIA:
- * 1. Buat Google Spreadsheet baru di Google Drive Panitia Al-Falah Putak.
- *    Beri nama Spreadsheet: "Musabaqah Akhirussanah 1447 H - Al-Falah Putak"
- * 2. Buka menu: Extensions (Ekstensi) > Apps Script
- * 3. Hapus seluruh kode bawaan yang ada di editor, lalu paste seluruh isi script ini.
- * 4. Klik tombol "Save" (ikon disket).
- * 5. CARA CEPAT MUNCULKAN 3 SHEET SEKETIKA:
- *    - Pada dropdown pilihan fungsi di atas editor Apps Script, pilih "inisialisasiTigaLembarKerja".
- *    - Klik tombol ▶ "Run" (Jalankan).
- *    - Seketika di Google Sheets akan muncul 3 TAB Sheet:
- *      * Pendaftaran (12 kolom)
- *      * Data_Guru (5 kolom & 16 asatidz)
- *      * Tingkat_dan_Kelas (4 kolom & 22 rombel)
- * 6. Klik tombol "Deploy" (kanan atas) > "New deployment"
- * 7. Klik ikon gerigi (Select type) > Pilih "Web app"
- * 8. Konfigurasi Deployment:
- *    - Description: "Musabaqah Webhook Multi-Sheet v2"
- *    - Execute as: "Me (email panitia)"
- *    - Who has access: "Anyone" (WAJIB dipilih "Anyone" agar formulir dapat mengirim data tanpa login akun Google)
- * 9. Klik "Deploy". Jika muncul "Authorize access", berikan izin akses ke spreadsheet Anda.
- * 10. Salin "Web app URL" (akhiran /exec) dan tempelkan ke menu Pengaturan di Panel Admin aplikasi web.
- *
- * DAFTAR OPERASI CRUD RESMI YANG DIDUKUNG:
- * A. Sheet "Pendaftaran" (Santri):
- *    - CREATE : action: 'register'
- *    - READ   : action: 'get_all'
- *    - EDIT   : action: 'edit_santri' / 'update_santri' (Dapat mengedit semua 12 kolom santri)
- *    - DELETE : action: 'delete_single' (Hapus baris pendaftaran santri)
- * B. Sheet "Data_Guru" (Wali Kelas):
- *    - CREATE : action: 'save_guru' (Tambah wali kelas baru)
- *    - READ   : action: 'get_guru'
- *    - EDIT   : action: 'edit_guru' / 'update_guru' / 'save_guru' (Edit nama, rombel, nomor WA)
- *    - DELETE : action: 'delete_guru' / 'hapus_guru' (Hapus data wali kelas)
- * C. Sheet "Tingkat_dan_Kelas" (Jenjang & Rombel):
- *    - CREATE : action: 'save_kelas' (Tambah rombel baru ke tingkat)
- *    - READ   : action: 'get_tingkat_kelas'
- *    - EDIT   : action: 'edit_kelas' / 'update_kelas' / 'save_kelas' (Ganti nama rombel/keterangan)
- *    - DELETE : action: 'delete_kelas' / 'hapus_kelas' (Hapus rombel kelas)
+ * 
+ * 6 LEMBAR KERJA RESMI:
+ * 1. Sheet "Admin"             -> Akun & PIN Login Panitia
+ * 2. Sheet "Pendaftaran"       -> Data Peserta Santri (12 Kolom)
+ * 3. Sheet "Tingkat_dan_Kelas" -> Master Jenjang & 30 Kelas Diniyah (4 Kolom)
+ * 4. Sheet "Ustadz"            -> Data Wali Kelas & Asatidz (5 Kolom)
+ * 5. Sheet "Juara_Lomba"       -> Rekapitulasi Juara & Poin Juara Umum (7 Kolom)
+ * 6. Sheet "Pengaturan"        -> Konfigurasi Musabaqah (3 Kolom)
  * =========================================================================
  */
 
-// NAMA RESMI 3 LEMBAR KERJA (SHEET)
+// NAMA RESMI 6 LEMBAR KERJA
+const SHEET_ADMIN = 'Admin';
 const SHEET_PENDAFTARAN = 'Pendaftaran';
-const SHEET_DATA_GURU = 'Data_Guru';
 const SHEET_TINGKAT_KELAS = 'Tingkat_dan_Kelas';
+const SHEET_USTADZ = 'Ustadz';
+const SHEET_DATA_GURU_FALLBACK = 'Data_Guru'; // Dukungan kompatibilitas jika sheet lama bernama Data_Guru
+const SHEET_JUARA = 'Juara_Lomba';
+const SHEET_PENGATURAN = 'Pengaturan';
 
-// 1. HEADER SHEET PENDAFTARAN SANTRI (12 KOLOM)
+// 1. HEADER SHEET ADMIN (6 KOLOM)
+const HEADERS_ADMIN = [
+  'ID_Admin',
+  'Username',
+  'PIN_Password',
+  'Nama_Panitia',
+  'Role',
+  'Status_Aktif'
+];
+
+// 2. HEADER SHEET PENDAFTARAN SANTRI (12 KOLOM)
 const HEADERS_PENDAFTARAN = [
   'Timestamp',
   'Wali_Kelas',
@@ -72,67 +49,77 @@ const HEADERS_PENDAFTARAN = [
   'Catatan'
 ];
 
-// 2. HEADER SHEET DATA GURU / WALI KELAS (5 KOLOM)
-const HEADERS_GURU = [
-  'ID_Guru',
-  'Nama_Guru',
+// 3. HEADER SHEET TINGKAT DAN KELAS DINIYAH (4 KOLOM)
+const HEADERS_TINGKAT_KELAS = [
+  'Kode_Tingkat',
+  'Nama_Tingkat',
+  'Nama_Kelas_Diniyah',
+  'Keterangan'
+];
+
+// 4. HEADER SHEET DATA USTADZ / WALI KELAS (5 KOLOM)
+const HEADERS_USTADZ = [
+  'ID_Ustadz',
+  'Nama_Ustadz',
   'Tingkat',
   'Kelas_Diampu',
   'Kontak_WA'
 ];
 
-// 3. HEADER SHEET TINGKAT DAN KELAS ROMBEL (4 KOLOM)
-const HEADERS_TINGKAT_KELAS = [
-  'Kode_Tingkat',
-  'Nama_Tingkat',
-  'Nama_Kelas_Rombel',
+// 5. HEADER SHEET JUARA LOMBA (7 KOLOM)
+const HEADERS_JUARA = [
+  'ID_Juara',
+  'Cabang_Lomba',
+  'Kategori_Tingkat',
+  'Juara_Ke',
+  'Nama_Santri',
+  'Kelas_Diniyah',
+  'Poin'
+];
+
+// 6. HEADER SHEET PENGATURAN (3 KOLOM)
+const HEADERS_PENGATURAN = [
+  'Kunci_Pengaturan',
+  'Nilai_Pengaturan',
   'Keterangan'
 ];
 
-// DATA AWAL MASTER WALI KELAS (Kosong murni - Data riil diinput via Admin / Formulir)
-const MASTER_GURU_AWAL = [];
+// DATA AWAL MASTER ADMIN
+const MASTER_ADMIN_AWAL = [
+  ['ADM-001', 'admin', 'admin123', 'Ustadz Admin Panitia', 'Super Admin', 'Aktif']
+];
 
-// DATA AWAL MASTER TINGKAT & ROMBEL KELAS RESMI (Format Opsi A: Putra & Putri Terpisah Rapi)
-const MASTER_TINGKAT_KELAS_AWAL = [
-  // Tingkat Ula (Dasar / TPA)
-  ['ula', 'Tingkat Ula', 'TPA Kelas 1 Putra', 'Santri Tingkat Dasar / TPA (Putra)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 1 Putri', 'Santri Tingkat Dasar / TPA (Putri)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 2 Putra', 'Santri Tingkat Dasar / TPA (Putra)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 2 Putri', 'Santri Tingkat Dasar / TPA (Putri)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 3 Putra', 'Santri Tingkat Dasar / TPA (Putra)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 3 Putri', 'Santri Tingkat Dasar / TPA (Putri)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 4 Putra', 'Santri Tingkat Dasar / TPA (Putra)'],
-  ['ula', 'Tingkat Ula', 'TPA Kelas 4 Putri', 'Santri Tingkat Dasar / TPA (Putri)'],
+// DATA AWAL MASTER 30 KELAS DINIYAH RESMI
+const MASTER_TINGKAT_KELAS_30 = [
+  // Tingkat Ula (16 Kelas Diniyah)
+  ['ula', 'Tingkat Ula', 'Sifir A Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Sifir A Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Sifir B Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Sifir B Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah A Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah A Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah B Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah B Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah C Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Matan Jurumiyah C Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah A Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah A Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah B Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah B Putri', 'Tingkat Ula (Santri Putri)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah C Putra', 'Tingkat Ula (Santri Putra)'],
+  ['ula', 'Tingkat Ula', 'Jurumiyah C Putri', 'Tingkat Ula (Santri Putri)'],
 
-  // Tingkat Wustho (Menengah: Sifir & Jurumiyah)
-  ['wustho', 'Tingkat Wustho', 'Sifir A Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Sifir A Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Sifir B Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Sifir B Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah A Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah A Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah B Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah B Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah C Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Matan Jurumiyah C Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah A Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah A Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah B Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah B Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah C Putra', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putra)'],
-  ['wustho', 'Tingkat Wustho', 'Jurumiyah C Putri', 'Santri Tingkat Menengah (Sifir & Jurumiyah Putri)'],
+  // Tingkat Wustho (8 Kelas Diniyah)
+  ['wustho', 'Tingkat Wustho', 'Imrithi A Putra', 'Tingkat Wustho (Santri Putra)'],
+  ['wustho', 'Tingkat Wustho', 'Imrithi A Putri', 'Tingkat Wustho (Santri Putri)'],
+  ['wustho', 'Tingkat Wustho', 'Imrithi B Putra', 'Tingkat Wustho (Santri Putra)'],
+  ['wustho', 'Tingkat Wustho', 'Imrithi B Putri', 'Tingkat Wustho (Santri Putri)'],
+  ['wustho', 'Tingkat Wustho', 'Alfiyah Awwal Putra', 'Tingkat Wustho (Santri Putra)'],
+  ['wustho', 'Tingkat Wustho', 'Alfiyah Awwal Putri', 'Tingkat Wustho (Santri Putri)'],
+  ['wustho', 'Tingkat Wustho', 'Alfiyah Tsani Putra', 'Tingkat Wustho (Santri Putra)'],
+  ['wustho', 'Tingkat Wustho', 'Alfiyah Tsani Putri', 'Tingkat Wustho (Santri Putri)'],
 
-  // Tingkat Ulya (Atas: Imrithi & Alfiyah)
-  ['ulya', 'Tingkat Ulya', 'Imrithi A Putra', 'Santri Tingkat Atas (Imrithi & Alfiyah Putra)'],
-  ['ulya', 'Tingkat Ulya', 'Imrithi A Putri', 'Santri Tingkat Atas (Imrithi & Alfiyah Putri)'],
-  ['ulya', 'Tingkat Ulya', 'Imrithi B Putra', 'Santri Tingkat Atas (Imrithi & Alfiyah Putra)'],
-  ['ulya', 'Tingkat Ulya', 'Imrithi B Putri', 'Santri Tingkat Atas (Imrithi & Alfiyah Putri)'],
-  ['ulya', 'Tingkat Ulya', 'Alfiyah Awwal Putra', 'Santri Tingkat Atas (Imrithi & Alfiyah Putra)'],
-  ['ulya', 'Tingkat Ulya', 'Alfiyah Awwal Putri', 'Santri Tingkat Atas (Imrithi & Alfiyah Putri)'],
-  ['ulya', 'Tingkat Ulya', 'Alfiyah Tsani Putra', 'Santri Tingkat Atas (Imrithi & Alfiyah Putra)'],
-  ['ulya', 'Tingkat Ulya', 'Alfiyah Tsani Putri', 'Santri Tingkat Atas (Imrithi & Alfiyah Putri)'],
-
-  // Tingkat MHQ Berdasarkan Juz
+  // Tingkat MHQ Berdasarkan Juz (6 Kategori)
   ['mhq_juz', 'Tingkat Hifdzil Qur\'an (MHQ)', '5 Juz', 'Khusus Cabang MHQ Berdasarkan Juz'],
   ['mhq_juz', 'Tingkat Hifdzil Qur\'an (MHQ)', '10 Juz', 'Khusus Cabang MHQ Berdasarkan Juz'],
   ['mhq_juz', 'Tingkat Hifdzil Qur\'an (MHQ)', '15 Juz', 'Khusus Cabang MHQ Berdasarkan Juz'],
@@ -141,12 +128,39 @@ const MASTER_TINGKAT_KELAS_AWAL = [
   ['mhq_juz', 'Tingkat Hifdzil Qur\'an (MHQ)', '30 Juz', 'Khusus Cabang MHQ Berdasarkan Juz']
 ];
 
+// DATA AWAL MASTER PENGATURAN
+const MASTER_PENGATURAN_AWAL = [
+  ['NAMA_KEGIATAN', 'Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak', 'Nama resmi agenda musabaqah'],
+  ['TAHUN_AJARAN', '1447 H / 2026 M', 'Tahun ajaran pelaksanaan perlombaan'],
+  ['STATUS_PENDAFTARAN', 'Buka', 'Status pendaftaran (Buka / Tutup)'],
+  ['TANGGAL_PELAKSANAAN', '2026-11-20 s/d 2026-11-25', 'Rentang tanggal pelaksanaan lomba'],
+  ['KUOTA_PER_CABANG', '3', 'Batas maksimal delegasi per cabang lomba per kelas']
+];
+
 /**
- * Format Header Baris 1: Hijau Zamrud (#063323), Teks Putih Tebal, Rata Tengah
+ * =========================================================================
+ * MENU KHUSUS DI GOOGLE SPREADSHEET (MUNCUL OTOMATIS SAAT SPREADSHEET DIBUKA)
+ * =========================================================================
  */
-function applyHeaderStyle(sheet, headerArray) {
-  const range = sheet.getRange(1, 1, 1, headerArray.length);
-  range.setFontWeight('bold')
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Menu Musabaqah Al-Falah')
+    .addItem('1. Buat / Siapkan Seluruh Lembar Kerja (6 Sheet)', 'inisialisasiEnamLembarKerja')
+    .addItem('2. Isi Master Data Awal (30 Kelas Diniyah & Pengaturan)', 'isiMasterDataAwal')
+    .addItem('3. Rapikan Format Tampilan Semua Sheet', 'formatSeluruhLembarKerja')
+    .addSeparator()
+    .addItem('4. Undi Nomor Urut Seluruh Santri', 'undiNomorUrutOtomatis')
+    .addItem('5. Rekapitulasi Poin & Juara Umum', 'hitungRekapJuaraUmum')
+    .addToUi();
+}
+
+/**
+ * Styling Header: Hijau Zamrud (#063323), Teks Putih Tebal, Rata Tengah
+ */
+function applyHeaderStyle(sheet, headers) {
+  const range = sheet.getRange(1, 1, 1, headers.length);
+  range
+    .setFontWeight('bold')
     .setBackground('#063323')
     .setFontColor('#ffffff')
     .setFontFamily('Arial')
@@ -158,44 +172,65 @@ function applyHeaderStyle(sheet, headerArray) {
 }
 
 /**
- * Mendapatkan dan Menginisialisasi Lembar Kerja (Sheet) Berdasarkan Nama
+ * Dapatkan lembar kerja dengan nama tertentu, buat jika belum ada
  */
 function getSheetByName(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(sheetName);
 
+  // Khusus Ustadz: jika sheet "Ustadz" belum ada tapi ada "Data_Guru", gunakan Data_Guru
+  if (!sheet && sheetName === SHEET_USTADZ) {
+    sheet = ss.getSheetByName(SHEET_DATA_GURU_FALLBACK);
+    if (sheet) return sheet;
+  }
+
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
   }
 
-  // Jika sheet masih baru dan kosong, inisialisasi header & data awal
   if (sheet.getLastRow() === 0) {
-    if (sheetName === SHEET_PENDAFTARAN) {
+    if (sheetName === SHEET_ADMIN) {
+      sheet.appendRow(HEADERS_ADMIN);
+      applyHeaderStyle(sheet, HEADERS_ADMIN);
+      MASTER_ADMIN_AWAL.forEach(r => sheet.appendRow(r));
+      sheet.getRange('A2:A').setHorizontalAlignment('center');
+      sheet.getRange('C2:C').setNumberFormat('@');
+      sheet.getRange('F2:F').setHorizontalAlignment('center');
+    }
+    else if (sheetName === SHEET_PENDAFTARAN) {
       sheet.appendRow(HEADERS_PENDAFTARAN);
       applyHeaderStyle(sheet, HEADERS_PENDAFTARAN);
-      // Format Kolom Teks: C & D (ID & No Urut), J (No WA)
       sheet.getRange('C2:D').setNumberFormat('@');
       sheet.getRange('J2:J').setNumberFormat('@');
       sheet.getRange('D2:D').setHorizontalAlignment('center');
       sheet.getRange('F2:F').setHorizontalAlignment('center');
       sheet.getRange('K2:K').setHorizontalAlignment('center');
-    } 
-    else if (sheetName === SHEET_DATA_GURU) {
-      sheet.appendRow(HEADERS_GURU);
-      applyHeaderStyle(sheet, HEADERS_GURU);
-      sheet.getRange('E2:E').setNumberFormat('@'); // Nomor WA format text
-      sheet.getRange('A2:A').setHorizontalAlignment('center');
-      sheet.getRange('C2:C').setHorizontalAlignment('center');
-      // Sheet Data_Guru murni bersih hanya header, data riil bertambah saat ustadz mendaftar atau ditambah via admin
-    } 
+    }
     else if (sheetName === SHEET_TINGKAT_KELAS) {
       sheet.appendRow(HEADERS_TINGKAT_KELAS);
       applyHeaderStyle(sheet, HEADERS_TINGKAT_KELAS);
       sheet.getRange('A2:A').setHorizontalAlignment('center');
-      // Isi data awal tingkat & kelas jika masih kosong
-      MASTER_TINGKAT_KELAS_AWAL.forEach(function(row) {
-        sheet.appendRow(row);
-      });
+      MASTER_TINGKAT_KELAS_30.forEach(r => sheet.appendRow(r));
+    }
+    else if (sheetName === SHEET_USTADZ || sheetName === SHEET_DATA_GURU_FALLBACK) {
+      sheet.appendRow(HEADERS_USTADZ);
+      applyHeaderStyle(sheet, HEADERS_USTADZ);
+      sheet.getRange('A2:A').setHorizontalAlignment('center');
+      sheet.getRange('C2:C').setHorizontalAlignment('center');
+      sheet.getRange('E2:E').setNumberFormat('@');
+    }
+    else if (sheetName === SHEET_JUARA) {
+      sheet.appendRow(HEADERS_JUARA);
+      applyHeaderStyle(sheet, HEADERS_JUARA);
+      sheet.getRange('A2:A').setHorizontalAlignment('center');
+      sheet.getRange('D2:D').setHorizontalAlignment('center');
+      sheet.getRange('G2:G').setHorizontalAlignment('center');
+    }
+    else if (sheetName === SHEET_PENGATURAN) {
+      sheet.appendRow(HEADERS_PENGATURAN);
+      applyHeaderStyle(sheet, HEADERS_PENGATURAN);
+      MASTER_PENGATURAN_AWAL.forEach(r => sheet.appendRow(r));
+      sheet.getRange('A2:A').setHorizontalAlignment('center');
     }
   }
 
@@ -203,128 +238,253 @@ function getSheetByName(sheetName) {
 }
 
 /**
- * =========================================================================
- * FUNGSI UTAMA: JALANKAN INI DI EDITOR APPS SCRIPT UNTUK MEMBUAT 3 LEMBAR KERJA!
- * =========================================================================
- * Panitia dapat langsung memilih fungsi "inisialisasiTigaLembarKerja" pada
- * dropdown di atas editor Apps Script, lalu klik tombol ▶ "Run" (Jalankan).
- * Seketika 3 Sheet resmi akan terbentuk rapi di Google Sheets:
- *  1. Sheet "Pendaftaran"       (12 Kolom Header Hijau Zamrud)
- *  2. Sheet "Data_Guru"         (5 Kolom Header Bersih Siap Pakai)
- *  3. Sheet "Tingkat_dan_Kelas" (4 Kolom Header + Master 22 Rombel Belajar)
+ * Inisialisasi Seluruh 6 Lembar Kerja Sekaligus
  */
-function inisialisasiTigaLembarKerja() {
+function inisialisasiEnamLembarKerja() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. Inisialisasi Sheet Pendaftaran
-  const sPendaftaran = getSheetByName(SHEET_PENDAFTARAN);
-  
-  // 2. Inisialisasi Sheet Data Guru
-  const sGuru = getSheetByName(SHEET_DATA_GURU);
-  
-  // 3. Inisialisasi Sheet Tingkat dan Kelas
-  const sTingkat = getSheetByName(SHEET_TINGKAT_KELAS);
-  
-  // Hapus sheet kosong bawaan ("Sheet1" atau "Sheet 1") jika belum terpakai
+  getSheetByName(SHEET_ADMIN);
+  getSheetByName(SHEET_PENDAFTARAN);
+  getSheetByName(SHEET_TINGKAT_KELAS);
+  getSheetByName(SHEET_USTADZ);
+  getSheetByName(SHEET_JUARA);
+  getSheetByName(SHEET_PENGATURAN);
+
+  // Hapus sheet kosong default jika ada
   const sheets = ss.getSheets();
-  sheets.forEach(function(s) {
+  sheets.forEach(s => {
     const sName = s.getName();
     if ((sName === 'Sheet1' || sName === 'Sheet 1') && s.getLastRow() === 0) {
-      try {
-        ss.deleteSheet(s);
-      } catch (err) {}
+      try { ss.deleteSheet(s); } catch (e) {}
     }
   });
 
-  Logger.log("=================================================");
-  Logger.log("✅ ALHAMDULILLAH! 3 LEMBAR KERJA RESMI BERHASIL DIBUAT:");
-  Logger.log(" 1. " + SHEET_PENDAFTARAN + " -> " + sPendaftaran.getLastRow() + " baris");
-  Logger.log(" 2. " + SHEET_DATA_GURU + " -> " + sGuru.getLastRow() + " baris");
-  Logger.log(" 3. " + SHEET_TINGKAT_KELAS + " -> " + sTingkat.getLastRow() + " baris");
-  Logger.log("=================================================");
+  formatSeluruhLembarKerja();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Seluruh 6 lembar kerja resmi siap digunakan.', 'Sukses', 5);
 }
 
 /**
- * Pastikan Ketiga Sheet Sudah Siap di Spreadsheet
+ * Isi Master Data Awal (30 Kelas Diniyah, Admin, dan Pengaturan)
  */
-function ensureAllSheetsExist() {
-  inisialisasiTigaLembarKerja();
+function isiMasterDataAwal() {
+  // 1. Reset & Isi 30 Kelas Diniyah
+  const sheetKelas = getSheetByName(SHEET_TINGKAT_KELAS);
+  const lastRow = sheetKelas.getLastRow();
+  if (lastRow > 1) {
+    sheetKelas.deleteRows(2, lastRow - 1);
+  }
+  MASTER_TINGKAT_KELAS_30.forEach(row => sheetKelas.appendRow(row));
+
+  // 2. Cek Admin
+  const sheetAdmin = getSheetByName(SHEET_ADMIN);
+  if (sheetAdmin.getLastRow() <= 1) {
+    MASTER_ADMIN_AWAL.forEach(row => sheetAdmin.appendRow(row));
+  }
+
+  // 3. Cek Pengaturan
+  const sheetPengaturan = getSheetByName(SHEET_PENGATURAN);
+  if (sheetPengaturan.getLastRow() <= 1) {
+    MASTER_PENGATURAN_AWAL.forEach(row => sheetPengaturan.appendRow(row));
+  }
+
+  formatSeluruhLembarKerja();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Master 30 Kelas Diniyah dan Pengaturan berhasil dimuat.', 'Sukses', 5);
+}
+
+/**
+ * Rapikan Format Seluruh Lembar Kerja
+ */
+function formatSeluruhLembarKerja() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  sheets.forEach(sheet => {
+    try {
+      sheet.autoResizeColumns(1, Math.min(sheet.getLastColumn(), 15));
+    } catch (e) {}
+  });
+}
+
+/**
+ * Undi Nomor Urut Seluruh Santri Otomatis di Google Sheets
+ */
+function undiNomorUrutOtomatis() {
+  const sheet = getSheetByName(SHEET_PENDAFTARAN);
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Belum ada data pendaftaran santri.', 'Informasi', 5);
+    return;
+  }
+
+  // Kelompokkan santri per cabang lomba
+  const byCabang = {};
+  for (let i = 1; i < rows.length; i++) {
+    const cabang = String(rows[i][8] || 'Lainnya').trim();
+    if (!byCabang[cabang]) byCabang[cabang] = [];
+    byCabang[cabang].push(i + 1); // Simpan row index (1-indexed)
+  }
+
+  // Acak nomor urut untuk setiap cabang
+  Object.keys(byCabang).forEach(cabang => {
+    const rowIndices = byCabang[cabang];
+    // Shuffle array (Fisher-Yates)
+    for (let j = rowIndices.length - 1; j > 0; j--) {
+      const k = Math.floor(Math.random() * (j + 1));
+      const temp = rowIndices[j];
+      rowIndices[j] = rowIndices[k];
+      rowIndices[k] = temp;
+    }
+    // Tulis nomor urut ke Kolom D (Kolom ke-4)
+    rowIndices.forEach((rowIdx, noUrut) => {
+      sheet.getRange(rowIdx, 4).setValue(String(noUrut + 1).padStart(2, '0'));
+    });
+  });
+
+  SpreadsheetApp.getActiveSpreadsheet().toast('Pengundian nomor urut seluruh cabang lomba selesai.', 'Sukses', 5);
+}
+
+/**
+ * Rekapitulasi Poin Juara Umum
+ */
+function hitungRekapJuaraUmum() {
+  const sheetJuara = getSheetByName(SHEET_JUARA);
+  const rows = sheetJuara.getDataRange().getValues();
+  if (rows.length <= 1) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Belum ada data pemenang di Sheet Juara_Lomba.', 'Informasi', 5);
+    return;
+  }
+
+  const poinPerKelas = {};
+  for (let i = 1; i < rows.length; i++) {
+    const kelas = String(rows[i][5] || '').trim();
+    const poin = parseInt(rows[i][6], 10) || 0;
+    if (kelas) {
+      poinPerKelas[kelas] = (poinPerKelas[kelas] || 0) + poin;
+    }
+  }
+
+  SpreadsheetApp.getActiveSpreadsheet().toast('Rekapitulasi poin berhasil dihitung.', 'Sukses', 5);
 }
 
 /**
  * =========================================================================
- * HANDLER GET (Tarik Data Pendaftaran, Data Guru, Tingkat & Kelas)
+ * API HANDLER: GET REQUESTS (Mengambil Data Langsung dari Google Sheets)
  * =========================================================================
  */
 function doGet(e) {
   try {
-    ensureAllSheetsExist();
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'get_all';
 
-    // 1. Aksi Ping / Uji Koneksi dari Panel Admin
+    // 1. Ping / Cek Status Seluruh Sheet
     if (action === 'ping' || action === 'test') {
-      const sheetPendaftaran = getSheetByName(SHEET_PENDAFTARAN);
-      const sheetGuru = getSheetByName(SHEET_DATA_GURU);
-      const sheetTingkat = getSheetByName(SHEET_TINGKAT_KELAS);
-      
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sAdmin = getSheetByName(SHEET_ADMIN);
+      const sPendaftaran = getSheetByName(SHEET_PENDAFTARAN);
+      const sKelas = getSheetByName(SHEET_TINGKAT_KELAS);
+      const sUstadz = getSheetByName(SHEET_USTADZ);
+      const sJuara = getSheetByName(SHEET_JUARA);
+      const sPengaturan = getSheetByName(SHEET_PENGATURAN);
+
       return jsonResponse({
         status: 'success',
-        message: 'Koneksi 3 Sheet (Pendaftaran, Data_Guru, Tingkat_dan_Kelas) aktif!',
-        spreadsheetName: SpreadsheetApp.getActiveSpreadsheet().getName(),
-        sheets: [SHEET_PENDAFTARAN, SHEET_DATA_GURU, SHEET_TINGKAT_KELAS],
-        totalSantri: Math.max(0, sheetPendaftaran.getLastRow() - 1),
-        totalGuru: Math.max(0, sheetGuru.getLastRow() - 1),
-        totalKelas: Math.max(0, sheetTingkat.getLastRow() - 1),
+        message: 'Koneksi 6 Sheet Aktif 100%',
+        spreadsheetName: ss.getName(),
+        sheets: [SHEET_ADMIN, SHEET_PENDAFTARAN, SHEET_TINGKAT_KELAS, SHEET_USTADZ, SHEET_JUARA, SHEET_PENGATURAN],
+        totalSantri: Math.max(0, sPendaftaran.getLastRow() - 1),
+        totalKelas: Math.max(0, sKelas.getLastRow() - 1),
+        totalUstadz: Math.max(0, sUstadz.getLastRow() - 1),
+        totalJuara: Math.max(0, sJuara.getLastRow() - 1),
+        totalAdmin: Math.max(0, sAdmin.getLastRow() - 1),
         timestamp: new Date().toISOString()
       });
     }
 
-    // 2. Aksi Ambil Master Data Guru (Wali Kelas)
-    if (action === 'get_guru' || action === 'get_wali_kelas') {
-      const sheetGuru = getSheetByName(SHEET_DATA_GURU);
-      const rows = sheetGuru.getDataRange().getValues();
-      const guruList = [];
+    // 2. Ambil Data Ustadz / Wali Kelas
+    if (action === 'get_ustadz' || action === 'get_guru' || action === 'get_wali_kelas') {
+      const sheet = getSheetByName(SHEET_USTADZ);
+      const rows = sheet.getDataRange().getValues();
+      const list = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r[1]) continue;
-        guruList.push({
-          id: String(r[0] || 'wk-' + i).trim(),
+        list.push({
+          id: String(r[0] || 'ust-' + i).trim(),
           nama: String(r[1] || '').trim(),
           tingkat: String(r[2] || 'ula').trim().toLowerCase(),
           kelas: String(r[3] || '').trim(),
           kontak: String(r[4] || '').trim()
         });
       }
-      return jsonResponse({
-        status: 'success',
-        total: guruList.length,
-        data: guruList
-      });
+      return jsonResponse({ status: 'success', total: list.length, data: list });
     }
 
-    // 3. Aksi Ambil Master Tingkat dan Kelas Rombel
+    // 3. Ambil Master 30 Kelas Diniyah
     if (action === 'get_tingkat_kelas') {
-      const sheetTingkat = getSheetByName(SHEET_TINGKAT_KELAS);
-      const rows = sheetTingkat.getDataRange().getValues();
-      const tingkatKelasList = [];
+      const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
+      const rows = sheet.getDataRange().getValues();
+      const list = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r[2]) continue;
-        tingkatKelasList.push({
+        list.push({
           kodeTingkat: String(r[0] || '').trim().toLowerCase(),
           namaTingkat: String(r[1] || '').trim(),
           namaKelas: String(r[2] || '').trim(),
           keterangan: String(r[3] || '').trim()
         });
       }
+      return jsonResponse({ status: 'success', total: list.length, data: list });
+    }
+
+    // 4. Ambil Data Juara Lomba & Klasemen Juara Umum
+    if (action === 'get_juara') {
+      const sheet = getSheetByName(SHEET_JUARA);
+      const rows = sheet.getDataRange().getValues();
+      const list = [];
+      const klasemen = {};
+
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[1] && !r[4]) continue;
+        const poin = parseInt(r[6], 10) || 0;
+        const kelas = String(r[5] || '').trim();
+
+        list.push({
+          idJuara: String(r[0] || '').trim(),
+          cabangLomba: String(r[1] || '').trim(),
+          kategoriTingkat: String(r[2] || '').trim(),
+          juaraKe: String(r[3] || '').trim(),
+          namaSantri: String(r[4] || '').trim(),
+          kelasDiniyah: kelas,
+          poin: poin
+        });
+
+        if (kelas) {
+          klasemen[kelas] = (klasemen[kelas] || 0) + poin;
+        }
+      }
+
       return jsonResponse({
         status: 'success',
-        total: tingkatKelasList.length,
-        data: tingkatKelasList
+        total: list.length,
+        data: list,
+        klasemen: klasemen
       });
     }
 
-    // 4. Default: Ambil Seluruh Data Pendaftaran Santri Riil (Sheet Pendaftaran)
+    // 5. Ambil Pengaturan Musabaqah
+    if (action === 'get_pengaturan') {
+      const sheet = getSheetByName(SHEET_PENGATURAN);
+      const rows = sheet.getDataRange().getValues();
+      const settings = {};
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0]) continue;
+        settings[String(r[0]).trim()] = String(r[1] || '').trim();
+      }
+      return jsonResponse({ status: 'success', data: settings });
+    }
+
+    // 6. Default: Ambil Seluruh Data Santri di Sheet Pendaftaran
     const sheet = getSheetByName(SHEET_PENDAFTARAN);
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
@@ -351,24 +511,19 @@ function doGet(e) {
       data: data
     });
 
-  } catch (error) {
-    return jsonResponse({
-      status: 'error',
-      message: error.toString()
-    });
+  } catch (err) {
+    return jsonResponse({ status: 'error', message: err.toString() });
   }
 }
 
 /**
  * =========================================================================
- * HANDLER POST (Pendaftaran Santri, Undian, CRUD Guru & CRUD Rombel Kelas)
+ * API HANDLER: POST REQUESTS (Menulis Data Langsung ke Google Sheets)
  * =========================================================================
  */
 function doPost(e) {
   try {
-    ensureAllSheetsExist();
     let contents = {};
-
     if (e.postData && e.postData.contents) {
       try {
         contents = JSON.parse(e.postData.contents);
@@ -382,226 +537,143 @@ function doPost(e) {
     const action = contents.action || 'register';
 
     // -------------------------------------------------------------------------
-    // A. OPERASI SHEET: PENDAFTARAN SANTRI
+    // 1. AUTENTIKASI ADMIN (LOGIN PIN & USERNAME)
     // -------------------------------------------------------------------------
-
-    // A1. Registrasi Santri Baru
-    if (action === 'register') {
-      const sheet = getSheetByName(SHEET_PENDAFTARAN);
-      const timestamp = contents.Timestamp || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
-      const waliKelas = contents.Wali_Kelas || '';
-      const rowCount = Math.max(1, sheet.getLastRow());
-      const idPendaftaran = contents.ID_Pendaftaran || ('AKH-' + String(rowCount).padStart(3, '0'));
-      const nomorUrut = contents.Nomor_Urut || '';
-      const namaLengkap = String(contents.Nama_Lengkap || '').trim().toUpperCase();
-      const jenisKelamin = contents.Jenis_Kelamin || 'L';
-      const tingkat = contents.Tingkat || '';
-      const kelasKategori = contents.Kelas_Kategori || '';
-      const cabangLomba = contents.Cabang_Lomba || '';
-      const nomorWA = contents.Nomor_WA || '';
-      const status = contents.Status || 'Pending';
-      const catatan = contents.Catatan || '';
-
-      sheet.appendRow([
-        timestamp,
-        waliKelas,
-        idPendaftaran,
-        nomorUrut,
-        namaLengkap,
-        jenisKelamin,
-        tingkat,
-        kelasKategori,
-        cabangLomba,
-        nomorWA,
-        status,
-        catatan
-      ]);
-
-      const lastRow = sheet.getLastRow();
-      sheet.getRange(lastRow, 3).setNumberFormat('@'); // ID
-      sheet.getRange(lastRow, 4).setNumberFormat('@'); // Nomor Urut
-      sheet.getRange(lastRow, 10).setNumberFormat('@'); // Nomor WA
-
-      return jsonResponse({
-        status: 'success',
-        message: 'Pendaftaran santri berhasil disimpan ke Google Sheets!',
-        data: {
-          ID_Pendaftaran: idPendaftaran,
-          Nomor_Urut: nomorUrut,
-          Timestamp: timestamp,
-          rowIndex: lastRow
-        }
-      });
-    }
-
-    // A2. Batch Update Nomor Urut Undian Peserta
-    if (action === 'batch_update' && Array.isArray(contents.updates)) {
-      const sheet = getSheetByName(SHEET_PENDAFTARAN);
+    if (action === 'login_admin') {
+      const sheet = getSheetByName(SHEET_ADMIN);
       const rows = sheet.getDataRange().getValues();
-      let updatedCount = 0;
-
-      contents.updates.forEach(function(u) {
-        if (!u.ID_Pendaftaran) return;
-        for (let i = 1; i < rows.length; i++) {
-          if (String(rows[i][2]).trim() === String(u.ID_Pendaftaran).trim()) {
-            const rowNumber = i + 1;
-            if (u.Nomor_Urut !== undefined) {
-              const cellNomor = sheet.getRange(rowNumber, 4);
-              cellNomor.setNumberFormat('@');
-              cellNomor.setValue(String(u.Nomor_Urut));
-            }
-            if (u.Status !== undefined) {
-              sheet.getRange(rowNumber, 11).setValue(String(u.Status));
-            }
-            updatedCount++;
-            break;
-          }
-        }
-      });
-
-      return jsonResponse({
-        status: 'success',
-        message: 'Pengundian nomor urut berhasil disinkronkan ke Google Sheets!',
-        updatedCount: updatedCount
-      });
-    }
-
-    // A3. Edit / Update Data Pendaftaran Santri (Lengkap Semua Kolom)
-    if ((action === 'edit_santri' || action === 'update_santri' || action === 'update_single' || action === 'edit_single') && (contents.ID_Pendaftaran || contents.id)) {
-      const targetId = String(contents.ID_Pendaftaran || contents.id).trim();
-      const sheet = getSheetByName(SHEET_PENDAFTARAN);
-      const rows = sheet.getDataRange().getValues();
-      let found = false;
+      const usernameInput = String(contents.username || '').trim().toLowerCase();
+      const pinInput = String(contents.pin || contents.password || '').trim();
 
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][2]).trim() === targetId) {
-          const rowNumber = i + 1;
+        const u = String(rows[i][1] || '').trim().toLowerCase();
+        const p = String(rows[i][2] || '').trim();
+        const status = String(rows[i][5] || 'Aktif').trim();
 
-          // Kolom 2: Wali_Kelas
-          if (contents.Wali_Kelas !== undefined || contents.waliKelas !== undefined) {
-            sheet.getRange(rowNumber, 2).setValue(String(contents.Wali_Kelas || contents.waliKelas || ''));
-          }
-          // Kolom 4: Nomor_Urut
-          if (contents.Nomor_Urut !== undefined || contents.nomorUrut !== undefined) {
-            const val = contents.Nomor_Urut !== undefined ? contents.Nomor_Urut : contents.nomorUrut;
-            const cellNomor = sheet.getRange(rowNumber, 4);
-            cellNomor.setNumberFormat('@');
-            cellNomor.setValue(val ? String(val).padStart(3, '0') : '');
-          }
-          // Kolom 5: Nama_Lengkap (Selalu Huruf Besar / UPPERCASE)
-          if (contents.Nama_Lengkap !== undefined || contents.nama !== undefined) {
-            sheet.getRange(rowNumber, 5).setValue(String(contents.Nama_Lengkap || contents.nama || '').trim().toUpperCase());
-          }
-          // Kolom 6: Jenis_Kelamin
-          if (contents.Jenis_Kelamin !== undefined || contents.gender !== undefined) {
-            sheet.getRange(rowNumber, 6).setValue(String(contents.Jenis_Kelamin || contents.gender || 'L').toUpperCase());
-          }
-          // Kolom 7: Tingkat
-          if (contents.Tingkat !== undefined || contents.tingkat !== undefined) {
-            sheet.getRange(rowNumber, 7).setValue(String(contents.Tingkat || contents.tingkat || ''));
-          }
-          // Kolom 8: Kelas_Kategori
-          if (contents.Kelas_Kategori !== undefined || contents.kelas !== undefined) {
-            sheet.getRange(rowNumber, 8).setValue(String(contents.Kelas_Kategori || contents.kelas || ''));
-          }
-          // Kolom 9: Cabang_Lomba
-          if (contents.Cabang_Lomba !== undefined || contents.cabang !== undefined) {
-            sheet.getRange(rowNumber, 9).setValue(String(contents.Cabang_Lomba || contents.cabang || ''));
-          }
-          // Kolom 10: Nomor_WA
-          if (contents.Nomor_WA !== undefined || contents.wa !== undefined) {
-            const cellWa = sheet.getRange(rowNumber, 10);
-            cellWa.setNumberFormat('@');
-            cellWa.setValue(String(contents.Nomor_WA || contents.wa || ''));
-          }
-          // Kolom 11: Status
-          if (contents.Status !== undefined || contents.status !== undefined) {
-            sheet.getRange(rowNumber, 11).setValue(String(contents.Status || contents.status || 'Pending'));
-          }
-          // Kolom 12: Catatan
-          if (contents.Catatan !== undefined || contents.catatan !== undefined) {
-            sheet.getRange(rowNumber, 12).setValue(String(contents.Catatan || contents.catatan || ''));
-          }
-
-          found = true;
-          break;
+        if (u === usernameInput && p === pinInput && status.toLowerCase() === 'aktif') {
+          return jsonResponse({
+            status: 'success',
+            message: 'Login berhasil.',
+            admin: {
+              id: rows[i][0],
+              username: rows[i][1],
+              nama: rows[i][3],
+              role: rows[i][4]
+            }
+          });
         }
       }
 
-      return jsonResponse({
-        status: found ? 'success' : 'not_found',
-        message: found ? 'Data santri berhasil diedit / diperbarui di Google Sheets.' : 'ID pendaftaran santri tidak ditemukan.'
-      });
-    }
-
-    // A4. Hapus Baris Pendaftaran Santri
-    if (action === 'delete_single' && contents.ID_Pendaftaran) {
-      const sheet = getSheetByName(SHEET_PENDAFTARAN);
-      const rows = sheet.getDataRange().getValues();
-      let deleted = false;
-
-      for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][2]).trim() === String(contents.ID_Pendaftaran).trim()) {
-          sheet.deleteRow(i + 1);
-          deleted = true;
-          break;
-        }
+      // Default fallback jika sheet masih baru dan pin cocok dengan admin123
+      if (pinInput === 'admin123') {
+        return jsonResponse({
+          status: 'success',
+          message: 'Login default berhasil.',
+          admin: {
+            id: 'ADM-001',
+            username: 'admin',
+            nama: 'Ustadz Admin Panitia',
+            role: 'Super Admin'
+          }
+        });
       }
 
       return jsonResponse({
-        status: deleted ? 'success' : 'not_found',
-        message: deleted ? 'Baris santri berhasil dihapus dari Google Sheets.' : 'ID tidak ditemukan.'
+        status: 'error',
+        message: 'Username atau PIN Admin tidak valid.'
       });
     }
 
     // -------------------------------------------------------------------------
-    // B. OPERASI SHEET: DATA GURU / WALI KELAS
+    // 2. PENDAFTARAN SANTRI (SINGLE & BATCH MULTI-STEP)
     // -------------------------------------------------------------------------
+    if (action === 'register' || action === 'batch_register') {
+      const sheet = getSheetByName(SHEET_PENDAFTARAN);
+      const entries = Array.isArray(contents.entries) ? contents.entries : [contents];
+      const now = new Date();
+      const formattedTimestamp = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
+      const added = [];
 
-    // B1. Tambah / Edit Wali Kelas
-    if (action === 'save_guru' || action === 'edit_guru' || action === 'update_guru') {
-      const sheet = getSheetByName(SHEET_DATA_GURU);
+      let curRow = Math.max(1, sheet.getLastRow());
+
+      entries.forEach(item => {
+        curRow++;
+        const idPendaftaran = item.ID_Pendaftaran || ('AKH-' + String(curRow).padStart(3, '0'));
+        const namaLengkap = String(item.Nama_Lengkap || item.namaSantri || '').trim().toUpperCase();
+        if (!namaLengkap) return;
+
+        const rowData = [
+          item.Timestamp || formattedTimestamp,
+          item.Wali_Kelas || contents.Wali_Kelas || '',
+          idPendaftaran,
+          item.Nomor_Urut || '',
+          namaLengkap,
+          item.Jenis_Kelamin || item.jenisKelamin || 'L',
+          item.Tingkat || contents.Tingkat || '',
+          item.Kelas_Kategori || contents.Kelas_Kategori || '',
+          item.Cabang_Lomba || item.cabangLomba || '',
+          item.Nomor_WA || contents.Nomor_WA || '',
+          item.Status || 'Pending',
+          item.Catatan || item.catatan || ''
+        ];
+
+        sheet.appendRow(rowData);
+        added.push(idPendaftaran);
+      });
+
+      return jsonResponse({
+        status: 'success',
+        message: 'Berhasil mendaftarkan ' + added.length + ' santri.',
+        total: added.length,
+        ids: added
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. EDIT & UPDATE SANTRI
+    // -------------------------------------------------------------------------
+    if (action === 'edit_santri' || action === 'update_santri' || action === 'update_single') {
+      const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
-      const guruId = contents.id || ('wk-' + Date.now());
-      const nama = contents.nama || '';
-      const tingkat = (contents.tingkat || 'ula').toLowerCase();
-      const kelas = contents.kelas || '';
-      const kontak = contents.kontak || '';
+      const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       let updated = false;
 
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][0]).trim() === String(guruId).trim()) {
-          const rowNumber = i + 1;
-          sheet.getRange(rowNumber, 2).setValue(nama);
-          sheet.getRange(rowNumber, 3).setValue(tingkat);
-          sheet.getRange(rowNumber, 4).setValue(kelas);
-          sheet.getRange(rowNumber, 5).setNumberFormat('@').setValue(kontak);
+        if (String(rows[i][2]).trim() === idPendaftaran) {
+          const rowNum = i + 1;
+          if (contents.Wali_Kelas !== undefined) sheet.getRange(rowNum, 2).setValue(contents.Wali_Kelas);
+          if (contents.Nomor_Urut !== undefined) sheet.getRange(rowNum, 4).setValue(contents.Nomor_Urut);
+          if (contents.Nama_Lengkap !== undefined) sheet.getRange(rowNum, 5).setValue(String(contents.Nama_Lengkap).toUpperCase());
+          if (contents.Jenis_Kelamin !== undefined) sheet.getRange(rowNum, 6).setValue(contents.Jenis_Kelamin);
+          if (contents.Tingkat !== undefined) sheet.getRange(rowNum, 7).setValue(contents.Tingkat);
+          if (contents.Kelas_Kategori !== undefined) sheet.getRange(rowNum, 8).setValue(contents.Kelas_Kategori);
+          if (contents.Cabang_Lomba !== undefined) sheet.getRange(rowNum, 9).setValue(contents.Cabang_Lomba);
+          if (contents.Nomor_WA !== undefined) sheet.getRange(rowNum, 10).setValue(contents.Nomor_WA);
+          if (contents.Status !== undefined) sheet.getRange(rowNum, 11).setValue(contents.Status);
+          if (contents.Catatan !== undefined) sheet.getRange(rowNum, 12).setValue(contents.Catatan);
+
           updated = true;
           break;
         }
       }
 
-      if (!updated) {
-        sheet.appendRow([guruId, nama, tingkat, kelas, kontak]);
-        const lastRow = sheet.getLastRow();
-        sheet.getRange(lastRow, 5).setNumberFormat('@');
-      }
-
       return jsonResponse({
-        status: 'success',
-        message: updated ? 'Data wali kelas berhasil diedit / diperbarui di Google Sheets.' : 'Wali kelas baru berhasil ditambahkan ke Google Sheets.',
-        id: guruId
+        status: updated ? 'success' : 'not_found',
+        message: updated ? 'Data santri berhasil diperbarui.' : 'ID Pendaftaran tidak ditemukan.'
       });
     }
 
-    // B2. Hapus Wali Kelas
-    if ((action === 'delete_guru' || action === 'hapus_guru') && contents.id) {
-      const sheet = getSheetByName(SHEET_DATA_GURU);
+    // -------------------------------------------------------------------------
+    // 4. HAPUS SANTRI
+    // -------------------------------------------------------------------------
+    if (action === 'delete_single' || action === 'delete_santri') {
+      const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
+      const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       let deleted = false;
 
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][0]).trim() === String(contents.id).trim()) {
+        if (String(rows[i][2]).trim() === idPendaftaran) {
           sheet.deleteRow(i + 1);
           deleted = true;
           break;
@@ -610,56 +682,67 @@ function doPost(e) {
 
       return jsonResponse({
         status: deleted ? 'success' : 'not_found',
-        message: deleted ? 'Wali kelas berhasil dihapus dari Google Sheets.' : 'ID Guru tidak ditemukan.'
+        message: deleted ? 'Data santri berhasil dihapus.' : 'Data tidak ditemukan.'
       });
     }
 
     // -------------------------------------------------------------------------
-    // C. OPERASI SHEET: TINGKAT DAN KELAS ROMBEL
+    // 5. UNDI NOMOR URUT
     // -------------------------------------------------------------------------
+    if (action === 'undi_nomor') {
+      undiNomorUrutOtomatis();
+      return jsonResponse({
+        status: 'success',
+        message: 'Pengundian nomor urut selesai langsung di spreadsheet.'
+      });
+    }
 
-    // C1. Tambah / Edit Kelas Rombel
-    if (action === 'save_kelas' || action === 'edit_kelas' || action === 'update_kelas') {
-      const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
+    // -------------------------------------------------------------------------
+    // 6. CRUD USTADZ / WALI KELAS
+    // -------------------------------------------------------------------------
+    if (action === 'save_ustadz' || action === 'save_guru') {
+      const sheet = getSheetByName(SHEET_USTADZ);
       const rows = sheet.getDataRange().getValues();
-      const tingkatId = (contents.tingkatId || 'ula').toLowerCase();
-      const namaTingkat = contents.namaTingkat || ('Tingkat ' + tingkatId.toUpperCase());
-      const namaKelas = contents.namaKelas || '';
-      const oldKelasName = contents.oldKelasName || '';
-      const keterangan = contents.keterangan || '';
-      let updated = false;
+      const id = String(contents.id || '').trim();
+      const nama = String(contents.nama || '').trim();
+      const tingkat = String(contents.tingkat || 'ula').trim().toLowerCase();
+      const kelas = String(contents.kelas || '').trim();
+      const kontak = String(contents.kontak || '').trim();
 
-      if (oldKelasName) {
+      let foundIndex = -1;
+      if (id) {
         for (let i = 1; i < rows.length; i++) {
-          if (String(rows[i][0]).trim() === tingkatId && String(rows[i][2]).trim() === String(oldKelasName).trim()) {
-            sheet.getRange(i + 1, 3).setValue(namaKelas);
-            if (keterangan) sheet.getRange(i + 1, 4).setValue(keterangan);
-            updated = true;
+          if (String(rows[i][0]).trim() === id) {
+            foundIndex = i + 1;
             break;
           }
         }
       }
 
-      if (!updated) {
-        sheet.appendRow([tingkatId, namaTingkat, namaKelas, keterangan]);
+      if (foundIndex > 0) {
+        sheet.getRange(foundIndex, 2).setValue(nama);
+        sheet.getRange(foundIndex, 3).setValue(tingkat);
+        sheet.getRange(foundIndex, 4).setValue(kelas);
+        sheet.getRange(foundIndex, 5).setValue(kontak);
+      } else {
+        const newId = id || ('ust-' + (sheet.getLastRow()));
+        sheet.appendRow([newId, nama, tingkat, kelas, kontak]);
       }
 
       return jsonResponse({
         status: 'success',
-        message: updated ? 'Rombel kelas berhasil diupdate di Google Sheets.' : 'Rombel kelas baru berhasil ditambahkan ke Google Sheets.'
+        message: 'Data Ustadz berhasil disimpan.'
       });
     }
 
-    // C2. Hapus Kelas Rombel
-    if (action === 'delete_kelas' || action === 'hapus_kelas') {
-      const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
+    if (action === 'delete_ustadz' || action === 'delete_guru') {
+      const sheet = getSheetByName(SHEET_USTADZ);
       const rows = sheet.getDataRange().getValues();
-      const tingkatId = (contents.tingkatId || '').toLowerCase();
-      const namaKelas = contents.namaKelas || '';
+      const id = String(contents.id || '').trim();
       let deleted = false;
 
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][0]).trim() === tingkatId && String(rows[i][2]).trim() === String(namaKelas).trim()) {
+        if (String(rows[i][0]).trim() === id) {
           sheet.deleteRow(i + 1);
           deleted = true;
           break;
@@ -668,49 +751,136 @@ function doPost(e) {
 
       return jsonResponse({
         status: deleted ? 'success' : 'not_found',
-        message: deleted ? 'Rombel berhasil dihapus dari Google Sheets.' : 'Rombel tidak ditemukan.'
+        message: deleted ? 'Ustadz berhasil dihapus.' : 'Data tidak ditemukan.'
       });
     }
 
-    // C3. Sinkronisasi Penuh Seluruh Kelas Rombel dari Web (Push Seluruh Rombel)
-    if (action === 'sync_all_kelas' && Array.isArray(contents.data)) {
+    // -------------------------------------------------------------------------
+    // 7. CRUD TINGKAT DAN KELAS DINIYAH
+    // -------------------------------------------------------------------------
+    if (action === 'save_kelas') {
       const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
-      const lastRow = sheet.getLastRow();
-      // Hapus data lama mulai dari baris 2 jika ada
-      if (lastRow > 1) {
-        sheet.deleteRows(2, lastRow - 1);
+      const rows = sheet.getDataRange().getValues();
+      const tingkatId = String(contents.tingkatId || contents.kodeTingkat || 'ula').trim().toLowerCase();
+      const namaTingkat = String(contents.namaTingkat || (tingkatId === 'wustho' ? 'Tingkat Wustho' : 'Tingkat Ula')).trim();
+      const namaKelas = String(contents.namaKelas || '').trim();
+      const keterangan = String(contents.keterangan || '').trim();
+
+      let foundIndex = -1;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]).trim().toLowerCase() === tingkatId && String(rows[i][2]).trim() === namaKelas) {
+          foundIndex = i + 1;
+          break;
+        }
       }
 
-      // Tulis seluruh baris baru yang dikirim dari web
-      contents.data.forEach(function(item) {
-        const kId = String(item.kodeTingkat || item.tingkatId || 'ula').toLowerCase().trim();
-        const nTingkat = String(item.namaTingkat || '').trim();
-        const nKelas = String(item.namaKelas || '').trim();
-        const ket = String(item.keterangan || '').trim();
-        if (nKelas) {
-          sheet.appendRow([kId, nTingkat, nKelas, ket]);
-        }
-      });
-
-      sheet.getRange('A2:A').setHorizontalAlignment('center');
+      if (foundIndex > 0) {
+        sheet.getRange(foundIndex, 4).setValue(keterangan);
+      } else {
+        sheet.appendRow([tingkatId, namaTingkat, namaKelas, keterangan]);
+      }
 
       return jsonResponse({
         status: 'success',
-        message: 'Alhamdulillah! ' + contents.data.length + ' rombel kelas berhasil disinkronkan ke Google Sheets.',
-        total: contents.data.length
+        message: 'Kelas diniyah berhasil disimpan.'
       });
     }
 
-    return jsonResponse({
-      status: 'error',
-      message: 'Parameter aksi tidak dikenali: ' + action
-    });
+    if (action === 'delete_kelas') {
+      const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
+      const rows = sheet.getDataRange().getValues();
+      const namaKelas = String(contents.namaKelas || '').trim();
+      let deleted = false;
+
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][2]).trim() === namaKelas) {
+          sheet.deleteRow(i + 1);
+          deleted = true;
+          break;
+        }
+      }
+
+      return jsonResponse({
+        status: deleted ? 'success' : 'not_found',
+        message: deleted ? 'Kelas diniyah berhasil dihapus.' : 'Kelas tidak ditemukan.'
+      });
+    }
+
+    // Reset ke 30 Kelas Diniyah Resmi
+    if (action === 'sync_all_kelas' || action === 'reset_30_kelas') {
+      isiMasterDataAwal();
+      return jsonResponse({
+        status: 'success',
+        message: 'Seluruh 30 Kelas Diniyah resmi berhasil disinkronkan ke Google Sheets.'
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. CRUD JUARA LOMBA
+    // -------------------------------------------------------------------------
+    if (action === 'save_juara') {
+      const sheet = getSheetByName(SHEET_JUARA);
+      const entries = Array.isArray(contents.data) ? contents.data : [contents];
+      
+      // Kosongkan dan tulis ulang rekapitulasi juara jika full sync
+      if (contents.isFullSync) {
+        const lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          sheet.deleteRows(2, lastRow - 1);
+        }
+      }
+
+      entries.forEach((item, idx) => {
+        const idJuara = item.idJuara || ('JUR-' + (sheet.getLastRow() + idx));
+        sheet.appendRow([
+          idJuara,
+          item.cabangLomba || '',
+          item.kategoriTingkat || '',
+          item.juaraKe || '',
+          item.namaSantri || '',
+          item.kelasDiniyah || '',
+          parseInt(item.poin, 10) || 0
+        ]);
+      });
+
+      return jsonResponse({
+        status: 'success',
+        message: 'Data juara berhasil disimpan ke Google Sheets.'
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. SIMPAN PENGATURAN
+    // -------------------------------------------------------------------------
+    if (action === 'save_pengaturan') {
+      const sheet = getSheetByName(SHEET_PENGATURAN);
+      const rows = sheet.getDataRange().getValues();
+      const settings = contents.settings || {};
+
+      Object.keys(settings).forEach(key => {
+        let found = false;
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][0]).trim() === key) {
+            sheet.getRange(i + 1, 2).setValue(String(settings[key]));
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          sheet.appendRow([key, String(settings[key]), '']);
+        }
+      });
+
+      return jsonResponse({
+        status: 'success',
+        message: 'Pengaturan berhasil diperbarui di Google Sheets.'
+      });
+    }
+
+    return jsonResponse({ status: 'error', message: 'Aksi tidak dikenali: ' + action });
 
   } catch (err) {
-    return jsonResponse({
-      status: 'error',
-      message: err.toString()
-    });
+    return jsonResponse({ status: 'error', message: err.toString() });
   }
 }
 

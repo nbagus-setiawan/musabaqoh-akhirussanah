@@ -32,6 +32,7 @@ import {
 } from '../../shared/data/competitions';
 import { 
   getJuaraList, 
+  fetchJuaraLomba,
   saveJuara, 
   deleteJuara, 
   calculateKlasemenJuara,
@@ -66,11 +67,20 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
   // Delete Confirm Modal
   const [deleteTargetKey, setDeleteTargetKey] = useState(null);
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsRefreshing(true);
-    setJuaraData(getJuaraList());
+    try {
+      const fresh = await fetchJuaraLomba();
+      if (Array.isArray(fresh)) {
+        setJuaraData(fresh);
+      } else {
+        setJuaraData(getJuaraList());
+      }
+    } catch (e) {
+      setJuaraData(getJuaraList());
+    }
     if (onRefresh) onRefresh();
-    setTimeout(() => setIsRefreshing(false), 400);
+    setTimeout(() => setIsRefreshing(false), 300);
   };
 
   // Reset pagination saat filter berubah

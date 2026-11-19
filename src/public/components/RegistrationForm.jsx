@@ -229,9 +229,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       if (list && list.includes(namaKelas)) return tingkatKey;
     }
     const k = namaKelas.toLowerCase();
-    if (k.includes('tpa') || k.includes('ula')) return 'ula';
-    if (k.includes('sifir') || k.includes('jurumiyah') || k.includes('wustho')) return 'wustho';
-    if (k.includes('imrithi') || k.includes('alfiyah') || k.includes('ulya')) return 'ulya';
+    if (k.includes('sifir') || k.includes('jurumiyah') || k.includes('ula')) return 'ula';
+    if (k.includes('imrithi') || k.includes('alfiyah') || k.includes('wustho')) return 'wustho';
+    if (k.includes('juz') || k.includes('mhq')) return 'mhq_juz';
     return '';
   };
 
