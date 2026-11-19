@@ -333,7 +333,7 @@ export default function AdminSantri({
     }
 
     const existingNums = registrations.map(r => Number(r.Nomor_Urut)).filter(n => !isNaN(n) && n > 0);
-    const defaultStart = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 50;
+    const defaultStart = 1;
 
     const { value: formValues } = await Swal.fire({
       title: 'Undi Nomor Urut',
@@ -346,7 +346,7 @@ export default function AdminSantri({
             Nomor Urut Dimulai Dari:
           </label>
           <input id="swal-start-num" type="number" min="1" value="${defaultStart}" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace; font-size: 15px; margin-bottom: 4px;" />
-          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Standar pesantren: Dimulai dari nomor <strong>050</strong>.</p>
+          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Bebas duplikat di seluruh cabang lomba (Lomba beregu: 1 nomor urut per regu).</p>
           
           <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b;">
             Pilih Cabang Perlombaan:

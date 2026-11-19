@@ -423,112 +423,164 @@ function formatSeluruhLembarKerja() {
 
 /**
  * Undi Nomor Urut Seluruh Santri Otomatis di Google Sheets
- * Aturan Khusus:
- * - Lomba Beregu (Syarhil Qur'an, CCM, Kreasi Nadzom):
- *   Seluruh anggota dalam 1 regu yang sama mendapatkan SATU NOMOR URUT YANG SAMA!
- * - Lomba Individu (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan):
- *   Setiap santri mendapatkan nomor urut individu yang berbeda.
+ * Aturan Mutlak:
+ * 1. BEBAS DUPLIKAT DI SELURUH CABANG & DALAM CABANG:
+ *    Setiap nomor urut hanya keluar 1 kali di seluruh database perlombaan.
+ * 2. LOMBA BEREGU (Syarhil Qur'an, CCM, Cerdas Cermat, Kreasi Nadzom, Nadzom):
+ *    Seluruh anggota dalam satu regu/tim yang sama MENDAPATKAN NOMOR URUT YANG SAMA PERSIS.
+ *    Nomor regu tersebut unik global, tidak akan pernah dipakai oleh peserta atau regu lain manapun.
+ * 3. LOMBA INDIVIDU (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan, dll.):
+ *    Setiap santri mendapatkan nomor urut individu yang berbeda dan unik secara global.
  */
-function undiNomorUrutOtomatis() {
+function undiNomorUrutOtomatis(optStartNumber) {
   const sheet = getSheetByName(SHEET_PENDAFTARAN);
   const rows = sheet.getDataRange().getValues();
   if (rows.length <= 1) {
     SpreadsheetApp.getActiveSpreadsheet().toast('Belum ada data pendaftaran santri.', 'Informasi', 5);
-    return;
+    return 0;
   }
 
-  const headers = rows[0].map(h => String(h).trim());
-  const colIndexCabang = headers.indexOf('Cabang_Lomba');
-  const colIndexKelas = headers.indexOf('Kelas_Diniyah') !== -1 ? headers.indexOf('Kelas_Diniyah') : headers.indexOf('Kelas_Kategori');
-  const colIndexDetail = headers.indexOf('Detail_Cabang');
-  const colIndexCatatan = headers.indexOf('Catatan');
-  const colIndexNoUrut = headers.indexOf('Nomor_Urut');
+  // Tentukan nomor awal (Default: 1)
+  let startNumber = (typeof optStartNumber === 'number' && optStartNumber > 0) ? optStartNumber : null;
+  if (startNumber === null) {
+    try {
+      const ui = SpreadsheetApp.getUi();
+      const response = ui.prompt(
+        'Undi Nomor Urut Musabaqah',
+        'Masukkan nomor urut awal (Ketik angka, default: 1):',
+        ui.ButtonSet.OK_CANCEL
+      );
+      if (response.getSelectedButton() === ui.Button.CANCEL) {
+        return 0;
+      }
+      const val = parseInt(response.getResponseText().trim(), 10);
+      startNumber = (!isNaN(val) && val > 0) ? val : 1;
+    } catch (e) {
+      startNumber = 1;
+    }
+  }
+
+  const headers = rows[0].map(h => String(h || '').trim());
+  const colIndexCabang = headers.findIndex(h => /cabang/i.test(h));
+  const colIndexKelas = headers.findIndex(h => /kelas/i.test(h));
+  const colIndexDetail = headers.findIndex(h => /detail/i.test(h));
+  const colIndexCatatan = headers.findIndex(h => /catatan/i.test(h));
+  const colIndexNoUrut = headers.findIndex(h => /(nomor_urut|no_urut|nomor_undian|undian)/i.test(h));
+  const colIndexNama = headers.findIndex(h => /(nama_santri|nama_lengkap|nama)/i.test(h));
+  const colIndexStatus = headers.findIndex(h => /status/i.test(h));
 
   if (colIndexCabang === -1 || colIndexNoUrut === -1) {
     SpreadsheetApp.getActiveSpreadsheet().toast('Kolom Cabang_Lomba atau Nomor_Urut tidak ditemukan.', 'Error', 5);
-    return;
+    return 0;
   }
 
-  // Daftar Cabang Lomba Beregu Resmi
+  // Daftar Kata Kunci Cabang Lomba Beregu Resmi
   const cabangBeregu = ["syarhil", "ccm", "cerdas cermat", "kreasi nadzom", "nadzom"];
 
-  // Kelompokkan baris pendaftaran per cabang lomba
-  const byCabang = {};
-  for (let i = 1; i < rows.length; i++) {
-    const cabang = String(rows[i][colIndexCabang] || 'Lainnya').trim();
-    if (!cabang) continue;
-    if (!byCabang[cabang]) byCabang[cabang] = [];
-    byCabang[cabang].push({
-      rowIndex: i + 1,
-      kelas: colIndexKelas !== -1 ? String(rows[i][colIndexKelas] || '').trim() : '',
-      detail: colIndexDetail !== -1 ? String(rows[i][colIndexDetail] || '').trim() : '',
-      catatan: colIndexCatatan !== -1 ? String(rows[i][colIndexCatatan] || '').trim() : ''
-    });
-  }
+  // Kumpulkan Unit Undian Global
+  // 1 Unit = 1 Tim Beregu (semua anggotanya) ATAU 1 Peserta Individu
+  const units = [];
+  const teamMap = {}; // teamKey -> index di array units
 
-  // Acak nomor urut untuk setiap cabang lomba
-  Object.keys(byCabang).forEach(cabangName => {
-    const santriList = byCabang[cabangName];
-    const isBeregu = cabangBeregu.some(cb => cabangName.toLowerCase().includes(cb));
+  for (let i = 1; i < rows.length; i++) {
+    const rowIndex = i + 1; // 1-indexed row di Google Sheets
+    const row = rows[i];
+
+    const nama = colIndexNama !== -1 ? String(row[colIndexNama] || '').trim() : 'Santri';
+    const cabang = String(row[colIndexCabang] || '').trim();
+    if (!cabang || !nama) continue;
+
+    // Lewati baris jika status secara eksplisit Ditolak atau Batal
+    if (colIndexStatus !== -1) {
+      const status = String(row[colIndexStatus] || '').trim().toLowerCase();
+      if (status === 'ditolak' || status === 'batal') continue;
+    }
+
+    const kelas = colIndexKelas !== -1 ? String(row[colIndexKelas] || '').trim() : '';
+    const detail = colIndexDetail !== -1 ? String(row[colIndexDetail] || '').trim() : '';
+    const catatan = colIndexCatatan !== -1 ? String(row[colIndexCatatan] || '').trim() : '';
+
+    const isBeregu = cabangBeregu.some(cb => cabang.toLowerCase().includes(cb));
 
     if (isBeregu) {
-      // 1. LOMBA BEREGU (Syarhil Qur'an, CCM, Kreasi Nadzom)
-      // Kelompokkan anggota ke dalam Tim/Regu yang sama
-      const groups = {};
-      const groupOrder = [];
+      // Ekstrak label Regu dari detail, catatan, atau kelas (misal: "Regu 1", "Regu 2", dst.)
+      const combinedText = `${detail} ${catatan} ${kelas}`;
+      const matchRegu = combinedText.match(/(regu\s*[a-z0-9]+|tim\s*[a-z0-9]+)/i);
+      const reguLabel = matchRegu ? matchRegu[0].toUpperCase() : 'REGU 1';
 
-      santriList.forEach(item => {
-        let reguLabel = item.detail;
-        const matchRegu = (item.detail + ' ' + item.catatan).match(/regu\s*\d+/i);
-        if (matchRegu) {
-          reguLabel = matchRegu[0].toUpperCase();
-        } else if (!reguLabel) {
-          reguLabel = 'REGU_1';
-        }
+      // Bersihkan nama kelas dari embel-embel regu/bahasa
+      const kelasClean = kelas
+        .replace(/\s*\([^)]*regu[^)]*\)/gi, '')
+        .replace(/\s*\([^)]*bahasa[^)]*\)/gi, '')
+        .trim();
 
-        const teamKey = (item.kelas + '_' + reguLabel).toLowerCase().trim();
-        if (!groups[teamKey]) {
-          groups[teamKey] = [];
-          groupOrder.push(teamKey);
-        }
-        groups[teamKey].push(item.rowIndex);
-      });
+      // Kunci Tim Unik: Cabang + Kelas + Regu
+      const teamKey = `${cabang.toLowerCase().trim()}___${kelasClean.toLowerCase().trim()}___${reguLabel.toLowerCase().trim()}`;
 
-      // Acak urutan regu (Fisher-Yates shuffle)
-      for (let j = groupOrder.length - 1; j > 0; j--) {
-        const k = Math.floor(Math.random() * (j + 1));
-        const temp = groupOrder[j];
-        groupOrder[j] = groupOrder[k];
-        groupOrder[k] = temp;
-      }
-
-      // Seluruh anggota dalam regu yang sama MENDAPATKAN NOMOR URUT YANG SAMA PERSIS
-      groupOrder.forEach((teamKey, idx) => {
-        const noUrutFormatted = String(idx + 1).padStart(2, '0');
-        const rowIndices = groups[teamKey];
-        rowIndices.forEach(rIdx => {
-          sheet.getRange(rIdx, colIndexNoUrut + 1).setValue(noUrutFormatted);
+      if (teamMap[teamKey] !== undefined) {
+        // Anggota berikutnya dalam regu yang sama
+        units[teamMap[teamKey]].rows.push(rowIndex);
+      } else {
+        // Regu baru
+        teamMap[teamKey] = units.length;
+        units.push({
+          type: 'team',
+          key: teamKey,
+          cabang: cabang,
+          rows: [rowIndex]
         });
-      });
-
-    } else {
-      // 2. LOMBA INDIVIDU (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan)
-      // Setiap santri diundi sendiri dan mendapatkan nomor urut individu yang berbeda
-      const rowIndices = santriList.map(item => item.rowIndex);
-      for (let j = rowIndices.length - 1; j > 0; j--) {
-        const k = Math.floor(Math.random() * (j + 1));
-        const temp = rowIndices[j];
-        rowIndices[j] = rowIndices[k];
-        rowIndices[k] = temp;
       }
-      rowIndices.forEach((rIdx, idx) => {
-        const noUrutFormatted = String(idx + 1).padStart(2, '0');
-        sheet.getRange(rIdx, colIndexNoUrut + 1).setValue(noUrutFormatted);
+    } else {
+      // Individu: 1 baris santri = 1 unit undian tersendiri
+      units.push({
+        type: 'individual',
+        key: 'indiv_' + rowIndex,
+        cabang: cabang,
+        rows: [rowIndex]
       });
     }
+  }
+
+  if (units.length === 0) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Tidak ada peserta aktif untuk diundi.', 'Informasi', 5);
+    return 0;
+  }
+
+  // Buat pool nomor urut unik global dari startNumber s/d (startNumber + total unit - 1)
+  // TIDAK ADA ANGKA YANG SAMA / DUPLIKAT DI SELURUH DATABASE
+  const numbersPool = [];
+  for (let n = 0; n < units.length; n++) {
+    numbersPool.push(startNumber + n);
+  }
+
+  // Acak pool nomor urut dengan Fisher-Yates shuffle
+  for (let j = numbersPool.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    const temp = numbersPool[j];
+    numbersPool[j] = numbersPool[k];
+    numbersPool[k] = temp;
+  }
+
+  // Baca seluruh nilai kolom nomor urut saat ini untuk di-update secara batch (Atomic & Instan)
+  const noUrutRange = sheet.getRange(2, colIndexNoUrut + 1, rows.length - 1, 1);
+  const noUrutValues = noUrutRange.getValues();
+
+  let totalRowsAssigned = 0;
+  units.forEach((unit, idx) => {
+    const nomorUndian = numbersPool[idx];
+    unit.rows.forEach(rIdx => {
+      // rIdx adalah baris 1-indexed di sheet, sehingga di noUrutValues index = rIdx - 2
+      noUrutValues[rIdx - 2][0] = nomorUndian;
+      totalRowsAssigned++;
+    });
   });
 
-  SpreadsheetApp.getActiveSpreadsheet().toast('Pengundian selesai! Lomba beregu mendapatkan 1 nomor urut per regu.', 'Sukses', 5);
+  // Tulis nomor undian sekaligus ke Google Sheets dalam 1 panggilan cepat
+  noUrutRange.setValues(noUrutValues);
+
+  const pesanSukses = 'Pengundian selesai! Total ' + units.length + ' undian unik (' + totalRowsAssigned + ' baris santri) tanpa duplikat di seluruh cabang lomba.';
+  SpreadsheetApp.getActiveSpreadsheet().toast(pesanSukses, 'Sukses', 5);
+  return units.length;
 }
 
 /**
@@ -892,10 +944,12 @@ function doPost(e) {
     // 5. UNDI NOMOR URUT
     // -------------------------------------------------------------------------
     if (action === 'undi_nomor') {
-      undiNomorUrutOtomatis();
+      const startNum = contents.startNumber ? parseInt(contents.startNumber, 10) : 1;
+      const count = undiNomorUrutOtomatis(startNum);
       return jsonResponse({
         status: 'success',
-        message: 'Pengundian nomor urut selesai (1 nomor urut untuk lomba beregu).'
+        countAssigned: count,
+        message: 'Pengundian nomor urut selesai (' + count + ' undian unik, tanpa duplikat di seluruh cabang).'
       });
     }
 

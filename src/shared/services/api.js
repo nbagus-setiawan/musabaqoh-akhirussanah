@@ -389,19 +389,28 @@ export const deleteRegistration = async (idPendaftaran) => {
 /**
  * Undi Nomor Urut Seluruh Santri di Google Sheets
  */
-export const generateRandomQueueNumbers = async () => {
+export const generateRandomQueueNumbers = async (category = 'ALL', startNumber = 1) => {
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
     try {
       const resp = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'undi_nomor' })
+        body: JSON.stringify({
+          action: 'undi_nomor',
+          category: category || 'ALL',
+          startNumber: Number(startNumber) || 1
+        })
       });
       if (resp.ok) {
-        // Ambil data terbaru hasil pengundian dari spreadsheet
+        const json = await resp.json();
+        // Ambil data terbaru hasil pengundian langsung dari spreadsheet
         const fresh = await fetchRegistrations(true);
-        return { success: true, count: fresh.length };
+        return {
+          success: true,
+          count: fresh.length,
+          countAssigned: (json && json.countAssigned) ? json.countAssigned : fresh.length
+        };
       }
     } catch (e) {
       console.warn('Undi nomor via Google Sheets gagal:', e);
