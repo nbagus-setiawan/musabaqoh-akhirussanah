@@ -219,14 +219,17 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
     return {
       Timestamp: timestamp,
       Wali_Kelas: metadata.waliKelas || item.waliKelas || '',
+      Nomor_WA: metadata.nomorWA || item.nomorWA || '',
       ID_Pendaftaran: idPendaftaran,
       Nomor_Urut: '',
-      Nama_Lengkap: String(item.namaSantri || item.Nama_Lengkap || '').trim().toUpperCase(),
+      Nama_Santri: String(item.namaSantri || item.Nama_Santri || item.Nama_Lengkap || '').trim().toUpperCase(),
+      Nama_Lengkap: String(item.namaSantri || item.Nama_Santri || item.Nama_Lengkap || '').trim().toUpperCase(),
       Jenis_Kelamin: item.jenisKelamin || metadata.jenisKelamin || 'L',
       Tingkat: metadata.tingkatName || metadata.tingkat || item.tingkat || '',
-      Kelas_Kategori: item.kelasKategori || metadata.kelasDiniyah || metadata.kelasKategori || '',
+      Kelas_Diniyah: item.kelasDiniyah || metadata.kelasDiniyah || item.kelasKategori || '',
+      Kelas_Kategori: item.kelasDiniyah || metadata.kelasDiniyah || item.kelasKategori || '',
       Cabang_Lomba: item.cabangLomba || '',
-      Nomor_WA: metadata.nomorWA || item.nomorWA || '',
+      Detail_Cabang: item.detailCabang || '',
       Status: 'Pending',
       Catatan: item.catatan || ''
     };

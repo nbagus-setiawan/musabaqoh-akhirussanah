@@ -276,7 +276,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'mqk',
             cabangLomba: 'MQK',
             namaSantri: nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: kelasDiniyah,
+            detailCabang: 'Individu',
             label: `Santri ${idx + 1}`
           });
         }
@@ -291,7 +293,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'pidato',
             cabangLomba: 'PIDATO',
             namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            detailCabang: item.bahasa,
             label: `Santri ${idx + 1} • ${item.bahasa}`,
             catatan: `Bahasa: ${item.bahasa}`
           });
@@ -307,7 +311,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'mc',
             cabangLomba: 'MC',
             namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            detailCabang: item.bahasa,
             label: `Santri ${idx + 1} • ${item.bahasa}`,
             catatan: `Bahasa: ${item.bahasa}`
           });
@@ -315,7 +321,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       });
     }
 
-    // Step 5: Syarhil Qur'an
+    // Step 5: Syarhil Qur'an (Beregu)
     if (!skippedSteps[5]) {
       syarhilRegu.forEach((regu, rIdx) => {
         const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
@@ -324,7 +330,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'syarhil',
             cabangLomba: 'Syarhil Qur\'an',
             namaSantri: regu.pensyarah.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Pensyarah`,
             catatan: `${reguTitle} - Pensyarah`
           });
@@ -334,7 +342,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'syarhil',
             cabangLomba: 'Syarhil Qur\'an',
             namaSantri: regu.tilawah.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Tilawah`,
             catatan: `${reguTitle} - Tilawah`
           });
@@ -344,7 +354,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'syarhil',
             cabangLomba: 'Syarhil Qur\'an',
             namaSantri: regu.terjemah.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Terjemah`,
             catatan: `${reguTitle} - Terjemah`
           });
@@ -360,7 +372,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'tilawah',
             cabangLomba: 'Tilawah',
             namaSantri: nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: kelasDiniyah,
+            detailCabang: 'Individu',
             label: `Santri ${idx + 1}`
           });
         }
@@ -375,7 +389,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'khot',
             cabangLomba: 'Khot / Kaligrafi',
             namaSantri: nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: kelasDiniyah,
+            detailCabang: 'Individu',
             label: `Santri ${idx + 1}`
           });
         }
@@ -390,7 +406,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'mhq',
             cabangLomba: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
             namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${item.juz})`,
+            detailCabang: item.juz,
             label: `Santri ${idx + 1} • Kategori ${item.juz}`,
             catatan: `Kategori Hafalan: ${item.juz}`
           });
@@ -406,14 +424,16 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'adzan',
             cabangLomba: 'Adzan',
             namaSantri: nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: kelasDiniyah,
+            detailCabang: 'Individu',
             label: `Santri ${idx + 1}`
           });
         }
       });
     }
 
-    // Step 10: CCM
+    // Step 10: CCM (Beregu)
     if (!skippedSteps[10]) {
       ccmRegu.forEach((regu, rIdx) => {
         const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
@@ -422,7 +442,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'ccm',
             cabangLomba: 'CCM',
             namaSantri: regu.anggota1.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Anggota 1`,
             catatan: `${reguTitle} - Anggota 1`
           });
@@ -432,7 +454,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'ccm',
             cabangLomba: 'CCM',
             namaSantri: regu.anggota2.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Anggota 2`,
             catatan: `${reguTitle} - Anggota 2`
           });
@@ -442,7 +466,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             cabangId: 'ccm',
             cabangLomba: 'CCM',
             namaSantri: regu.anggota3.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
             kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+            detailCabang: reguTitle,
             label: `${reguTitle} • Anggota 3`,
             catatan: `${reguTitle} - Anggota 3`
           });
@@ -450,14 +476,17 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       });
     }
 
-    // Step 11: Kreasi Nadzom
+    // Step 11: Kreasi Nadzom (Beregu)
     if (!skippedSteps[11] && kreasiNadzom.ketua.trim()) {
+      const reguTitle = kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu';
       list.push({
         cabangId: 'kreasi_nadzom',
         cabangLomba: 'Kreasi Nadzom',
         namaSantri: `${kreasiNadzom.ketua.trim().toUpperCase()} (Ketua Regu)`,
-        kategoriDetail: `${kelasDiniyah} (${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'})`,
-        label: `Ketua Regu • ${kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu'}`,
+        kelasDiniyah: kelasDiniyah,
+        kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+        detailCabang: reguTitle,
+        label: `Ketua Regu • ${reguTitle}`,
         catatan: `Ketua: ${kreasiNadzom.ketua.trim().toUpperCase()}, Jumlah Anggota: ${kreasiNadzom.jumlahAnggota || '-'}. ${kreasiNadzom.catatan || ''}`
       });
     }
@@ -694,7 +723,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       const santriPayloadList = allDelegates.map(item => ({
         namaSantri: item.namaSantri,
         cabangLomba: item.cabangLomba,
-        kelasKategori: item.kategoriDetail,
+        kelasDiniyah: kelasDiniyah,
+        kelasKategori: kelasDiniyah,
+        detailCabang: item.detailCabang || '',
         catatan: item.catatan || '',
         jenisKelamin: jenisKelamin
       }));

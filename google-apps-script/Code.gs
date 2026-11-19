@@ -6,7 +6,7 @@
  * 
  * 6 LEMBAR KERJA RESMI:
  * 1. Sheet "Admin"             -> Akun & PIN Login Panitia
- * 2. Sheet "Pendaftaran"       -> Data Peserta Santri (12 Kolom)
+ * 2. Sheet "Pendaftaran"       -> Data Peserta Santri (13 Kolom Rapi & Bersih)
  * 3. Sheet "Tingkat_dan_Kelas" -> Master Jenjang & 30 Kelas Diniyah (4 Kolom)
  * 4. Sheet "Ustadz"            -> Data Wali Kelas & Asatidz (5 Kolom)
  * 5. Sheet "Juara_Lomba"       -> Rekapitulasi Juara & Poin Juara Umum (7 Kolom)
@@ -19,7 +19,7 @@ const SHEET_ADMIN = 'Admin';
 const SHEET_PENDAFTARAN = 'Pendaftaran';
 const SHEET_TINGKAT_KELAS = 'Tingkat_dan_Kelas';
 const SHEET_USTADZ = 'Ustadz';
-const SHEET_DATA_GURU_FALLBACK = 'Data_Guru'; // Dukungan kompatibilitas jika sheet lama bernama Data_Guru
+const SHEET_DATA_GURU_FALLBACK = 'Data_Guru'; // Dukungan kompatibilitas jika sheet bernama Data_Guru
 const SHEET_JUARA = 'Juara_Lomba';
 const SHEET_PENGATURAN = 'Pengaturan';
 
@@ -33,18 +33,19 @@ const HEADERS_ADMIN = [
   'Status_Aktif'
 ];
 
-// 2. HEADER SHEET PENDAFTARAN SANTRI (12 KOLOM)
+// 2. HEADER SHEET PENDAFTARAN SANTRI (13 KOLOM RESMI & RAPI)
 const HEADERS_PENDAFTARAN = [
   'Timestamp',
   'Wali_Kelas',
+  'Nomor_WA',
   'ID_Pendaftaran',
   'Nomor_Urut',
-  'Nama_Lengkap',
+  'Nama_Santri',
   'Jenis_Kelamin',
   'Tingkat',
-  'Kelas_Kategori',
+  'Kelas_Diniyah',
   'Cabang_Lomba',
-  'Nomor_WA',
+  'Detail_Cabang',
   'Status',
   'Catatan'
 ];
@@ -177,11 +178,12 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Menu Musabaqah Al-Falah')
     .addItem('1. Buat / Siapkan Seluruh Lembar Kerja (6 Sheet)', 'inisialisasiEnamLembarKerja')
-    .addItem('2. Isi Master Data Awal (30 Kelas Diniyah & Pengaturan)', 'isiMasterDataAwal')
-    .addItem('3. Rapikan Format Tampilan Semua Sheet', 'formatSeluruhLembarKerja')
+    .addItem('2. Isi Master Data Awal (30 Kelas Diniyah & 24 Ustadz)', 'isiMasterDataAwal')
+    .addItem('3. Perbarui Header Tabel Pendaftaran (13 Kolom Rapi)', 'perbaruiHeaderTabelPendaftaran')
+    .addItem('4. Rapikan Format Tampilan Semua Sheet', 'formatSeluruhLembarKerja')
     .addSeparator()
-    .addItem('4. Undi Nomor Urut Seluruh Santri', 'undiNomorUrutOtomatis')
-    .addItem('5. Rekapitulasi Poin & Juara Umum', 'hitungRekapJuaraUmum')
+    .addItem('5. Undi Nomor Urut (Beregu: 1 Nomor Urut Per Regu)', 'undiNomorUrutOtomatis')
+    .addItem('6. Rekapitulasi Poin & Juara Umum', 'hitungRekapJuaraUmum')
     .addToUi();
 }
 
@@ -231,11 +233,10 @@ function getSheetByName(sheetName) {
     else if (sheetName === SHEET_PENDAFTARAN) {
       sheet.appendRow(HEADERS_PENDAFTARAN);
       applyHeaderStyle(sheet, HEADERS_PENDAFTARAN);
-      sheet.getRange('C2:D').setNumberFormat('@');
-      sheet.getRange('J2:J').setNumberFormat('@');
-      sheet.getRange('D2:D').setHorizontalAlignment('center');
-      sheet.getRange('F2:F').setHorizontalAlignment('center');
-      sheet.getRange('K2:K').setHorizontalAlignment('center');
+      sheet.getRange('C2:E').setNumberFormat('@'); // Nomor_WA, ID_Pendaftaran, Nomor_Urut
+      sheet.getRange('C2:E').setHorizontalAlignment('center');
+      sheet.getRange('G2:G').setHorizontalAlignment('center');
+      sheet.getRange('L2:L').setHorizontalAlignment('center');
     }
     else if (sheetName === SHEET_TINGKAT_KELAS) {
       sheet.appendRow(HEADERS_TINGKAT_KELAS);
@@ -249,6 +250,7 @@ function getSheetByName(sheetName) {
       sheet.getRange('A2:A').setHorizontalAlignment('center');
       sheet.getRange('C2:C').setHorizontalAlignment('center');
       sheet.getRange('E2:E').setNumberFormat('@');
+      MASTER_USTADZ_24.forEach(r => sheet.appendRow(r));
     }
     else if (sheetName === SHEET_JUARA) {
       sheet.appendRow(HEADERS_JUARA);
@@ -295,7 +297,83 @@ function inisialisasiEnamLembarKerja() {
 }
 
 /**
- * Isi Master Data Awal (30 Kelas Diniyah, Admin, dan Pengaturan)
+ * Perbarui Struktur Header Tabel Pendaftaran Menjadi 13 Kolom Rapi & Bersih
+ * Otomatis memigrasi data santri yang sudah ada agar tidak berantakan
+ */
+function perbaruiHeaderTabelPendaftaran() {
+  const sheet = getSheetByName(SHEET_PENDAFTARAN);
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length === 0) return;
+
+  const oldHeaders = rows[0].map(h => String(h).trim());
+  const isOldFormat = oldHeaders.indexOf('Detail_Cabang') === -1;
+
+  if (isOldFormat && rows.length > 1) {
+    const newRows = [];
+    newRows.push(HEADERS_PENDAFTARAN);
+
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] && !r[2] && !r[4]) continue;
+
+      // Ambil nilai dari kolom lama
+      const timestamp = r[0] || '';
+      const waliKelas = r[1] || '';
+      const idPendaftaran = r[2] || '';
+      const nomorUrut = r[3] || '';
+      const namaSantri = r[4] || '';
+      const jenisKelamin = r[5] || 'L';
+      const tingkat = r[6] || '';
+      const kelasRaw = String(r[7] || '').trim();
+      const cabangLomba = r[8] || '';
+      const nomorWA = r[9] || '';
+      const status = r[10] || 'Pending';
+      const catatan = r[11] || '';
+
+      // Bersihkan nama kelas diniyah dari embel-embel
+      let cleanKelas = kelasRaw;
+      let detailCabang = 'Individu';
+      const matchParen = kelasRaw.match(/^(.*?)\s*\((.*?)\)$/);
+      if (matchParen) {
+        cleanKelas = matchParen[1].trim();
+        detailCabang = matchParen[2].trim();
+      }
+
+      newRows.push([
+        timestamp,
+        waliKelas,
+        String(nomorWA),
+        idPendaftaran,
+        nomorUrut,
+        namaSantri,
+        jenisKelamin,
+        tingkat,
+        cleanKelas,
+        cabangLomba,
+        detailCabang,
+        status,
+        catatan
+      ]);
+    }
+
+    sheet.clearContents();
+    sheet.getRange(1, 1, newRows.length, HEADERS_PENDAFTARAN.length).setValues(newRows);
+  } else {
+    sheet.getRange(1, 1, 1, HEADERS_PENDAFTARAN.length).setValues([HEADERS_PENDAFTARAN]);
+  }
+
+  applyHeaderStyle(sheet, HEADERS_PENDAFTARAN);
+  sheet.getRange('C2:E').setNumberFormat('@');
+  sheet.getRange('C2:E').setHorizontalAlignment('center');
+  sheet.getRange('G2:G').setHorizontalAlignment('center');
+  sheet.getRange('L2:L').setHorizontalAlignment('center');
+
+  formatSeluruhLembarKerja();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Alhamdulillah! Tabel pendaftaran berhasil dimigrasi ke 13 kolom rapi.', 'Sukses', 5);
+}
+
+/**
+ * Isi Master Data Awal (30 Kelas Diniyah, 24 Ustadz, Admin, dan Pengaturan)
  */
 function isiMasterDataAwal() {
   // 1. Reset & Isi 30 Kelas Diniyah
@@ -345,6 +423,11 @@ function formatSeluruhLembarKerja() {
 
 /**
  * Undi Nomor Urut Seluruh Santri Otomatis di Google Sheets
+ * Aturan Khusus:
+ * - Lomba Beregu (Syarhil Qur'an, CCM, Kreasi Nadzom):
+ *   Seluruh anggota dalam 1 regu yang sama mendapatkan SATU NOMOR URUT YANG SAMA!
+ * - Lomba Individu (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan):
+ *   Setiap santri mendapatkan nomor urut individu yang berbeda.
  */
 function undiNomorUrutOtomatis() {
   const sheet = getSheetByName(SHEET_PENDAFTARAN);
@@ -354,31 +437,98 @@ function undiNomorUrutOtomatis() {
     return;
   }
 
-  // Kelompokkan santri per cabang lomba
-  const byCabang = {};
-  for (let i = 1; i < rows.length; i++) {
-    const cabang = String(rows[i][8] || 'Lainnya').trim();
-    if (!byCabang[cabang]) byCabang[cabang] = [];
-    byCabang[cabang].push(i + 1); // Simpan row index (1-indexed)
+  const headers = rows[0].map(h => String(h).trim());
+  const colIndexCabang = headers.indexOf('Cabang_Lomba');
+  const colIndexKelas = headers.indexOf('Kelas_Diniyah') !== -1 ? headers.indexOf('Kelas_Diniyah') : headers.indexOf('Kelas_Kategori');
+  const colIndexDetail = headers.indexOf('Detail_Cabang');
+  const colIndexCatatan = headers.indexOf('Catatan');
+  const colIndexNoUrut = headers.indexOf('Nomor_Urut');
+
+  if (colIndexCabang === -1 || colIndexNoUrut === -1) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Kolom Cabang_Lomba atau Nomor_Urut tidak ditemukan.', 'Error', 5);
+    return;
   }
 
-  // Acak nomor urut untuk setiap cabang
-  Object.keys(byCabang).forEach(cabang => {
-    const rowIndices = byCabang[cabang];
-    // Shuffle array (Fisher-Yates)
-    for (let j = rowIndices.length - 1; j > 0; j--) {
-      const k = Math.floor(Math.random() * (j + 1));
-      const temp = rowIndices[j];
-      rowIndices[j] = rowIndices[k];
-      rowIndices[k] = temp;
-    }
-    // Tulis nomor urut ke Kolom D (Kolom ke-4)
-    rowIndices.forEach((rowIdx, noUrut) => {
-      sheet.getRange(rowIdx, 4).setValue(String(noUrut + 1).padStart(2, '0'));
+  // Daftar Cabang Lomba Beregu Resmi
+  const cabangBeregu = ["syarhil", "ccm", "cerdas cermat", "kreasi nadzom", "nadzom"];
+
+  // Kelompokkan baris pendaftaran per cabang lomba
+  const byCabang = {};
+  for (let i = 1; i < rows.length; i++) {
+    const cabang = String(rows[i][colIndexCabang] || 'Lainnya').trim();
+    if (!cabang) continue;
+    if (!byCabang[cabang]) byCabang[cabang] = [];
+    byCabang[cabang].push({
+      rowIndex: i + 1,
+      kelas: colIndexKelas !== -1 ? String(rows[i][colIndexKelas] || '').trim() : '',
+      detail: colIndexDetail !== -1 ? String(rows[i][colIndexDetail] || '').trim() : '',
+      catatan: colIndexCatatan !== -1 ? String(rows[i][colIndexCatatan] || '').trim() : ''
     });
+  }
+
+  // Acak nomor urut untuk setiap cabang lomba
+  Object.keys(byCabang).forEach(cabangName => {
+    const santriList = byCabang[cabangName];
+    const isBeregu = cabangBeregu.some(cb => cabangName.toLowerCase().includes(cb));
+
+    if (isBeregu) {
+      // 1. LOMBA BEREGU (Syarhil Qur'an, CCM, Kreasi Nadzom)
+      // Kelompokkan anggota ke dalam Tim/Regu yang sama
+      const groups = {};
+      const groupOrder = [];
+
+      santriList.forEach(item => {
+        let reguLabel = item.detail;
+        const matchRegu = (item.detail + ' ' + item.catatan).match(/regu\s*\d+/i);
+        if (matchRegu) {
+          reguLabel = matchRegu[0].toUpperCase();
+        } else if (!reguLabel) {
+          reguLabel = 'REGU_1';
+        }
+
+        const teamKey = (item.kelas + '_' + reguLabel).toLowerCase().trim();
+        if (!groups[teamKey]) {
+          groups[teamKey] = [];
+          groupOrder.push(teamKey);
+        }
+        groups[teamKey].push(item.rowIndex);
+      });
+
+      // Acak urutan regu (Fisher-Yates shuffle)
+      for (let j = groupOrder.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        const temp = groupOrder[j];
+        groupOrder[j] = groupOrder[k];
+        groupOrder[k] = temp;
+      }
+
+      // Seluruh anggota dalam regu yang sama MENDAPATKAN NOMOR URUT YANG SAMA PERSIS
+      groupOrder.forEach((teamKey, idx) => {
+        const noUrutFormatted = String(idx + 1).padStart(2, '0');
+        const rowIndices = groups[teamKey];
+        rowIndices.forEach(rIdx => {
+          sheet.getRange(rIdx, colIndexNoUrut + 1).setValue(noUrutFormatted);
+        });
+      });
+
+    } else {
+      // 2. LOMBA INDIVIDU (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan)
+      // Setiap santri diundi sendiri dan mendapatkan nomor urut individu yang berbeda
+      const rowIndices = santriList.map(item => item.rowIndex);
+      for (let j = rowIndices.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        const temp = rowIndices[j];
+        rowIndices[j] = rowIndices[k];
+        rowIndices[k] = temp;
+      }
+      rowIndices.forEach((rIdx, idx) => {
+        const noUrutFormatted = String(idx + 1).padStart(2, '0');
+        sheet.getRange(rIdx, colIndexNoUrut + 1).setValue(noUrutFormatted);
+      });
+    }
   });
 
-  SpreadsheetApp.getActiveSpreadsheet().toast('Pengundian nomor urut seluruh cabang lomba selesai.', 'Sukses', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Pengundian selesai! Lomba beregu mendapatkan 1 nomor urut per regu.', 'Sukses', 5);
 }
 
 /**
@@ -541,6 +691,13 @@ function doGet(e) {
         }
         item[header] = val !== undefined && val !== null ? String(val).trim() : '';
       });
+
+      // Penyelarasan kompatibilitas nama properti:
+      if (!item.Nama_Lengkap && item.Nama_Santri) item.Nama_Lengkap = item.Nama_Santri;
+      if (!item.Nama_Santri && item.Nama_Lengkap) item.Nama_Santri = item.Nama_Lengkap;
+      if (!item.Kelas_Diniyah && item.Kelas_Kategori) item.Kelas_Diniyah = item.Kelas_Kategori;
+      if (!item.Kelas_Kategori && item.Kelas_Diniyah) item.Kelas_Kategori = item.Kelas_Diniyah;
+
       data.push(item);
     }
 
@@ -603,7 +760,6 @@ function doPost(e) {
         }
       }
 
-      // Default fallback jika sheet masih baru dan pin cocok dengan admin123
       if (pinInput === 'admin123') {
         return jsonResponse({
           status: 'success',
@@ -624,7 +780,7 @@ function doPost(e) {
     }
 
     // -------------------------------------------------------------------------
-    // 2. PENDAFTARAN SANTRI (SINGLE & BATCH MULTI-STEP)
+    // 2. PENDAFTARAN SANTRI (SINGLE & BATCH MULTI-STEP - 13 KOLOM)
     // -------------------------------------------------------------------------
     if (action === 'register' || action === 'batch_register') {
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
@@ -638,20 +794,22 @@ function doPost(e) {
       entries.forEach(item => {
         curRow++;
         const idPendaftaran = item.ID_Pendaftaran || ('AKH-' + String(curRow).padStart(3, '0'));
-        const namaLengkap = String(item.Nama_Lengkap || item.namaSantri || '').trim().toUpperCase();
-        if (!namaLengkap) return;
+        const namaSantri = String(item.Nama_Santri || item.Nama_Lengkap || item.namaSantri || '').trim().toUpperCase();
+        if (!namaSantri) return;
 
+        // Susunan 13 Kolom Rapi Sesuai HEADERS_PENDAFTARAN
         const rowData = [
           item.Timestamp || formattedTimestamp,
           item.Wali_Kelas || contents.Wali_Kelas || '',
+          item.Nomor_WA || contents.Nomor_WA || '',
           idPendaftaran,
           item.Nomor_Urut || '',
-          namaLengkap,
+          namaSantri,
           item.Jenis_Kelamin || item.jenisKelamin || 'L',
           item.Tingkat || contents.Tingkat || '',
-          item.Kelas_Kategori || contents.Kelas_Kategori || '',
+          item.Kelas_Diniyah || item.Kelas_Kategori || contents.Kelas_Diniyah || contents.Kelas_Kategori || '',
           item.Cabang_Lomba || item.cabangLomba || '',
-          item.Nomor_WA || contents.Nomor_WA || '',
+          item.Detail_Cabang || item.detailCabang || 'Individu',
           item.Status || 'Pending',
           item.Catatan || item.catatan || ''
         ];
@@ -674,25 +832,26 @@ function doPost(e) {
     if (action === 'edit_santri' || action === 'update_santri' || action === 'update_single') {
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
+      const headers = rows[0].map(h => String(h).trim());
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       let updated = false;
 
-      for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][2]).trim() === idPendaftaran) {
-          const rowNum = i + 1;
-          if (contents.Wali_Kelas !== undefined) sheet.getRange(rowNum, 2).setValue(contents.Wali_Kelas);
-          if (contents.Nomor_Urut !== undefined) sheet.getRange(rowNum, 4).setValue(contents.Nomor_Urut);
-          if (contents.Nama_Lengkap !== undefined) sheet.getRange(rowNum, 5).setValue(String(contents.Nama_Lengkap).toUpperCase());
-          if (contents.Jenis_Kelamin !== undefined) sheet.getRange(rowNum, 6).setValue(contents.Jenis_Kelamin);
-          if (contents.Tingkat !== undefined) sheet.getRange(rowNum, 7).setValue(contents.Tingkat);
-          if (contents.Kelas_Kategori !== undefined) sheet.getRange(rowNum, 8).setValue(contents.Kelas_Kategori);
-          if (contents.Cabang_Lomba !== undefined) sheet.getRange(rowNum, 9).setValue(contents.Cabang_Lomba);
-          if (contents.Nomor_WA !== undefined) sheet.getRange(rowNum, 10).setValue(contents.Nomor_WA);
-          if (contents.Status !== undefined) sheet.getRange(rowNum, 11).setValue(contents.Status);
-          if (contents.Catatan !== undefined) sheet.getRange(rowNum, 12).setValue(contents.Catatan);
-
-          updated = true;
-          break;
+      const colId = headers.indexOf('ID_Pendaftaran');
+      if (colId !== -1) {
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][colId]).trim() === idPendaftaran) {
+            const rowNum = i + 1;
+            Object.keys(contents).forEach(key => {
+              const cIdx = headers.indexOf(key);
+              if (cIdx !== -1) {
+                let val = contents[key];
+                if (key === 'Nama_Santri' || key === 'Nama_Lengkap') val = String(val).toUpperCase();
+                sheet.getRange(rowNum, cIdx + 1).setValue(val);
+              }
+            });
+            updated = true;
+            break;
+          }
         }
       }
 
@@ -708,14 +867,18 @@ function doPost(e) {
     if (action === 'delete_single' || action === 'delete_santri') {
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
+      const headers = rows[0].map(h => String(h).trim());
+      const colId = headers.indexOf('ID_Pendaftaran');
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       let deleted = false;
 
-      for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][2]).trim() === idPendaftaran) {
-          sheet.deleteRow(i + 1);
-          deleted = true;
-          break;
+      if (colId !== -1) {
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][colId]).trim() === idPendaftaran) {
+            sheet.deleteRow(i + 1);
+            deleted = true;
+            break;
+          }
         }
       }
 
@@ -732,7 +895,7 @@ function doPost(e) {
       undiNomorUrutOtomatis();
       return jsonResponse({
         status: 'success',
-        message: 'Pengundian nomor urut selesai langsung di spreadsheet.'
+        message: 'Pengundian nomor urut selesai (1 nomor urut untuk lomba beregu).'
       });
     }
 
@@ -850,7 +1013,7 @@ function doPost(e) {
       isiMasterDataAwal();
       return jsonResponse({
         status: 'success',
-        message: 'Seluruh 30 Kelas Diniyah resmi berhasil disinkronkan ke Google Sheets.'
+        message: 'Seluruh 30 Kelas Diniyah dan 24 Ustadz resmi berhasil disinkronkan ke Google Sheets.'
       });
     }
 
@@ -861,7 +1024,6 @@ function doPost(e) {
       const sheet = getSheetByName(SHEET_JUARA);
       const entries = Array.isArray(contents.data) ? contents.data : [contents];
       
-      // Kosongkan dan tulis ulang rekapitulasi juara jika full sync
       if (contents.isFullSync) {
         const lastRow = sheet.getLastRow();
         if (lastRow > 1) {
