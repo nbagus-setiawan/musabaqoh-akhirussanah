@@ -17,6 +17,7 @@ import {
   Sparkles, 
   ShieldCheck, 
   ChevronRight, 
+  ChevronLeft,
   UserPlus, 
   FileText, 
   Layers, 
@@ -128,7 +129,10 @@ export default function AdminDashboard({
   // MATRIKS KEPATUHAN & KESIAPAN 24 KELAS DINIYAH (ZERO GUESSWORK)
   // =========================================================
   const [matrixFilter, setMatrixFilter] = useState('ALL'); // 'ALL' | 'BELUM' | 'SEBAGIAN' | 'LENGKAP'
+  const [matrixTingkat, setMatrixTingkat] = useState('ALL'); // 'ALL' | 'ula' | 'wustho'
   const [matrixSearch, setMatrixSearch] = useState('');
+  const [matrixPage, setMatrixPage] = useState(1);
+  const [matrixItemsPerPage, setMatrixItemsPerPage] = useState(8);
 
   const waliList = useMemo(() => {
     try {
@@ -175,8 +179,11 @@ export default function AdminDashboard({
   const countLengkap = complianceMatrix.filter(m => m.status === 'LENGKAP').length;
   const countSebagian = complianceMatrix.filter(m => m.status === 'SEBAGIAN').length;
   const countBelum = complianceMatrix.filter(m => m.status === 'BELUM').length;
+  const countUla = complianceMatrix.filter(m => (m.tingkat || '').toLowerCase() === 'ula').length;
+  const countWustho = complianceMatrix.filter(m => (m.tingkat || '').toLowerCase() === 'wustho').length;
 
   const filteredMatrix = complianceMatrix.filter(m => {
+    if (matrixTingkat !== 'ALL' && (m.tingkat || '').toLowerCase() !== matrixTingkat.toLowerCase()) return false;
     if (matrixFilter !== 'ALL' && m.status !== matrixFilter) return false;
     if (matrixSearch) {
       const q = matrixSearch.toLowerCase();
@@ -189,6 +196,11 @@ export default function AdminDashboard({
     }
     return true;
   });
+
+  const matrixTotalPages = Math.max(1, Math.ceil(filteredMatrix.length / matrixItemsPerPage));
+  const currentMatrixPage = Math.min(matrixPage, matrixTotalPages);
+  const matrixStartIndex = (currentMatrixPage - 1) * matrixItemsPerPage;
+  const paginatedMatrix = filteredMatrix.slice(matrixStartIndex, matrixStartIndex + matrixItemsPerPage);
 
   const handleJumpToClass = (kelasName) => {
     if (setSearchTerm) setSearchTerm(kelasName);
@@ -475,17 +487,17 @@ export default function AdminDashboard({
           {/* Quick Counter Chips */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <button
-              onClick={() => setMatrixFilter('ALL')}
+              onClick={() => { setMatrixFilter('ALL'); setMatrixPage(1); }}
               className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 matrixFilter === 'ALL'
                   ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              Semua (24)
+              Semua ({complianceMatrix.length})
             </button>
             <button
-              onClick={() => setMatrixFilter('LENGKAP')}
+              onClick={() => { setMatrixFilter('LENGKAP'); setMatrixPage(1); }}
               className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 matrixFilter === 'LENGKAP'
                   ? 'bg-emerald-800 text-white border-emerald-800 shadow-2xs'
@@ -495,7 +507,7 @@ export default function AdminDashboard({
               Lengkap ({countLengkap})
             </button>
             <button
-              onClick={() => setMatrixFilter('SEBAGIAN')}
+              onClick={() => { setMatrixFilter('SEBAGIAN'); setMatrixPage(1); }}
               className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 matrixFilter === 'SEBAGIAN'
                   ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
@@ -505,7 +517,7 @@ export default function AdminDashboard({
               Sebagian ({countSebagian})
             </button>
             <button
-              onClick={() => setMatrixFilter('BELUM')}
+              onClick={() => { setMatrixFilter('BELUM'); setMatrixPage(1); }}
               className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 matrixFilter === 'BELUM'
                   ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
@@ -517,25 +529,71 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        {/* Search Bar dalam Matriks */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari kelas Diniyah, ustadz wali kelas, atau kontak..."
-            value={matrixSearch}
-            onChange={(e) => setMatrixSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-700 focus:bg-white bg-slate-50/60 transition-all placeholder:text-slate-400"
-          />
-          {matrixSearch && (
+        {/* Filter Tingkat dan Bar Pencarian */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Filter Jenjang Tingkat (Semua 24 / Ula 16 / Wustho 8) */}
+          <div className="flex items-center space-x-1.5 p-1 bg-slate-100/80 rounded-xl border border-slate-200/80">
             <button
               type="button"
-              onClick={() => setMatrixSearch('')}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+              onClick={() => { setMatrixTingkat('ALL'); setMatrixPage(1); }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                matrixTingkat === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <X className="w-3.5 h-3.5" />
+              Semua Jenjang ({complianceMatrix.length})
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => { setMatrixTingkat('ula'); setMatrixPage(1); }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                matrixTingkat === 'ula'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tingkat Ula ({countUla})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMatrixTingkat('wustho'); setMatrixPage(1); }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                matrixTingkat === 'wustho'
+                  ? 'bg-teal-700 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tingkat Wustho ({countWustho})
+            </button>
+          </div>
+
+          {/* Search Bar dalam Matriks */}
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari kelas, wali kelas, kontak..."
+              value={matrixSearch}
+              onChange={(e) => {
+                setMatrixSearch(e.target.value);
+                setMatrixPage(1);
+              }}
+              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-700 focus:bg-white bg-slate-50/60 transition-all placeholder:text-slate-400"
+            />
+            {matrixSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMatrixSearch('');
+                  setMatrixPage(1);
+                }}
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabel Matriks 24 Kelas */}
@@ -559,7 +617,7 @@ export default function AdminDashboard({
                   </td>
                 </tr>
               ) : (
-                filteredMatrix.map((item) => {
+                paginatedMatrix.map((item) => {
                   const isPutri = (item.kelas || '').toLowerCase().includes('putri');
                   const isUla = (item.tingkat || '').toLowerCase() === 'ula';
                   const pct = Math.min(100, Math.round((item.totalCount / 10) * 100));
@@ -683,6 +741,86 @@ export default function AdminDashboard({
           </table>
         </div>
 
+        {/* Kontrol Paginasi Matriks 24 Kelas */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs">
+          {/* Info Range & Pilihan Baris Per Halaman */}
+          <div className="flex flex-wrap items-center gap-3 text-slate-500 font-medium">
+            <span>
+              Menampilkan{' '}
+              <strong className="text-slate-800 font-mono">
+                {filteredMatrix.length === 0 ? 0 : matrixStartIndex + 1}
+              </strong>
+              {' '}-{' '}
+              <strong className="text-slate-800 font-mono">
+                {Math.min(matrixStartIndex + matrixItemsPerPage, filteredMatrix.length)}
+              </strong>
+              {' '}dari{' '}
+              <strong className="text-slate-800 font-mono">
+                {filteredMatrix.length}
+              </strong>
+              {' '}Kelas Diniyah
+            </span>
+
+            <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-200">
+              <span className="text-[11px] text-slate-400">Tampilkan:</span>
+              <select
+                value={matrixItemsPerPage}
+                onChange={(e) => {
+                  setMatrixItemsPerPage(Number(e.target.value));
+                  setMatrixPage(1);
+                }}
+                aria-label="Jumlah baris kelas per halaman"
+                className="px-2 py-1 rounded-lg border border-slate-200 bg-white font-semibold text-slate-700 outline-none focus:border-emerald-700 text-xs cursor-pointer"
+              >
+                <option value={8}>8 Kelas / Halaman</option>
+                <option value={12}>12 Kelas / Halaman</option>
+                <option value={24}>Semua (24 Kelas)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Tombol Navigasi Halaman: Sebelumnya, Nomor Halaman, Selanjutnya */}
+          {matrixTotalPages > 1 && (
+            <div className="flex items-center space-x-1">
+              <button
+                type="button"
+                onClick={() => setMatrixPage(p => Math.max(1, p - 1))}
+                disabled={currentMatrixPage === 1}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center space-x-1 cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Sebelumnya</span>
+              </button>
+
+              <div className="flex items-center space-x-1 px-1">
+                {Array.from({ length: matrixTotalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setMatrixPage(pageNum)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      currentMatrixPage === pageNum
+                        ? 'bg-emerald-800 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMatrixPage(p => Math.min(matrixTotalPages, p + 1))}
+                disabled={currentMatrixPage === matrixTotalPages}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center space-x-1 cursor-pointer"
+              >
+                <span>Selanjutnya</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* =========================================================
