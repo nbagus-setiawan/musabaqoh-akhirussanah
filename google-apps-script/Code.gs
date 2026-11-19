@@ -446,8 +446,8 @@ function undiNomorUrutOtomatis(optStartNumber) {
     try {
       const ui = SpreadsheetApp.getUi();
       const response = ui.prompt(
-        'Undi Nomor Urut Musabaqah',
-        'Masukkan nomor urut awal (Ketik angka, default: 1):',
+        'Undi Nomor Urut Musabaqah (Format 3 Digit)',
+        'Masukkan nomor urut awal (Ketik angka, misal: 001 atau 050):',
         ui.ButtonSet.OK_CANCEL
       );
       if (response.getSelectedButton() === ui.Button.CANCEL) {
@@ -565,20 +565,26 @@ function undiNomorUrutOtomatis(optStartNumber) {
   const noUrutRange = sheet.getRange(2, colIndexNoUrut + 1, rows.length - 1, 1);
   const noUrutValues = noUrutRange.getValues();
 
+  // Kunci Utama: Tetapkan format kolom ke Plain Text '@' dan Rata Tengah agar 3 digit (001, 002, 010) tidak terpotong
+  noUrutRange.setNumberFormat('@');
+  noUrutRange.setHorizontalAlignment('center');
+
   let totalRowsAssigned = 0;
   units.forEach((unit, idx) => {
-    const nomorUndian = numbersPool[idx];
+    const rawNum = numbersPool[idx];
+    // Format wajib 3 digit string (misal: 1 -> "001", 10 -> "010", 50 -> "050")
+    const nomorUndian3Digit = String(rawNum).padStart(3, '0');
     unit.rows.forEach(rIdx => {
       // rIdx adalah baris 1-indexed di sheet, sehingga di noUrutValues index = rIdx - 2
-      noUrutValues[rIdx - 2][0] = nomorUndian;
+      noUrutValues[rIdx - 2][0] = nomorUndian3Digit;
       totalRowsAssigned++;
     });
   });
 
-  // Tulis nomor undian sekaligus ke Google Sheets dalam 1 panggilan cepat
+  // Tulis nomor undian 3 digit sekaligus ke Google Sheets dalam 1 panggilan cepat
   noUrutRange.setValues(noUrutValues);
 
-  const pesanSukses = 'Pengundian selesai! Total ' + units.length + ' undian unik (' + totalRowsAssigned + ' baris santri) tanpa duplikat di seluruh cabang lomba.';
+  const pesanSukses = 'Pengundian selesai! Total ' + units.length + ' undian unik (' + totalRowsAssigned + ' baris santri, format 3 digit) tanpa duplikat di seluruh cabang lomba.';
   SpreadsheetApp.getActiveSpreadsheet().toast(pesanSukses, 'Sukses', 5);
   return units.length;
 }
@@ -741,7 +747,14 @@ function doGet(e) {
         if (val instanceof Date) {
           val = Utilities.formatDate(val, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
         }
-        item[header] = val !== undefined && val !== null ? String(val).trim() : '';
+        val = val !== undefined && val !== null ? String(val).trim() : '';
+
+        // Pastikan Nomor_Urut selalu dipad 3 digit (misal: "1" -> "001", "10" -> "010")
+        if (header === 'Nomor_Urut' && val && !isNaN(val) && Number(val) > 0) {
+          val = String(val).padStart(3, '0');
+        }
+
+        item[header] = val;
       });
 
       // Penyelarasan kompatibilitas nama properti:

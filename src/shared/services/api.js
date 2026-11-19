@@ -109,8 +109,14 @@ export const fetchRegistrations = async (forceRemote = true) => {
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
-        return result.data;
+        const formatted = result.data.map(item => {
+          if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
+            item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
+          }
+          return item;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
+        return formatted;
       }
     }
   } catch (err) {
@@ -130,9 +136,15 @@ export const syncRemoteRegistrationsSilently = async () => {
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
+        const formatted = result.data.map(item => {
+          if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
+            item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
+          }
+          return item;
+        });
         const local = getLocalRegistrations();
-        if (JSON.stringify(result.data) !== JSON.stringify(local)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
+        if (JSON.stringify(formatted) !== JSON.stringify(local)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
           notifyDataChanged('registrations', result.data);
         }
       }

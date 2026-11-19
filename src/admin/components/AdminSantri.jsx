@@ -343,10 +343,10 @@ export default function AdminSantri({
             Pengundian acak untuk santri berstatus <strong>Terverifikasi</strong>.
           </p>
           <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b;">
-            Nomor Urut Dimulai Dari:
+            Nomor Urut Dimulai Dari (3 Digit):
           </label>
-          <input id="swal-start-num" type="number" min="1" value="${defaultStart}" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace; font-size: 15px; margin-bottom: 4px;" />
-          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Bebas duplikat di seluruh cabang lomba (Lomba beregu: 1 nomor urut per regu).</p>
+          <input id="swal-start-num" type="text" value="001" placeholder="Contoh: 001 atau 050" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace; font-size: 15px; margin-bottom: 4px;" />
+          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Format 3 digit resmi (misal: 001, 002, dst). Bebas duplikat di seluruh cabang lomba (Lomba beregu: 1 nomor urut per regu).</p>
           
           <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b;">
             Pilih Cabang Perlombaan:
@@ -364,13 +364,14 @@ export default function AdminSantri({
       confirmButtonColor: '#065f46',
       cancelButtonColor: '#94a3b8',
       preConfirm: () => {
-        const start = document.getElementById('swal-start-num').value;
+        const start = document.getElementById('swal-start-num').value.trim();
         const cat = document.getElementById('swal-category').value;
-        if (!start || Number(start) < 1) {
-          Swal.showValidationMessage('Nomor awal harus berupa angka valid lebih dari 0!');
+        const numVal = parseInt(start, 10);
+        if (isNaN(numVal) || numVal < 1) {
+          Swal.showValidationMessage('Nomor awal harus berupa angka valid minimal 1 (contoh: 001)!');
           return false;
         }
-        return { startNumber: Number(start), category: cat };
+        return { startNumber: numVal, category: cat };
       }
     });
 
