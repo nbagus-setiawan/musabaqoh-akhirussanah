@@ -5,7 +5,6 @@ import {
   AlertCircle, 
   ArrowRight, 
   ArrowLeft, 
-  FastForward, 
   Plus, 
   Trash2, 
   BookOpen, 
@@ -21,10 +20,14 @@ import {
   Award,
   ShieldCheck,
   X,
-  CheckCircle,
-  HelpCircle,
-  MinusCircle,
-  GraduationCap
+  ChevronRight,
+  School,
+  Calendar,
+  LayoutGrid,
+  ListChecks,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   getWaliKelasList, 
@@ -42,7 +45,7 @@ import {
   MASTER_WALI_KELAS 
 } from '../../shared/data/competitions';
 
-const STORAGE_DRAFT_KEY = 'alfalah_multistep_draft_v1';
+const STORAGE_DRAFT_KEY = 'alfalah_multistep_draft_v2';
 
 export default function RegistrationForm({ onSubmitSuccess }) {
   // State Master Data
@@ -53,12 +56,13 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   const [tingkatList, setTingkatList] = useState(() => getTingkatList());
   const [subKelasData, setSubKelasData] = useState(() => getSubKelasByTingkat());
 
-  // Current Step: 1 sampai 12
-  const [currentStep, setCurrentStep] = useState(1);
+  // Tahapan Formulir: 'identity' | 'hub' | 'edit_branch' | 'review'
+  const [formStage, setFormStage] = useState('identity');
+  const [activeBranchId, setActiveBranchId] = useState('mqk');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // STEP 1: Identitas Wali Kelas & Kelas Diniyah
+  // TAHAP 1: Identitas Wali Kelas & Kelas Diniyah
   const [waliInput, setWaliInput] = useState('');
   const [selectedWaliId, setSelectedWaliId] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -70,62 +74,56 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   const waliDropdownRef = useRef(null);
   const waliInputRef = useRef(null);
 
-  // DATA DELEGASI TIAP CABANG LOMBA
-  // Step 2: MQK (maks 3 santri)
+  // DATA DELEGASI 10 CABANG LOMBA
+  // 1. MQK (maks 3 santri)
   const [mqkSantri, setMqkSantri] = useState(['', '', '']);
 
-  // Step 3: Pidato (maks 3 santri + pilihan 3 bahasa)
+  // 2. Pidato (maks 3 santri + pilihan 3 bahasa)
   const [pidatoSantri, setPidatoSantri] = useState([
     { nama: '', bahasa: 'Bahasa Indonesia' },
     { nama: '', bahasa: 'Bahasa Arab' },
     { nama: '', bahasa: 'Bahasa Inggris' }
   ]);
 
-  // Step 4: MC (maks 3 santri + pilihan 3 bahasa)
+  // 3. MC (maks 3 santri + pilihan 3 bahasa)
   const [mcSantri, setMcSantri] = useState([
     { nama: '', bahasa: 'Bahasa Indonesia' },
     { nama: '', bahasa: 'Bahasa Arab' },
     { nama: '', bahasa: 'Bahasa Inggris' }
   ]);
 
-  // Step 5: Syarhil Qur'an (Regu dengan tombol + Tambah Regu)
+  // 4. Syarhil Qur'an (Regu: Pensyarah, Tilawah, Terjemah)
   const [syarhilRegu, setSyarhilRegu] = useState([
     { namaRegu: 'Regu 1', pensyarah: '', tilawah: '', terjemah: '' }
   ]);
 
-  // Step 6: Tilawah (maks 3 santri)
+  // 5. Tilawah (maks 3 santri)
   const [tilawahSantri, setTilawahSantri] = useState(['', '', '']);
 
-  // Step 7: Khot / Kaligrafi (maks 3 santri)
+  // 6. Khot / Kaligrafi (maks 3 santri)
   const [kaligrafiSantri, setKaligrafiSantri] = useState(['', '', '']);
 
-  // Step 8: MHQ (maks 3 santri + pilihan juz)
+  // 7. MHQ (maks 3 santri + pilihan juz)
   const [mhqSantri, setMhqSantri] = useState([
     { nama: '', juz: '5 Juz' },
     { nama: '', juz: '10 Juz' },
     { nama: '', juz: '15 Juz' }
   ]);
 
-  // Step 9: Adzan (maks 3 santri)
+  // 8. Adzan (maks 3 santri, khusus putra)
   const [adzanSantri, setAdzanSantri] = useState(['', '', '']);
 
-  // Step 10: CCM (Cerdas Cermat Musabaqoh - Regu dengan tombol + Tambah Regu)
+  // 9. CCM (Cerdas Cermat Musabaqoh - Regu 3 orang)
   const [ccmRegu, setCcmRegu] = useState([
     { namaRegu: 'Regu 1', anggota1: '', anggota2: '', anggota3: '' }
   ]);
 
-  // Step 11: Kreasi Nadzom (Nama Ketua, Jumlah Anggota, Catatan)
+  // 10. Kreasi Nadzom (Ketua & Jumlah Anggota)
   const [kreasiNadzom, setKreasiNadzom] = useState({
     ketua: '',
     jumlahAnggota: '',
     catatan: ''
   });
-
-  // Track Cabang yang Dilewati
-  const [skippedSteps, setSkippedSteps] = useState({});
-
-  // Tab filter di Ringkasan Step 12: 'all' | 'filled' | 'skipped'
-  const [summaryFilterTab, setSummaryFilterTab] = useState('all');
 
   // 1. Muat Data Guru & Kelas Diniyah dari Google Sheets jika tersedia
   useEffect(() => {
@@ -176,7 +174,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         if (d.adzanSantri) setAdzanSantri(d.adzanSantri);
         if (d.ccmRegu) setCcmRegu(d.ccmRegu);
         if (d.kreasiNadzom) setKreasiNadzom(d.kreasiNadzom);
-        if (d.skippedSteps) setSkippedSteps(d.skippedSteps);
+        if (d.formStage && d.formStage !== 'identity' && d.kelasDiniyah) {
+          setFormStage(d.formStage);
+        }
       }
     } catch (e) {}
   }, []);
@@ -202,14 +202,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         adzanSantri,
         ccmRegu,
         kreasiNadzom,
-        skippedSteps
+        formStage
       };
       sessionStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(draftObj));
     } catch (e) {}
   }, [
     waliInput, selectedWaliId, tingkat, tingkatName, kelasDiniyah, jenisKelamin, nomorWA,
     mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, kaligrafiSantri,
-    mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, skippedSteps
+    mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, formStage
   ]);
 
   // Filter saran guru berdasarkan teks yang diketik
@@ -264,160 +264,148 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     if (waliInputRef.current) waliInputRef.current.focus();
   };
 
-  // Kumpulkan Seluruh Santri Delegasi yang Terisi (Memoized sebelum validasi langkah)
+  const isPutriClass = jenisKelamin === 'P' || (kelasDiniyah || '').toLowerCase().includes('putri');
+
+  // Kumpulkan Seluruh Delegasi Santri Aktif
   const allDelegates = useMemo(() => {
     const list = [];
 
-    // Step 2: MQK
-    if (!skippedSteps[2]) {
-      mqkSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'mqk',
-            cabangLomba: 'MQK',
-            namaSantri: nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: kelasDiniyah,
-            detailCabang: 'Individu',
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
+    // 1. MQK
+    mqkSantri.forEach((nama, idx) => {
+      if (nama.trim()) {
+        list.push({
+          cabangId: 'mqk',
+          cabangLomba: 'MQK',
+          namaSantri: nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: kelasDiniyah,
+          detailCabang: 'Individu',
+          label: `Santri ${idx + 1}`
+        });
+      }
+    });
 
-    // Step 3: PIDATO
-    if (!skippedSteps[3]) {
-      pidatoSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'pidato',
-            cabangLomba: 'PIDATO',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-            detailCabang: item.bahasa,
-            label: `Santri ${idx + 1} • ${item.bahasa}`,
-            catatan: `Bahasa: ${item.bahasa}`
-          });
-        }
-      });
-    }
+    // 2. PIDATO
+    pidatoSantri.forEach((item, idx) => {
+      if (item.nama && item.nama.trim()) {
+        list.push({
+          cabangId: 'pidato',
+          cabangLomba: 'PIDATO',
+          namaSantri: item.nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+          detailCabang: item.bahasa,
+          label: `Santri ${idx + 1} • ${item.bahasa}`,
+          catatan: `Bahasa: ${item.bahasa}`
+        });
+      }
+    });
 
-    // Step 4: MC
-    if (!skippedSteps[4]) {
-      mcSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'mc',
-            cabangLomba: 'MC',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-            detailCabang: item.bahasa,
-            label: `Santri ${idx + 1} • ${item.bahasa}`,
-            catatan: `Bahasa: ${item.bahasa}`
-          });
-        }
-      });
-    }
+    // 3. MC
+    mcSantri.forEach((item, idx) => {
+      if (item.nama && item.nama.trim()) {
+        list.push({
+          cabangId: 'mc',
+          cabangLomba: 'MC',
+          namaSantri: item.nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+          detailCabang: item.bahasa,
+          label: `Santri ${idx + 1} • ${item.bahasa}`,
+          catatan: `Bahasa: ${item.bahasa}`
+        });
+      }
+    });
 
-    // Step 5: Syarhil Qur'an (Beregu)
-    if (!skippedSteps[5]) {
-      syarhilRegu.forEach((regu, rIdx) => {
-        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
-        if (regu.pensyarah && regu.pensyarah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.pensyarah.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Pensyarah`,
-            catatan: `${reguTitle} - Pensyarah`
-          });
-        }
-        if (regu.tilawah && regu.tilawah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.tilawah.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Tilawah`,
-            catatan: `${reguTitle} - Tilawah`
-          });
-        }
-        if (regu.terjemah && regu.terjemah.trim()) {
-          list.push({
-            cabangId: 'syarhil',
-            cabangLomba: 'Syarhil Qur\'an',
-            namaSantri: regu.terjemah.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Terjemah`,
-            catatan: `${reguTitle} - Terjemah`
-          });
-        }
-      });
-    }
+    // 4. Syarhil Qur'an
+    syarhilRegu.forEach((regu, rIdx) => {
+      const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
+      if (regu.pensyarah && regu.pensyarah.trim()) {
+        list.push({
+          cabangId: 'syarhil',
+          cabangLomba: 'Syarhil Qur\'an',
+          namaSantri: regu.pensyarah.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Pensyarah`,
+          catatan: `${reguTitle} - Pensyarah`
+        });
+      }
+      if (regu.tilawah && regu.tilawah.trim()) {
+        list.push({
+          cabangId: 'syarhil',
+          cabangLomba: 'Syarhil Qur\'an',
+          namaSantri: regu.tilawah.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Tilawah`,
+          catatan: `${reguTitle} - Tilawah`
+        });
+      }
+      if (regu.terjemah && regu.terjemah.trim()) {
+        list.push({
+          cabangId: 'syarhil',
+          cabangLomba: 'Syarhil Qur\'an',
+          namaSantri: regu.terjemah.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Terjemah`,
+          catatan: `${reguTitle} - Terjemah`
+        });
+      }
+    });
 
-    // Step 6: Tilawah
-    if (!skippedSteps[6]) {
-      tilawahSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'tilawah',
-            cabangLomba: 'Tilawah',
-            namaSantri: nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: kelasDiniyah,
-            detailCabang: 'Individu',
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
+    // 5. Tilawah
+    tilawahSantri.forEach((nama, idx) => {
+      if (nama.trim()) {
+        list.push({
+          cabangId: 'tilawah',
+          cabangLomba: 'Tilawah',
+          namaSantri: nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: kelasDiniyah,
+          detailCabang: 'Individu',
+          label: `Santri ${idx + 1}`
+        });
+      }
+    });
 
-    // Step 7: Khot
-    if (!skippedSteps[7]) {
-      kaligrafiSantri.forEach((nama, idx) => {
-        if (nama.trim()) {
-          list.push({
-            cabangId: 'khot',
-            cabangLomba: 'Khot / Kaligrafi',
-            namaSantri: nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: kelasDiniyah,
-            detailCabang: 'Individu',
-            label: `Santri ${idx + 1}`
-          });
-        }
-      });
-    }
+    // 6. Khot / Kaligrafi
+    kaligrafiSantri.forEach((nama, idx) => {
+      if (nama.trim()) {
+        list.push({
+          cabangId: 'khot',
+          cabangLomba: 'Khot / Kaligrafi',
+          namaSantri: nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: kelasDiniyah,
+          detailCabang: 'Individu',
+          label: `Santri ${idx + 1}`
+        });
+      }
+    });
 
-    // Step 8: MHQ
-    if (!skippedSteps[8]) {
-      mhqSantri.forEach((item, idx) => {
-        if (item.nama && item.nama.trim()) {
-          list.push({
-            cabangId: 'mhq',
-            cabangLomba: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
-            namaSantri: item.nama.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${item.juz})`,
-            detailCabang: item.juz,
-            label: `Santri ${idx + 1} • Kategori ${item.juz}`,
-            catatan: `Kategori Hafalan: ${item.juz}`
-          });
-        }
-      });
-    }
+    // 7. MHQ
+    mhqSantri.forEach((item, idx) => {
+      if (item.nama && item.nama.trim()) {
+        list.push({
+          cabangId: 'mhq',
+          cabangLomba: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
+          namaSantri: item.nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${item.juz})`,
+          detailCabang: item.juz,
+          label: `Santri ${idx + 1} • Kategori ${item.juz}`,
+          catatan: `Kategori Hafalan: ${item.juz}`
+        });
+      }
+    });
 
-    // Step 9: Adzan
-    if (!skippedSteps[9]) {
+    // 8. Adzan
+    if (!isPutriClass) {
       adzanSantri.forEach((nama, idx) => {
         if (nama.trim()) {
           list.push({
@@ -433,51 +421,49 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       });
     }
 
-    // Step 10: CCM (Beregu)
-    if (!skippedSteps[10]) {
-      ccmRegu.forEach((regu, rIdx) => {
-        const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
-        if (regu.anggota1 && regu.anggota1.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota1.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Anggota 1`,
-            catatan: `${reguTitle} - Anggota 1`
-          });
-        }
-        if (regu.anggota2 && regu.anggota2.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota2.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Anggota 2`,
-            catatan: `${reguTitle} - Anggota 2`
-          });
-        }
-        if (regu.anggota3 && regu.anggota3.trim()) {
-          list.push({
-            cabangId: 'ccm',
-            cabangLomba: 'CCM',
-            namaSantri: regu.anggota3.trim().toUpperCase(),
-            kelasDiniyah: kelasDiniyah,
-            kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
-            detailCabang: reguTitle,
-            label: `${reguTitle} • Anggota 3`,
-            catatan: `${reguTitle} - Anggota 3`
-          });
-        }
-      });
-    }
+    // 9. CCM
+    ccmRegu.forEach((regu, rIdx) => {
+      const reguTitle = regu.namaRegu || `Regu ${rIdx + 1}`;
+      if (regu.anggota1 && regu.anggota1.trim()) {
+        list.push({
+          cabangId: 'ccm',
+          cabangLomba: 'CCM',
+          namaSantri: regu.anggota1.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Anggota 1`,
+          catatan: `${reguTitle} - Anggota 1`
+        });
+      }
+      if (regu.anggota2 && regu.anggota2.trim()) {
+        list.push({
+          cabangId: 'ccm',
+          cabangLomba: 'CCM',
+          namaSantri: regu.anggota2.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Anggota 2`,
+          catatan: `${reguTitle} - Anggota 2`
+        });
+      }
+      if (regu.anggota3 && regu.anggota3.trim()) {
+        list.push({
+          cabangId: 'ccm',
+          cabangLomba: 'CCM',
+          namaSantri: regu.anggota3.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
+          detailCabang: reguTitle,
+          label: `${reguTitle} • Anggota 3`,
+          catatan: `${reguTitle} - Anggota 3`
+        });
+      }
+    });
 
-    // Step 11: Kreasi Nadzom (Beregu)
-    if (!skippedSteps[11] && kreasiNadzom.ketua.trim()) {
+    // 10. Kreasi Nadzom
+    if (kreasiNadzom.ketua.trim()) {
       const reguTitle = kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Regu';
       list.push({
         cabangId: 'kreasi_nadzom',
@@ -495,214 +481,249 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   }, [
     mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
     kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
-    skippedSteps, kelasDiniyah
+    kelasDiniyah, isPutriClass
   ]);
 
-  // Helper cek apakah langkah cabang lomba saat ini terisi minimal 1 data
-  const isCurrentStepFilled = (step) => {
-    switch (step) {
-      case 1:
-        return Boolean(waliInput.trim() && tingkat && kelasDiniyah && nomorWA.replace(/\D/g, '').length >= 9);
-      case 2: // MQK
-        return mqkSantri.some(n => n.trim().length > 0);
-      case 3: // PIDATO
-        return pidatoSantri.some(s => s.nama && s.nama.trim().length > 0);
-      case 4: // MC
-        return mcSantri.some(s => s.nama && s.nama.trim().length > 0);
-      case 5: // Syarhil
-        return syarhilRegu.some(r => (r.pensyarah && r.pensyarah.trim()) || (r.tilawah && r.tilawah.trim()) || (r.terjemah && r.terjemah.trim()));
-      case 6: // Tilawah
-        return tilawahSantri.some(n => n.trim().length > 0);
-      case 7: // Khot
-        return kaligrafiSantri.some(n => n.trim().length > 0);
-      case 8: // MHQ
-        return mhqSantri.some(s => s.nama && s.nama.trim().length > 0);
-      case 9: // Adzan
-        return adzanSantri.some(n => n.trim().length > 0);
-      case 10: // CCM
-        return ccmRegu.some(r => (r.anggota1 && r.anggota1.trim()) || (r.anggota2 && r.anggota2.trim()) || (r.anggota3 && r.anggota3.trim()));
-      case 11: // Kreasi Nadzom
-        return Boolean(kreasiNadzom.ketua && kreasiNadzom.ketua.trim().length > 0);
-      case 12: // Ringkasan
-        return allDelegates.length > 0;
-      default:
-        return true;
-    }
-  };
-
-  const isStepValid = isCurrentStepFilled(currentStep);
-
-  // Navigasi Langkah
-  const handleNextStep = () => {
-    setFormError('');
-
-    // Validasi Langkah 1
-    if (currentStep === 1) {
-      if (!waliInput.trim() || !tingkat || !kelasDiniyah) {
-        setFormError('Harap pilih nama Ustadz / Ustadzah dari daftar saran agar Kelas Diniyah tervalidasi.');
-        return;
+  // Validasi Aturan Mutlak #2: Batas Maksimal 2 Lomba per Santri (Di luar CCM & Kreasi Nadzom)
+  const studentParticipationMap = useMemo(() => {
+    const map = {};
+    allDelegates.forEach(item => {
+      // Kecualikan CCM dan Kreasi Nadzom sesuai aturan panitia
+      if (item.cabangId === 'ccm' || item.cabangId === 'kreasi_nadzom') return;
+      const cleanName = item.namaSantri.replace(/\s*\(.*?\)\s*/g, '').trim().toUpperCase();
+      if (!cleanName) return;
+      if (!map[cleanName]) {
+        map[cleanName] = [];
       }
-      if (!nomorWA.trim() || nomorWA.replace(/\D/g, '').length < 9) {
-        setFormError('Nomor WhatsApp Wali Kelas wajib diisi minimal 9 digit.');
-        return;
+      if (!map[cleanName].includes(item.cabangLomba)) {
+        map[cleanName].push(item.cabangLomba);
       }
-      setCurrentStep(2);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+    });
+    return map;
+  }, [allDelegates]);
 
-    // Untuk langkah 2 s.d. 11: HANYA BISA BERIKUTNYA JIKA SUDAH TERISI!
-    if (currentStep >= 2 && currentStep <= 11) {
-      if (!isCurrentStepFilled(currentStep)) {
-        setFormError('Kolom nama santri masih kosong. Jika Kelas Diniyah ini tidak mengirimkan delegasi pada cabang ini, silakan klik tombol "Lewati" di bagian kanan atas.');
-        return;
+  // Santri yang melanggar batas >2 cabang lomba
+  const ruleViolations = useMemo(() => {
+    const violations = [];
+    Object.entries(studentParticipationMap).forEach(([nama, cabangArr]) => {
+      if (cabangArr.length > 2) {
+        violations.push({
+          nama,
+          count: cabangArr.length,
+          cabangList: cabangArr.join(', ')
+        });
+      }
+    });
+    return violations;
+  }, [studentParticipationMap]);
+
+  // Data Rangkuman Tiap Cabang Lomba untuk Kartu Hub
+  const branchesHubData = useMemo(() => {
+    return CABANG_LOMBA_LIST.map((c, index) => {
+      let count = 0;
+      let maxLimit = 3;
+      let names = [];
+      let isEligible = true;
+
+      if (c.id === 'adzan' && isPutriClass) {
+        isEligible = false;
       }
 
-      // Tandai cabang ini tidak dilewati (karena terisi data)
-      setSkippedSteps(prev => ({ ...prev, [currentStep]: false }));
-      setCurrentStep(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    // Langkah 12: Pengiriman Batch
-    if (currentStep === 12) {
-      handleSubmitAll();
-    }
-  };
-
-  const handlePrevStep = () => {
-    setFormError('');
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleSkipStep = () => {
-    setFormError('');
-    // Tandai langkah cabang ini sebagai dilewati
-    setSkippedSteps(prev => ({ ...prev, [currentStep]: true }));
-    if (currentStep < 12) {
-      setCurrentStep(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // Handler Tambah & Hapus Regu untuk Syarhil Qur'an & CCM
-  const handleAddSyarhilRegu = () => {
-    setSyarhilRegu(prev => [
-      ...prev,
-      { namaRegu: `Regu ${prev.length + 1}`, pensyarah: '', tilawah: '', terjemah: '' }
-    ]);
-  };
-
-  const handleRemoveSyarhilRegu = (index) => {
-    if (syarhilRegu.length <= 1) return;
-    setSyarhilRegu(prev => prev.filter((_, idx) => idx !== index));
-  };
-
-  const handleAddCcmRegu = () => {
-    setCcmRegu(prev => [
-      ...prev,
-      { namaRegu: `Regu ${prev.length + 1}`, anggota1: '', anggota2: '', anggota3: '' }
-    ]);
-  };
-
-  const handleRemoveCcmRegu = (index) => {
-    if (ccmRegu.length <= 1) return;
-    setCcmRegu(prev => prev.filter((_, idx) => idx !== index));
-  };
-
-  // Daftar Status Ringkasan 10 Cabang Lomba (Terisi vs Dilewati/Kosong)
-  const branchesSummary = useMemo(() => {
-    return [
-      {
-        step: 2,
-        name: 'MQK (Musabaqoh Qiro\'atil Kutub)',
-        isFilled: isCurrentStepFilled(2) && !skippedSteps[2],
-        delegates: mqkSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
-      },
-      {
-        step: 3,
-        name: 'PIDATO (3 Bahasa)',
-        isFilled: isCurrentStepFilled(3) && !skippedSteps[3],
-        delegates: pidatoSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.bahasa }))
-      },
-      {
-        step: 4,
-        name: 'MC / Pembawa Acara (3 Bahasa)',
-        isFilled: isCurrentStepFilled(4) && !skippedSteps[4],
-        delegates: mcSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.bahasa }))
-      },
-      {
-        step: 5,
-        name: 'Syarhil Qur\'an (Regu)',
-        isFilled: isCurrentStepFilled(5) && !skippedSteps[5],
-        delegates: syarhilRegu.flatMap((r, rI) => {
-          const arr = [];
-          if (r.pensyarah.trim()) arr.push({ nama: r.pensyarah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Pensyarah` });
-          if (r.tilawah.trim()) arr.push({ nama: r.tilawah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Tilawah` });
-          if (r.terjemah.trim()) arr.push({ nama: r.terjemah.trim().toUpperCase(), detail: `${r.namaRegu || `Regu ${rI + 1}`} - Terjemah` });
-          return arr;
-        })
-      },
-      {
-        step: 6,
-        name: 'Tilawah Al-Qur\'an',
-        isFilled: isCurrentStepFilled(6) && !skippedSteps[6],
-        delegates: tilawahSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
-      },
-      {
-        step: 7,
-        name: 'Khot / Kaligrafi',
-        isFilled: isCurrentStepFilled(7) && !skippedSteps[7],
-        delegates: kaligrafiSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
-      },
-      {
-        step: 8,
-        name: 'MHQ (Musabaqoh Hifdzil Qur\'an)',
-        isFilled: isCurrentStepFilled(8) && !skippedSteps[8],
-        delegates: mhqSantri.filter(s => s.nama.trim()).map((s, i) => ({ nama: s.nama.trim().toUpperCase(), detail: s.juz }))
-      },
-      {
-        step: 9,
-        name: 'Lomba Adzan',
-        isFilled: isCurrentStepFilled(9) && !skippedSteps[9],
-        delegates: adzanSantri.filter(n => n.trim()).map((n, i) => ({ nama: n.trim().toUpperCase(), detail: `Santri ${i + 1}` }))
-      },
-      {
-        step: 10,
-        name: 'Cerdas Cermat Musabaqoh (CCM)',
-        isFilled: isCurrentStepFilled(10) && !skippedSteps[10],
-        delegates: ccmRegu.flatMap((r, rI) => {
-          const arr = [];
-          const reguTitle = r.namaRegu || `Regu ${rI + 1}`;
-          if (r.anggota1.trim()) arr.push({ nama: r.anggota1.trim().toUpperCase(), detail: `${reguTitle} - Anggota 1` });
-          if (r.anggota2.trim()) arr.push({ nama: r.anggota2.trim().toUpperCase(), detail: `${reguTitle} - Anggota 2` });
-          if (r.anggota3.trim()) arr.push({ nama: r.anggota3.trim().toUpperCase(), detail: `${reguTitle} - Anggota 3` });
-          return arr;
-        })
-      },
-      {
-        step: 11,
-        name: 'Kreasi Nadzom (Regu)',
-        isFilled: isCurrentStepFilled(11) && !skippedSteps[11],
-        delegates: kreasiNadzom.ketua.trim() ? [{ nama: `${kreasiNadzom.ketua.trim().toUpperCase()} (Ketua)`, detail: `${kreasiNadzom.jumlahAnggota || '-'} Anggota` }] : []
+      switch (c.id) {
+        case 'mqk':
+          names = mqkSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
+          count = names.length;
+          break;
+        case 'pidato':
+          names = pidatoSantri.filter(s => s.nama.trim()).map(s => `${s.nama.trim().toUpperCase()} (${s.bahasa})`);
+          count = names.length;
+          break;
+        case 'mc':
+          names = mcSantri.filter(s => s.nama.trim()).map(s => `${s.nama.trim().toUpperCase()} (${s.bahasa})`);
+          count = names.length;
+          break;
+        case 'syarhil':
+          maxLimit = syarhilRegu.length * 3;
+          syarhilRegu.forEach((r, idx) => {
+            const arr = [];
+            if (r.pensyarah.trim()) arr.push(r.pensyarah.trim().toUpperCase());
+            if (r.tilawah.trim()) arr.push(r.tilawah.trim().toUpperCase());
+            if (r.terjemah.trim()) arr.push(r.terjemah.trim().toUpperCase());
+            if (arr.length > 0) {
+              names.push(`${r.namaRegu || `Regu ${idx + 1}`}: ${arr.join(', ')}`);
+              count += arr.length;
+            }
+          });
+          break;
+        case 'tilawah':
+          names = tilawahSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
+          count = names.length;
+          break;
+        case 'kaligrafi':
+          names = kaligrafiSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
+          count = names.length;
+          break;
+        case 'mhq':
+          names = mhqSantri.filter(s => s.nama.trim()).map(s => `${s.nama.trim().toUpperCase()} (${s.juz})`);
+          count = names.length;
+          break;
+        case 'adzan':
+          if (!isPutriClass) {
+            names = adzanSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
+            count = names.length;
+          }
+          break;
+        case 'ccm':
+          maxLimit = ccmRegu.length * 3;
+          ccmRegu.forEach((r, idx) => {
+            const arr = [];
+            if (r.anggota1.trim()) arr.push(r.anggota1.trim().toUpperCase());
+            if (r.anggota2.trim()) arr.push(r.anggota2.trim().toUpperCase());
+            if (r.anggota3.trim()) arr.push(r.anggota3.trim().toUpperCase());
+            if (arr.length > 0) {
+              names.push(`${r.namaRegu || `Regu ${idx + 1}`}: ${arr.join(', ')}`);
+              count += arr.length;
+            }
+          });
+          break;
+        case 'kreasi_nadzom':
+          maxLimit = 1;
+          if (kreasiNadzom.ketua.trim()) {
+            names = [`Ketua: ${kreasiNadzom.ketua.trim().toUpperCase()} (${kreasiNadzom.jumlahAnggota || '-'} Anggota)`];
+            count = 1;
+          }
+          break;
+        default:
+          break;
       }
-    ];
+
+      return {
+        ...c,
+        orderNumber: index + 1,
+        count,
+        maxLimit,
+        names,
+        isEligible,
+        isFilled: count > 0,
+        isComplete: count >= (c.type === 'regu' ? 3 : maxLimit)
+      };
+    });
   }, [
     mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
-    kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, skippedSteps
+    kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
+    isPutriClass
   ]);
 
-  const filledBranchesCount = branchesSummary.filter(b => b.isFilled).length;
-  const skippedBranchesCount = branchesSummary.filter(b => !b.isFilled).length;
+  const totalFilledBranches = branchesHubData.filter(b => b.isFilled).length;
 
-  // Pengiriman Batch ke Database (Sekali Kirim)
+  // Navigasi Aksi
+  const handleProceedToHub = (e) => {
+    if (e) e.preventDefault();
+    setFormError('');
+
+    if (!waliInput.trim() || !tingkat || !kelasDiniyah) {
+      setFormError('Harap pilih nama Ustadz / Ustadzah dari daftar saran agar Kelas Diniyah tervalidasi.');
+      return;
+    }
+    const cleanWA = nomorWA.replace(/\D/g, '');
+    if (!cleanWA || cleanWA.length < 9) {
+      setFormError('Nomor WhatsApp Wali Kelas wajib diisi minimal 9 digit.');
+      return;
+    }
+
+    setFormStage('hub');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenBranchEdit = (branchId) => {
+    setFormError('');
+    setActiveBranchId(branchId);
+    setFormStage('edit_branch');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToHub = () => {
+    setFormError('');
+    setFormStage('hub');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNextBranchInSequence = () => {
+    setFormError('');
+    const eligibleBranches = branchesHubData.filter(b => b.isEligible);
+    const currentIndex = eligibleBranches.findIndex(b => b.id === activeBranchId);
+    if (currentIndex >= 0 && currentIndex < eligibleBranches.length - 1) {
+      setActiveBranchId(eligibleBranches[currentIndex + 1].id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setFormStage('hub');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleProceedToReview = () => {
+    setFormError('');
+    if (allDelegates.length === 0) {
+      setFormError('Belum ada santri delegasi yang diisi di cabang manapun. Harap isi minimal 1 cabang lomba.');
+      return;
+    }
+    if (ruleViolations.length > 0) {
+      setFormError(`Terdapat santri yang melebihi batas 2 cabang lomba (${ruleViolations.map(r => r.nama).join(', ')}). Harap sesuaikan sebelum mengirim.`);
+      return;
+    }
+    setFormStage('review');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Helper Hapus/Kosongkan Seluruh Isian Cabang Tertentu
+  const handleClearCurrentBranch = () => {
+    switch (activeBranchId) {
+      case 'mqk': setMqkSantri(['', '', '']); break;
+      case 'pidato':
+        setPidatoSantri([
+          { nama: '', bahasa: 'Bahasa Indonesia' },
+          { nama: '', bahasa: 'Bahasa Arab' },
+          { nama: '', bahasa: 'Bahasa Inggris' }
+        ]);
+        break;
+      case 'mc':
+        setMcSantri([
+          { nama: '', bahasa: 'Bahasa Indonesia' },
+          { nama: '', bahasa: 'Bahasa Arab' },
+          { nama: '', bahasa: 'Bahasa Inggris' }
+        ]);
+        break;
+      case 'syarhil':
+        setSyarhilRegu([{ namaRegu: 'Regu 1', pensyarah: '', tilawah: '', terjemah: '' }]);
+        break;
+      case 'tilawah': setTilawahSantri(['', '', '']); break;
+      case 'kaligrafi': setKaligrafiSantri(['', '', '']); break;
+      case 'mhq':
+        setMhqSantri([
+          { nama: '', juz: '5 Juz' },
+          { nama: '', juz: '10 Juz' },
+          { nama: '', juz: '15 Juz' }
+        ]);
+        break;
+      case 'adzan': setAdzanSantri(['', '', '']); break;
+      case 'ccm':
+        setCcmRegu([{ namaRegu: 'Regu 1', anggota1: '', anggota2: '', anggota3: '' }]);
+        break;
+      case 'kreasi_nadzom':
+        setKreasiNadzom({ ketua: '', jumlahAnggota: '', catatan: '' });
+        break;
+      default: break;
+    }
+  };
+
+  // Pengiriman Kolektif Langsung ke Google Sheets
   const handleSubmitAll = async () => {
     if (allDelegates.length === 0) {
-      setFormError('Belum ada santri delegasi yang diisi di cabang lomba manapun. Harap isi minimal 1 santri.');
+      setFormError('Belum ada delegasi yang didaftarkan. Harap isi minimal 1 santri.');
+      return;
+    }
+    if (ruleViolations.length > 0) {
+      setFormError('Tidak dapat mengirim: Masih terdapat santri yang mengikuti lebih dari 2 cabang lomba.');
       return;
     }
 
@@ -732,1155 +753,1274 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
       const result = await saveBatchRegistrations(santriPayloadList, metadata);
 
-      // Hapus draft setelah berhasil terkirim
+      // Hapus draft sesi setelah sukses
       sessionStorage.removeItem(STORAGE_DRAFT_KEY);
 
       if (onSubmitSuccess) {
         await onSubmitSuccess(result);
       }
     } catch (err) {
-      setFormError('Terjadi kendala saat menyimpan pendaftaran. Silakan periksa koneksi dan coba kembali.');
+      setFormError('Terjadi kendala saat menyimpan data ke database. Silakan periksa koneksi dan coba lagi.');
       setIsSubmitting(false);
     }
   };
 
-  // Helper Judul Langkah Aktif
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1: return 'Validasi Identitas Wali Kelas & Kelas Diniyah';
-      case 2: return 'Musabaqoh Qiro\'atil Kutub (MQK)';
-      case 3: return 'Lomba Pidato (3 Bahasa)';
-      case 4: return 'Lomba MC / Pembawa Acara (3 Bahasa)';
-      case 5: return 'Lomba Syarhil Qur\'an (Regu)';
-      case 6: return 'Lomba Tilawah Al-Qur\'an';
-      case 7: return 'Lomba Khot / Kaligrafi';
-      case 8: return 'Musabaqoh Hifdzil Qur\'an (MHQ)';
-      case 9: return 'Lomba Adzan';
-      case 10: return 'Cerdas Cermat Musabaqoh (CCM)';
-      case 11: return 'Lomba Kreasi Nadzom (Regu)';
-      case 12: return 'Ringkasan & Pengiriman Delegasi Sekaligus';
-      default: return 'Formulir Pendaftaran';
+  // Helper validator partisipasi santri per baris input
+  const getStudentCrossNotice = (studentName, currentBranchName) => {
+    if (!studentName || !studentName.trim()) return null;
+    const clean = studentName.replace(/\s*\(.*?\)\s*/g, '').trim().toUpperCase();
+    const otherBranches = (studentParticipationMap[clean] || []).filter(b => b !== currentBranchName);
+    if (otherBranches.length === 0) return null;
+    if (otherBranches.length >= 2) {
+      return {
+        isDanger: true,
+        text: `Peringatan: Santri ini sudah terdaftar di 2 cabang lain (${otherBranches.join(', ')}). Maksimal batas adalah 2 cabang lomba.`
+      };
     }
+    return {
+      isDanger: false,
+      text: `Info: Santri ini juga terdaftar di ${otherBranches.join(', ')} (1 dari maks. 2 lomba).`
+    };
   };
 
-  const isPutriClass = jenisKelamin === 'P' || (kelasDiniyah || '').toLowerCase().includes('putri');
+  const activeBranchObj = CABANG_LOMBA_LIST.find(c => c.id === activeBranchId) || CABANG_LOMBA_LIST[0];
 
   return (
-    <div className="max-w-2xl mx-auto px-2 sm:px-4 py-2 sm:py-5 select-none font-sans">
+    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-3 sm:py-6 select-none font-sans space-y-4">
       
-      {/* Kartu Utama Formulir 12 Langkah */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden relative">
-        
-        {/* Garis Header Aksen Hijau Zamrud & Emas */}
-        <div className="h-2 w-full bg-gradient-to-r from-[#075B45] via-[#D9B45B] to-[#075B45]"></div>
-
-        {/* Top Bar Progress & Tombol Lewati di Atas Kanan - Rapi & Lega di Layar HP */}
-        <div className="px-3.5 sm:px-6 pt-3.5 pb-3 border-b border-slate-100 bg-slate-50/80 space-y-2">
+      {/* ========================================================= */}
+      {/* STEP INDICATOR HEADER (LEGA, BERSIH, MODERN)              */}
+      {/* ========================================================= */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-3 sm:p-4 overflow-hidden">
+        <div className="flex items-center justify-between gap-2">
           
-          {/* Baris 1: Badge Langkah & Tombol Lewati di Kanan Atas */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-              <span className="px-2.5 py-1 rounded-full bg-[#075B45] text-white text-[11px] font-black shrink-0 shadow-2xs">
-                Langkah {currentStep} dari 12
-              </span>
-              {currentStep > 1 && kelasDiniyah && (
-                <span className="text-[11px] font-bold text-emerald-900 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full truncate max-w-[190px] sm:max-w-none">
-                  {kelasDiniyah}
-                </span>
-              )}
+          {/* Step 1 */}
+          <button
+            type="button"
+            onClick={() => {
+              setFormError('');
+              setFormStage('identity');
+            }}
+            className={`flex items-center space-x-2 text-xs font-bold transition-colors cursor-pointer ${
+              formStage === 'identity' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+              formStage === 'identity' 
+                ? 'bg-[#075B45] text-white shadow-2xs' 
+                : (kelasDiniyah ? 'bg-emerald-100 text-[#075B45]' : 'bg-slate-100 text-slate-500')
+            }`}>
+              {kelasDiniyah ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
+            </div>
+            <span className="hidden sm:inline">1. Identitas Kelas</span>
+            <span className="sm:hidden">1. Kelas</span>
+          </button>
+
+          <div className="flex-1 h-0.5 bg-slate-200 mx-1 max-w-[40px] sm:max-w-[70px]"></div>
+
+          {/* Step 2 */}
+          <button
+            type="button"
+            onClick={() => {
+              if (kelasDiniyah) {
+                setFormError('');
+                setFormStage('hub');
+              }
+            }}
+            disabled={!kelasDiniyah}
+            className={`flex items-center space-x-2 text-xs font-bold transition-colors ${
+              !kelasDiniyah ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'
+            } ${
+              formStage === 'hub' || formStage === 'edit_branch' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+              formStage === 'hub' || formStage === 'edit_branch'
+                ? 'bg-[#075B45] text-white shadow-2xs' 
+                : (allDelegates.length > 0 ? 'bg-emerald-100 text-[#075B45]' : 'bg-slate-100 text-slate-500')
+            }`}>
+              {allDelegates.length > 0 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
+            </div>
+            <span className="hidden sm:inline">2. Pilih Cabang Lomba</span>
+            <span className="sm:hidden">2. Cabang ({totalFilledBranches})</span>
+          </button>
+
+          <div className="flex-1 h-0.5 bg-slate-200 mx-1 max-w-[40px] sm:max-w-[70px]"></div>
+
+          {/* Step 3 */}
+          <button
+            type="button"
+            onClick={() => {
+              if (allDelegates.length > 0) {
+                setFormError('');
+                setFormStage('review');
+              }
+            }}
+            disabled={allDelegates.length === 0}
+            className={`flex items-center space-x-2 text-xs font-bold transition-colors ${
+              allDelegates.length === 0 ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'
+            } ${
+              formStage === 'review' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+              formStage === 'review' ? 'bg-[#075B45] text-white shadow-2xs' : 'bg-slate-100 text-slate-500'
+            }`}>
+              3
+            </div>
+            <span className="hidden sm:inline">3. Pratinjau & Kirim</span>
+            <span className="sm:hidden">3. Kirim</span>
+          </button>
+
+        </div>
+      </div>
+
+      {/* Global Validation Error Banner */}
+      {formError && (
+        <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-2xl flex items-start space-x-2.5 animate-fadeIn shadow-2xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <span className="leading-relaxed font-semibold">{formError}</span>
+        </div>
+      )}
+
+      {/* Global Rule Violation Warning Banner (Batas 2 Lomba per Santri) */}
+      {ruleViolations.length > 0 && (
+        <div className="p-3.5 bg-amber-50 border border-amber-300 text-amber-900 text-xs rounded-2xl space-y-1 animate-fadeIn shadow-2xs">
+          <div className="flex items-center space-x-2 font-bold text-amber-950">
+            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>Peringatan Aturan Panitia: 1 Santri Maksimal 2 Cabang Lomba</span>
+          </div>
+          <p className="text-[11.5px] leading-relaxed">
+            Ditemukan santri yang didaftarkan di lebih dari 2 cabang perlombaan (di luar CCM dan Kreasi Nadzom):
+          </p>
+          <ul className="list-disc pl-5 text-[11px] font-semibold space-y-0.5 pt-0.5 text-amber-900">
+            {ruleViolations.map((v, idx) => (
+              <li key={idx}>
+                <strong>{v.nama}</strong>: terdaftar di {v.count} cabang ({v.cabangList})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAHAP 1: VALIDASI IDENTITAS WALI KELAS & KELAS DINIYAH    */}
+      {/* ========================================================= */}
+      {formStage === 'identity' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeIn">
+          
+          {/* Header Hijau Tua Resmi */}
+          <div className="bg-[#075B45] text-white p-4 sm:p-5 border-b border-[#054736]">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
+                <UserCheck className="w-5 h-5 text-[#D9B45B]" />
+              </div>
+              <div>
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  Tahap 1: Identitas Wali Kelas & Kelas Diniyah
+                </h1>
+                <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
+                  Pilih nama Ustadz / Ustadzah pengampu kelas untuk memastikan delegasi terhubung resmi
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleProceedToHub} className="p-4 sm:p-6 space-y-5">
+            
+            {/* Input Pencarian Nama Wali Kelas */}
+            <div className="space-y-1.5" ref={waliDropdownRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
+                  Nama Ustadz / Ustadzah Wali Kelas <span className="text-rose-500">*</span>
+                </label>
+                {suggestedWali.length > 0 && (
+                  <span className="text-[10.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                    {query.length > 0 ? `${suggestedWali.length} guru ditemukan` : `${suggestedWali.length} asatidz terdaftar`}
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <UserCheck className="w-4 h-4 text-[#075B45]" />
+                </div>
+                <input
+                  ref={waliInputRef}
+                  type="text"
+                  placeholder="Ketik nama Ustadz / Ustadzah (contoh: Danil, Tri, Sofiana)..."
+                  value={waliInput}
+                  onChange={(e) => {
+                    setWaliInput(e.target.value);
+                    setShowSuggestions(true);
+                    setFormError('');
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onClick={() => setShowSuggestions(true)}
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs placeholder:text-slate-400 min-h-[46px]"
+                />
+
+                {waliInput && (
+                  <button
+                    type="button"
+                    onClick={handleClearWali}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    title="Hapus Nama"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Dropdown Saran Nama Guru */}
+                {showSuggestions && suggestedWali.length > 0 && (
+                  <div className="absolute z-30 left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden max-h-60 overflow-y-auto animate-fadeIn">
+                    <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-100 text-[10.5px] font-bold text-slate-500 flex items-center justify-between">
+                      <span>Pilih Nama Wali Kelas:</span>
+                      <span className="text-[10px] text-slate-400">Klik untuk memilih</span>
+                    </div>
+                    {suggestedWali.map((guru) => (
+                      <button
+                        key={guru.id || guru.nama}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectSuggestedGuru(guru)}
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 flex items-center justify-between transition-colors border-b border-slate-100 last:border-0 cursor-pointer group"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#075B45] truncate">
+                            {guru.nama}
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate">
+                            Kelas Diniyah: <strong>{guru.kelas}</strong>
+                          </p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${
+                          (guru.kelas || '').toLowerCase().includes('putri')
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}>
+                          {(guru.kelas || '').toLowerCase().includes('putri') ? 'Putri' : 'Putra'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Tombol Lewati di Atas Kanan (Hanya di langkah cabang 2 s.d. 11) */}
-            {currentStep >= 2 && currentStep <= 11 && (
+            {/* Kartu Konfirmasi Kelas Diniyah (Muncul Seketika Saat Guru Dipilih) */}
+            {kelasDiniyah ? (
+              <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3 animate-fadeIn">
+                <div className="flex items-center justify-between pb-2 border-b border-emerald-200/70">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#075B45]" />
+                    <span className="text-xs font-bold text-[#075B45]">
+                      Kelas Diniyah Terverifikasi Otomatis
+                    </span>
+                  </div>
+                  <span className={`text-[10.5px] font-black px-2.5 py-0.5 rounded-full border ${
+                    isPutriClass 
+                      ? 'bg-rose-100 text-rose-800 border-rose-200' 
+                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                  }`}>
+                    {isPutriClass ? 'Kelas Santri Putri' : 'Kelas Santri Putra'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60">
+                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Kelas Diniyah</span>
+                    <strong className="text-slate-900 text-xs sm:text-sm font-black">{kelasDiniyah}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60">
+                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Jenjang Tingkat</span>
+                    <strong className="text-slate-900 text-xs sm:text-sm font-black">{tingkatName || tingkat}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Status Kuota</span>
+                    <strong className="text-[#075B45] text-xs sm:text-sm font-black">Maks. 3 per Lomba</strong>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-600">
+                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <p>
+                  Silakan pilih nama Wali Kelas pada kolom di atas. Sistem akan mendeteksi jenjang tingkat dan nama <strong>Kelas Diniyah</strong> secara otomatis tanpa perlu diketik manual.
+                </p>
+              </div>
+            )}
+
+            {/* Input Nomor WhatsApp Wali Kelas */}
+            <div className="space-y-1.5">
+              <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
+                Nomor WhatsApp Wali Kelas <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Phone className="w-4 h-4 text-[#075B45]" />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="Contoh: 082298090464 atau 628..."
+                  value={nomorWA}
+                  onChange={(e) => setNomorWA(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs placeholder:text-slate-400 min-h-[46px]"
+                />
+              </div>
+              <p className="text-[10.5px] text-slate-500">
+                Digunakan panitia untuk mengirimkan nomor undian resmi dan konfirmasi pemanggilan giliran tampil.
+              </p>
+            </div>
+
+            {/* Tombol Lanjut ke Dasbor Cabang */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={!kelasDiniyah || !nomorWA.trim()}
+                className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer ${
+                  kelasDiniyah && nomorWA.trim()
+                    ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-98'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <span>Lanjut ke Pemilihan Cabang Lomba</span>
+                <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
+              </button>
+            </div>
+
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAHAP 2: HUB / DASBOR CABANG LOMBA (BEBAS TEBAK-TEBAKAN!) */}
+      {/* ========================================================= */}
+      {formStage === 'hub' && (
+        <div className="space-y-4 animate-fadeIn">
+          
+          {/* Header Info Kelas & Ringkasan Partisipasi */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kelas Diniyah:</span>
+                <span className="text-xs sm:text-sm font-black text-[#075B45]">{kelasDiniyah}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  isPutriClass ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+                }`}>
+                  {isPutriClass ? 'Putri' : 'Putra'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Wali Kelas: <strong>{waliInput}</strong> • No. WA: {nomorWA}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFormError('');
+                setFormStage('identity');
+              }}
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
+            >
+              Ubah Data Kelas
+            </button>
+          </div>
+
+          {/* Baris Status Progress Partisipasi Cabang */}
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs sm:text-sm font-black text-slate-900">
+                  {totalFilledBranches} dari 10 Cabang Terisi
+                </span>
+                <span className="text-[11px] font-bold text-[#075B45] bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                  {allDelegates.length} Total Delegasi
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Klik kartu cabang lomba di bawah untuk mengisi atau memperbarui nama santri delegasi kelas Anda.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleProceedToReview}
+              disabled={allDelegates.length === 0 || ruleViolations.length > 0}
+              className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm transition-all shrink-0 cursor-pointer ${
+                allDelegates.length > 0 && ruleViolations.length === 0
+                  ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-95'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+              }`}
+            >
+              <span>Pratinjau & Kirim Data ({allDelegates.length})</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#D9B45B]" />
+            </button>
+          </div>
+
+          {/* Grid 10 Kartu Cabang Lomba */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+            {branchesHubData.map((branch) => {
+              const isDisabled = !branch.isEligible;
+              return (
+                <div
+                  key={branch.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                    isDisabled
+                      ? 'bg-slate-50 border-slate-200 opacity-60'
+                      : branch.isFilled
+                        ? 'bg-white border-emerald-300 shadow-2xs hover:border-emerald-400'
+                        : 'bg-white border-slate-200 hover:border-emerald-200 shadow-2xs'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    {/* Header Kartu Cabang */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center shrink-0 ${
+                          branch.isFilled 
+                            ? 'bg-[#075B45] text-[#D9B45B]' 
+                            : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {branch.orderNumber}
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                          {branch.name}
+                        </h3>
+                      </div>
+
+                      {/* Badge Keterisian Kuota */}
+                      {isDisabled ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+                          Khusus Putra
+                        </span>
+                      ) : branch.isComplete ? (
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 flex items-center space-x-1">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                          <span>Lengkap ({branch.count})</span>
+                        </span>
+                      ) : branch.isFilled ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                          Terisi ({branch.count}/{branch.maxLimit})
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+                          Belum Terisi (0/{branch.maxLimit})
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Deskripsi Singkat */}
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                      {branch.description}
+                    </p>
+
+                    {/* Daftar Nama Santri Terisi di Kartu ini */}
+                    {branch.names.length > 0 && (
+                      <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/70 space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">Delegasi Terdaftar:</span>
+                        {branch.names.map((n, i) => (
+                          <div key={i} className="text-[11.5px] font-bold text-slate-800 truncate flex items-center space-x-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#075B45]"></span>
+                            <span>{n}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tombol Aksi Masuk ke Form Cabang */}
+                  <div className="pt-2 border-t border-slate-100">
+                    {isDisabled ? (
+                      <span className="text-[11px] text-slate-400 font-medium italic block text-center py-1">
+                        Cabang ini tidak dibuka untuk kelas putri
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBranchEdit(branch.id)}
+                        className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                          branch.isFilled
+                            ? 'bg-emerald-50 hover:bg-emerald-100 text-[#075B45] border border-emerald-200'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{branch.isFilled ? 'Ubah / Tambah Delegasi' : 'Isi Delegasi Cabang Ini'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sticky Bottom Action Bar di HP & Desktop */}
+          <div className="sticky bottom-2 z-20 bg-white/95 backdrop-blur-sm p-3 rounded-2xl border border-slate-200 shadow-lg flex items-center justify-between gap-3">
+            <div className="text-xs text-slate-700">
+              <span className="font-bold text-slate-900 block sm:inline">{allDelegates.length} Santri Terdaftar</span>
+              <span className="text-slate-400 hidden sm:inline"> • </span>
+              <span className="text-slate-500">{totalFilledBranches} cabang lomba</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleProceedToReview}
+              disabled={allDelegates.length === 0 || ruleViolations.length > 0}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 shadow-xs transition-all cursor-pointer ${
+                allDelegates.length > 0 && ruleViolations.length === 0
+                  ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-95'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+              }`}
+            >
+              <span>Lanjut ke Pratinjau & Kirim</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#D9B45B]" />
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAHAP 3: EDITOR KHUSUS CABANG YANG DIPILIH                */}
+      {/* ========================================================= */}
+      {formStage === 'edit_branch' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeIn space-y-0">
+          
+          {/* Header Editor Cabang */}
+          <div className="bg-[#075B45] text-white p-4 sm:p-5 border-b border-[#054736] flex items-center justify-between gap-2">
+            <div className="flex items-center space-x-3">
               <button
                 type="button"
-                onClick={handleSkipStep}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-black transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
-                title="Lewati cabang ini jika kelas tidak mengirimkan delegasi"
+                onClick={handleBackToHub}
+                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                title="Kembali ke Dasbor Cabang"
               >
-                <span>Lewati</span>
-                <FastForward className="w-3.5 h-3.5 text-amber-700" />
+                <ArrowLeft className="w-4 h-4" />
               </button>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9B45B] block">
+                  Cabang #{activeBranchObj.orderNumber || ''} • {kelasDiniyah}
+                </span>
+                <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  {activeBranchObj.fullName || activeBranchObj.name}
+                </h2>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBackToHub}
+              className="text-xs font-bold text-emerald-100 hover:text-white bg-white/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+            >
+              Dasbor Cabang
+            </button>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-5">
+            
+            {/* Box Petunjuk Cabang & Kuota */}
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-700">
+              <Info className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-bold text-slate-900">Ketentuan Cabang Ini:</p>
+                <p className="leading-relaxed text-slate-600">
+                  {activeBranchObj.description} Maksimal pengiriman adalah 3 santri atau regu resmi.
+                </p>
+              </div>
+            </div>
+
+            {/* FORM INPUT SESUAI TIPE CABANG */}
+            {/* 1. MQK (Individu 3 Slot) */}
+            {activeBranchId === 'mqk' && (
+              <div className="space-y-3.5">
+                {[0, 1, 2].map((idx) => {
+                  const notice = getStudentCrossNotice(mqkSantri[idx], 'MQK');
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Santri Delegasi #{idx + 1} {idx === 0 ? '(Utama)' : '(Cadangan / Delegasi Tambahan)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
+                        value={mqkSantri[idx]}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setMqkSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = val;
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
-          </div>
 
-          {/* Baris 2: Judul Langkah Cabang Lomba */}
-          <div>
-            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
-              {getStepTitle()}
-            </h2>
-          </div>
-        </div>
-
-        {/* Progress Bar Indikator Visual */}
-        <div className="w-full bg-slate-200 h-1.5">
-          <div 
-            className="bg-gradient-to-r from-[#075B45] to-[#D9B45B] h-1.5 transition-all duration-300"
-            style={{ width: `${(currentStep / 12) * 100}%` }}
-          ></div>
-        </div>
-
-        {/* Area Konten Form */}
-        <div className="p-4 sm:p-7">
-          
-          {/* ========================================================= */}
-          {/* LANGKAH 1: IDENTITAS WALI KELAS & KELAS DINIYAH           */}
-          {/* ========================================================= */}
-          {currentStep === 1 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-700">
-                <Info className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
-                  Ketik atau pilih nama Ustadz / Ustadzah Wali Kelas. Jenjang tingkat dan <strong>Kelas Diniyah</strong> santri akan terdeteksi otomatis dari database.
-                </p>
-              </div>
-
-              {/* Input Nama Wali Kelas dengan Dropdown Autocomplete */}
-              <div className="space-y-1.5" ref={waliDropdownRef}>
-                <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
-                    Nama Ustadz / Ustadzah Wali Kelas <span className="text-rose-500">*</span>
-                  </label>
-                  {showSuggestions && suggestedWali.length > 0 && (
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      {query.length > 0 ? `${suggestedWali.length} guru cocok` : `${suggestedWali.length} asatidz tersedia`}
-                    </span>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <UserCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                  </div>
-                  <input
-                    ref={waliInputRef}
-                    type="text"
-                    placeholder="Ketik atau pilih nama Ustadz / Ustadzah..."
-                    value={waliInput}
-                    onChange={(e) => {
-                      setWaliInput(e.target.value);
-                      setShowSuggestions(true);
-                      setFormError('');
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onClick={() => setShowSuggestions(true)}
-                    className="w-full pl-9 pr-9 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs placeholder:text-slate-400 min-h-[46px]"
-                  />
-
-                  {waliInput && (
-                    <button
-                      type="button"
-                      onClick={handleClearWali}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                      title="Hapus Nama"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-
-                  {/* Floating Suggestions List */}
-                  {showSuggestions && suggestedWali.length > 0 && (
-                    <div className="absolute z-30 left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden max-h-56 overflow-y-auto animate-fadeIn">
-                      <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-100 text-[10.5px] font-bold text-slate-500 flex items-center justify-between">
-                        <span>Daftar Wali Kelas Diniyah:</span>
-                        <span className="text-[10px] text-slate-400">Pilih untuk validasi</span>
-                      </div>
-                      {suggestedWali.map((guru) => (
-                        <button
-                          key={guru.id || guru.nama}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleSelectSuggestedGuru(guru)}
-                          className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50/80 flex items-center justify-between transition-colors border-b border-slate-100 last:border-0 cursor-pointer group"
-                        >
-                          <div className="min-w-0 pr-2">
-                            <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#075B45] truncate">
-                              {guru.nama}
-                            </p>
-                            <p className="text-[11px] text-slate-500 truncate">
-                              Kelas Diniyah: <span className="font-semibold text-slate-700">{guru.kelas}</span> • {(guru.tingkat || '').toUpperCase()}
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg shrink-0">
-                            Pilih
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* KOTAK NOTIFIKASI HIJAU: NAMA WALI KELAS TERVALIDASI */}
-              {tingkat && kelasDiniyah && (
-                <div className="p-3.5 sm:p-4 bg-emerald-50/90 border-2 border-emerald-400 rounded-2xl shadow-2xs space-y-2.5 animate-fadeIn">
-                  <div className="flex items-center space-x-2 text-emerald-900">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
-                    <span className="text-xs sm:text-sm font-black tracking-tight">
-                      Nama Wali Kelas Tervalidasi
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200">
-                    <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-200">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Jenjang Tingkat</span>
-                      <span className="text-xs sm:text-sm font-black text-emerald-900 block truncate">{tingkatName || tingkat.toUpperCase()}</span>
-                    </div>
-                    <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-200">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Kelas Diniyah</span>
-                      <span className="text-xs sm:text-sm font-black text-[#075B45] block truncate">{kelasDiniyah}</span>
-                    </div>
-                    <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-200">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Kategori Delegasi</span>
-                      <span className="text-xs sm:text-sm font-black text-slate-800 block truncate">
-                        {jenisKelamin === 'P' ? 'Santri Putri' : 'Santri Putra'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Input Nomor WhatsApp */}
-              <div className="space-y-1.5 pt-1">
-                <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
-                  Nomor WhatsApp Wali Kelas <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="tel"
-                    placeholder="Contoh: 081234567890"
-                    value={nomorWA}
-                    onChange={(e) => {
-                      setNomorWA(e.target.value);
-                      setFormError('');
-                    }}
-                    className="w-full pl-9 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs min-h-[46px]"
-                  />
-                </div>
-                <p className="text-[10.5px] text-slate-400">
-                  Untuk konfirmasi pemanggilan dan jadwal penampilan perlombaan.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* LANGKAH 2: MUSABAQOH QIRO'ATIL KUTUB (MQK)               */}
-          {/* ========================================================= */}
-          {currentStep === 2 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: Musabaqoh Qiro'atil Kutub (MQK)
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}. Boleh mengisi 1, 2, atau 3 kolom santri di bawah ini:
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut MQK)' : '(Opsional)'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
-                      value={mqkSantri[idx] || ''}
-                      onChange={(e) => {
-                        const updated = [...mqkSantri];
-                        updated[idx] = e.target.value.toUpperCase();
-                        setMqkSantri(updated);
-                        setFormError('');
-                      }}
-                      className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* LANGKAH 3: PIDATO (3 BAHASA)                             */}
-          {/* ========================================================= */}
-          {currentStep === 3 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: PIDATO (3 Pilihan Bahasa)
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi. Tentukan pilihan bahasa (Indonesia, Arab, atau Inggris) untuk setiap santri:
-                </p>
-              </div>
-
+            {/* 2. PIDATO (3 Bahasa) */}
+            {activeBranchId === 'pidato' && (
               <div className="space-y-3.5">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="p-3 bg-slate-50/70 border border-slate-200 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">
-                        Santri Delegasi {idx + 1}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500">
-                        Pilihan Bahasa Wajib
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                      <div className="sm:col-span-7">
-                        <input
-                          type="text"
-                          placeholder={`Nama lengkap santri ${idx + 1}...`}
-                          value={pidatoSantri[idx]?.nama || ''}
-                          onChange={(e) => {
-                            const updated = [...pidatoSantri];
-                            updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
-                            setPidatoSantri(updated);
-                            setFormError('');
-                          }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
-                        />
-                      </div>
-                      <div className="sm:col-span-5">
+                {pidatoSantri.map((item, idx) => {
+                  const notice = getStudentCrossNotice(item.nama, 'PIDATO');
+                  return (
+                    <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900">Slot Pidato #{idx + 1}</span>
                         <select
-                          value={pidatoSantri[idx]?.bahasa || 'Bahasa Indonesia'}
+                          value={item.bahasa}
                           onChange={(e) => {
-                            const updated = [...pidatoSantri];
-                            updated[idx] = { ...updated[idx], bahasa: e.target.value };
-                            setPidatoSantri(updated);
+                            const val = e.target.value;
+                            setPidatoSantri(prev => {
+                              const arr = [...prev];
+                              arr[idx] = { ...arr[idx], bahasa: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-800 bg-white shadow-2xs min-h-[42px] cursor-pointer"
+                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#075B45] outline-none"
                         >
                           {PILIHAN_BAHASA.map(b => (
                             <option key={b} value={b}>{b}</option>
                           ))}
                         </select>
                       </div>
+                      <input
+                        type="text"
+                        placeholder={`Nama santri pidato (${item.bahasa})...`}
+                        value={item.nama}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setPidatoSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = { ...arr[idx], nama: val };
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 4: MC / PEMBAWA ACARA (3 BAHASA)                 */}
-          {/* ========================================================= */}
-          {currentStep === 4 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: MC / Pembawa Acara (3 Pilihan Bahasa)
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi. Tentukan pilihan bahasa (Indonesia, Arab, atau Inggris) untuk setiap santri:
-                </p>
-              </div>
-
+            {/* 3. MC (3 Bahasa) */}
+            {activeBranchId === 'mc' && (
               <div className="space-y-3.5">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="p-3 bg-slate-50/70 border border-slate-200 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">
-                        Santri Delegasi {idx + 1}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500">
-                        Pilihan Bahasa MC
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                      <div className="sm:col-span-7">
-                        <input
-                          type="text"
-                          placeholder={`Nama lengkap santri ${idx + 1}...`}
-                          value={mcSantri[idx]?.nama || ''}
-                          onChange={(e) => {
-                            const updated = [...mcSantri];
-                            updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
-                            setMcSantri(updated);
-                            setFormError('');
-                          }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
-                        />
-                      </div>
-                      <div className="sm:col-span-5">
+                {mcSantri.map((item, idx) => {
+                  const notice = getStudentCrossNotice(item.nama, 'MC');
+                  return (
+                    <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900">Slot MC #{idx + 1}</span>
                         <select
-                          value={mcSantri[idx]?.bahasa || 'Bahasa Indonesia'}
+                          value={item.bahasa}
                           onChange={(e) => {
-                            const updated = [...mcSantri];
-                            updated[idx] = { ...updated[idx], bahasa: e.target.value };
-                            setMcSantri(updated);
+                            const val = e.target.value;
+                            setMcSantri(prev => {
+                              const arr = [...prev];
+                              arr[idx] = { ...arr[idx], bahasa: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-800 bg-white shadow-2xs min-h-[42px] cursor-pointer"
+                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#075B45] outline-none"
                         >
                           {PILIHAN_BAHASA.map(b => (
                             <option key={b} value={b}>{b}</option>
                           ))}
                         </select>
                       </div>
+                      <input
+                        type="text"
+                        placeholder={`Nama santri pembawa acara (${item.bahasa})...`}
+                        value={item.nama}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setMcSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = { ...arr[idx], nama: val };
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 5: SYARHIL QUR'AN (REGU + TOMBOL TAMBAH REGU)     */}
-          {/* ========================================================= */}
-          {currentStep === 5 && (
-            <div className="space-y-4 animate-fadeIn">
-              
-              {/* Header Box dengan tombol Tambah Regu yang responsif dan lega di HP */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                    Cabang: Syarhil Qur'an (Per Regu)
-                  </h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                    1 Regu terdiri dari 3 santri: Pensyarah, Tilawah, dan Terjemah.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddSyarhilRegu}
-                  className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-300 text-[#075B45] text-xs font-bold shrink-0 cursor-pointer shadow-2xs transition-all self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4 text-[#075B45]" />
-                  <span>Tambah Regu</span>
-                </button>
-              </div>
-
+            {/* 4. SYARHIL QUR'AN (Beregu) */}
+            {activeBranchId === 'syarhil' && (
               <div className="space-y-4">
                 {syarhilRegu.map((regu, rIdx) => (
-                  <div key={rIdx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                      <span className="text-xs font-black text-[#075B45]">
-                        {regu.namaRegu || `Regu ${rIdx + 1}`}
+                  <div key={rIdx} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900">
+                        {regu.namaRegu || `Regu ${rIdx + 1}`} (3 Anggota)
                       </span>
                       {syarhilRegu.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => handleRemoveSyarhilRegu(rIdx)}
-                          className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 flex items-center space-x-1 cursor-pointer"
+                          onClick={() => setSyarhilRegu(prev => prev.filter((_, i) => i !== rIdx))}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Hapus Regu</span>
+                          Hapus Regu Ini
                         </button>
                       )}
                     </div>
 
                     <div className="space-y-2">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          1. Nama Pensyarah (Pidato Isi)
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">1. Pensyarah (Orator):</label>
                         <input
                           type="text"
                           placeholder="Nama lengkap pensyarah..."
-                          value={regu.pensyarah || ''}
+                          value={regu.pensyarah}
                           onChange={(e) => {
-                            const updated = [...syarhilRegu];
-                            updated[rIdx].pensyarah = e.target.value.toUpperCase();
-                            setSyarhilRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setSyarhilRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], pensyarah: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          2. Nama Qori' / Qori'ah (Tilawah)
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">2. Tilawah (Qori / Qoriah):</label>
                         <input
                           type="text"
                           placeholder="Nama lengkap tilawah..."
-                          value={regu.tilawah || ''}
+                          value={regu.tilawah}
                           onChange={(e) => {
-                            const updated = [...syarhilRegu];
-                            updated[rIdx].tilawah = e.target.value.toUpperCase();
-                            setSyarhilRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setSyarhilRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], tilawah: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          3. Nama Sari Tilawah / Terjemah
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">3. Terjemah (Sari Tilawah):</label>
                         <input
                           type="text"
-                          placeholder="Nama lengkap penerjemah..."
-                          value={regu.terjemah || ''}
+                          placeholder="Nama lengkap terjemah..."
+                          value={regu.terjemah}
                           onChange={(e) => {
-                            const updated = [...syarhilRegu];
-                            updated[rIdx].terjemah = e.target.value.toUpperCase();
-                            setSyarhilRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setSyarhilRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], terjemah: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 6: TILAWAH AL-QUR'AN                              */}
-          {/* ========================================================= */}
-          {currentStep === 6 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: Tilawah Al-Qur'an
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}. Boleh mengisi 1, 2, atau 3 kolom santri:
-                </p>
+                {syarhilRegu.length < 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setSyarhilRegu(prev => [...prev, { namaRegu: `Regu ${prev.length + 1}`, pensyarah: '', tilawah: '', terjemah: '' }])}
+                    className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#075B45]/40 text-[#075B45] font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Regu Syarhil 2</span>
+                  </button>
+                )}
               </div>
+            )}
 
-              <div className="space-y-3">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Tilawah)' : '(Opsional)'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
-                      value={tilawahSantri[idx] || ''}
-                      onChange={(e) => {
-                        const updated = [...tilawahSantri];
-                        updated[idx] = e.target.value.toUpperCase();
-                        setTilawahSantri(updated);
-                        setFormError('');
-                      }}
-                      className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* LANGKAH 7: KHOT / KALIGRAFI                               */}
-          {/* ========================================================= */}
-          {currentStep === 7 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: Khot / Kaligrafi
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}:
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Kaligrafi)' : '(Opsional)'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
-                      value={kaligrafiSantri[idx] || ''}
-                      onChange={(e) => {
-                        const updated = [...kaligrafiSantri];
-                        updated[idx] = e.target.value.toUpperCase();
-                        setKaligrafiSantri(updated);
-                        setFormError('');
-                      }}
-                      className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* LANGKAH 8: MHQ (MUSABAQOH HIFDZIL QUR'AN)                */}
-          {/* ========================================================= */}
-          {currentStep === 8 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: MHQ (Musabaqoh Hifdzil Qur'an)
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi. Pilih kategori juz (5, 10, 15, 20, 25, atau 30 Juz) untuk tiap santri:
-                </p>
-              </div>
-
+            {/* 5. TILAWAH */}
+            {activeBranchId === 'tilawah' && (
               <div className="space-y-3.5">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="p-3 bg-slate-50/70 border border-slate-200 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">
-                        Santri Hafalan {idx + 1}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500">
-                        Pilihan Kategori Juz
-                      </span>
+                {[0, 1, 2].map((idx) => {
+                  const notice = getStudentCrossNotice(tilawahSantri[idx], 'Tilawah');
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Santri Tilawah #{idx + 1}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Ketik nama lengkap santri tilawah ${idx + 1}...`}
+                        value={tilawahSantri[idx]}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setTilawahSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = val;
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                      <div className="sm:col-span-7">
-                        <input
-                          type="text"
-                          placeholder={`Nama lengkap santri ${idx + 1}...`}
-                          value={mhqSantri[idx]?.nama || ''}
-                          onChange={(e) => {
-                            const updated = [...mhqSantri];
-                            updated[idx] = { ...updated[idx], nama: e.target.value.toUpperCase() };
-                            setMhqSantri(updated);
-                            setFormError('');
-                          }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
-                        />
-                      </div>
-                      <div className="sm:col-span-5">
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 6. KHOT / KALIGRAFI */}
+            {activeBranchId === 'kaligrafi' && (
+              <div className="space-y-3.5">
+                {[0, 1, 2].map((idx) => {
+                  const notice = getStudentCrossNotice(kaligrafiSantri[idx], 'Khot / Kaligrafi');
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Santri Khot / Kaligrafi #{idx + 1}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Ketik nama lengkap santri kaligrafi ${idx + 1}...`}
+                        value={kaligrafiSantri[idx]}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setKaligrafiSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = val;
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 7. MHQ (Musabaqoh Hifdzil Qur'an) */}
+            {activeBranchId === 'mhq' && (
+              <div className="space-y-3.5">
+                {mhqSantri.map((item, idx) => {
+                  const notice = getStudentCrossNotice(item.nama, 'MHQ (Musabaqoh Hifdzil Qur\'an)');
+                  return (
+                    <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900">Slot MHQ #{idx + 1}</span>
                         <select
-                          value={mhqSantri[idx]?.juz || '5 Juz'}
+                          value={item.juz}
                           onChange={(e) => {
-                            const updated = [...mhqSantri];
-                            updated[idx] = { ...updated[idx], juz: e.target.value };
-                            setMhqSantri(updated);
+                            const val = e.target.value;
+                            setMhqSantri(prev => {
+                              const arr = [...prev];
+                              arr[idx] = { ...arr[idx], juz: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-800 bg-white shadow-2xs min-h-[42px] cursor-pointer"
+                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#075B45] outline-none"
                         >
                           {PILIHAN_JUZ_MHQ.map(j => (
                             <option key={j} value={j}>{j}</option>
                           ))}
                         </select>
                       </div>
+                      <input
+                        type="text"
+                        placeholder={`Nama santri hafalan (${item.juz})...`}
+                        value={item.nama}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setMhqSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = { ...arr[idx], nama: val };
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 9: ADZAN (KHUSUS PUTRA)                          */}
-          {/* ========================================================= */}
-          {currentStep === 9 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: Lomba Adzan
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Maksimal 3 santri delegasi dari Kelas Diniyah {kelasDiniyah}:
-                </p>
+            {/* 8. ADZAN (Khusus Putra) */}
+            {activeBranchId === 'adzan' && !isPutriClass && (
+              <div className="space-y-3.5">
+                {[0, 1, 2].map((idx) => {
+                  const notice = getStudentCrossNotice(adzanSantri[idx], 'Adzan');
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Santri Adzan #{idx + 1}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Ketik nama santri adzan ${idx + 1}...`}
+                        value={adzanSantri[idx]}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setAdzanSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = val;
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+            )}
 
-              {/* Notifikasi jika kelas santri putri */}
-              {isPutriClass && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start space-x-2">
-                  <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">
-                    Cabang lomba Adzan dikhususkan untuk <strong>Santri Putra</strong>. Untuk Kelas Diniyah Putri, silakan klik tombol <strong>"Lewati"</strong> di bagian kanan atas.
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {[0, 1, 2].map((idx) => (
-                  <div key={idx} className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Nama Lengkap Santri {idx + 1} {idx === 0 ? '(Wajib jika ikut Adzan)' : '(Opsional)'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
-                      value={adzanSantri[idx] || ''}
-                      onChange={(e) => {
-                        const updated = [...adzanSantri];
-                        updated[idx] = e.target.value.toUpperCase();
-                        setAdzanSantri(updated);
-                        setFormError('');
-                      }}
-                      className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* LANGKAH 10: CERDAS CERMAT MUSABAQOH (CCM)                */}
-          {/* ========================================================= */}
-          {currentStep === 10 && (
-            <div className="space-y-4 animate-fadeIn">
-              
-              {/* Header Box dengan tombol Tambah Regu yang responsif dan lega di HP */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                    Cabang: Cerdas Cermat Musabaqoh (CCM)
-                  </h3>
-                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                    1 Regu terdiri dari 3 santri. Tersedia tombol Tambah Regu jika mengirim lebih dari 1 regu:
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddCcmRegu}
-                  className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-300 text-[#075B45] text-xs font-bold shrink-0 cursor-pointer shadow-2xs transition-all self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4 text-[#075B45]" />
-                  <span>Tambah Regu</span>
-                </button>
-              </div>
-
+            {/* 9. CCM (Beregu 3 Orang) */}
+            {activeBranchId === 'ccm' && (
               <div className="space-y-4">
                 {ccmRegu.map((regu, rIdx) => (
-                  <div key={rIdx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                      <span className="text-xs font-black text-[#075B45]">
-                        {regu.namaRegu || `Regu ${rIdx + 1}`}
+                  <div key={rIdx} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900">
+                        {regu.namaRegu || `Regu ${rIdx + 1}`} (3 Anggota)
                       </span>
                       {ccmRegu.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => handleRemoveCcmRegu(rIdx)}
-                          className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 flex items-center space-x-1 cursor-pointer"
+                          onClick={() => setCcmRegu(prev => prev.filter((_, i) => i !== rIdx))}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Hapus Regu</span>
+                          Hapus Regu Ini
                         </button>
                       )}
                     </div>
 
                     <div className="space-y-2">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          Nama Anggota 1 (Juru Bicara / Ketua Regu)
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">Anggota 1:</label>
                         <input
                           type="text"
-                          placeholder="Nama anggota 1..."
-                          value={regu.anggota1 || ''}
+                          placeholder="Nama lengkap anggota 1..."
+                          value={regu.anggota1}
                           onChange={(e) => {
-                            const updated = [...ccmRegu];
-                            updated[rIdx].anggota1 = e.target.value.toUpperCase();
-                            setCcmRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setCcmRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], anggota1: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          Nama Anggota 2
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">Anggota 2:</label>
                         <input
                           type="text"
-                          placeholder="Nama anggota 2..."
-                          value={regu.anggota2 || ''}
+                          placeholder="Nama lengkap anggota 2..."
+                          value={regu.anggota2}
                           onChange={(e) => {
-                            const updated = [...ccmRegu];
-                            updated[rIdx].anggota2 = e.target.value.toUpperCase();
-                            setCcmRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setCcmRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], anggota2: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          Nama Anggota 3
-                        </label>
+                        <label className="text-[11px] font-bold text-slate-700 block">Anggota 3:</label>
                         <input
                           type="text"
-                          placeholder="Nama anggota 3..."
-                          value={regu.anggota3 || ''}
+                          placeholder="Nama lengkap anggota 3..."
+                          value={regu.anggota3}
                           onChange={(e) => {
-                            const updated = [...ccmRegu];
-                            updated[rIdx].anggota3 = e.target.value.toUpperCase();
-                            setCcmRegu(updated);
-                            setFormError('');
+                            const val = e.target.value.toUpperCase();
+                            setCcmRegu(prev => {
+                              const arr = [...prev];
+                              arr[rIdx] = { ...arr[rIdx], anggota3: val };
+                              return arr;
+                            });
                           }}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase font-semibold bg-white"
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 11: KREASI NADZOM                                 */}
-          {/* ========================================================= */}
-          {currentStep === 11 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Cabang: Kreasi Nadzom (Per Regu)
-                </h3>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Isikan nama ketua tim / koordinator regu dan jumlah total anggota yang tampil:
-                </p>
+                {ccmRegu.length < 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setCcmRegu(prev => [...prev, { namaRegu: `Regu ${prev.length + 1}`, anggota1: '', anggota2: '', anggota3: '' }])}
+                    className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#075B45]/40 text-[#075B45] font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Regu CCM 2</span>
+                  </button>
+                )}
               </div>
+            )}
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-800 block mb-1">
-                    Nama Ketua / Koordinator Regu <span className="text-rose-500">*</span>
+            {/* 10. KREASI NADZOM */}
+            {activeBranchId === 'kreasi_nadzom' && (
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 block">
+                    Nama Ketua Regu / Tim Kreasi Nadzom <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="Nama lengkap ketua regu..."
-                    value={kreasiNadzom.ketua || ''}
-                    onChange={(e) => {
-                      setKreasiNadzom(prev => ({ ...prev, ketua: e.target.value.toUpperCase() }));
-                      setFormError('');
-                    }}
-                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-bold text-slate-900 bg-white shadow-2xs min-h-[44px]"
+                    placeholder="Nama ketua kelompok..."
+                    value={kreasiNadzom.ketua}
+                    onChange={(e) => setKreasiNadzom(prev => ({ ...prev, ketua: e.target.value.toUpperCase() }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-slate-800 block mb-1">
-                    Berapa Jumlah Anggota Regu?
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 block">
+                    Estimasi Jumlah Total Anggota Regu
                   </label>
                   <input
                     type="text"
-                    placeholder="Contoh: 6 orang, 8 orang, atau 10 orang"
-                    value={kreasiNadzom.jumlahAnggota || ''}
+                    placeholder="Contoh: 12 santri"
+                    value={kreasiNadzom.jumlahAnggota}
                     onChange={(e) => setKreasiNadzom(prev => ({ ...prev, jumlahAnggota: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs min-h-[42px]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white"
                   />
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                    Rincian Nama Anggota (Opsional)
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 block">
+                    Catatan Judul Nadzom / Instrumen Tambahan
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Tuliskan nama anggota regu jika diperlukan..."
-                    value={kreasiNadzom.catatan || ''}
+                    placeholder="Contoh: Nadzom Imrithi Bab Kalam, iringan hadroh..."
+                    value={kreasiNadzom.catatan}
                     onChange={(e) => setKreasiNadzom(prev => ({ ...prev, catatan: e.target.value }))}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs text-slate-800 bg-white shadow-2xs"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white resize-none"
                   />
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ========================================================= */}
-          {/* LANGKAH 12: RINGKASAN & KIRIM SEMUA SEKALIGUS            */}
-          {/* ========================================================= */}
-          {currentStep === 12 && (
-            <div className="space-y-4 animate-fadeIn">
-              
-              {/* Header Rekap Kelas Diniyah - Rapi, Proporsional & Elegan di Mobile */}
-              <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border border-emerald-300/80 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3">
-                {/* Baris Atas: Label Rekapitulasi & Stat Badge Total Santri */}
-                <div className="flex items-center justify-between gap-2 border-b border-emerald-200/60 pb-2.5">
-                  <div className="flex items-center space-x-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-950 truncate">
-                      Rekapitulasi Pendaftaran Kelas
-                    </span>
-                  </div>
-
-                  <div className="flex items-center space-x-1.5 bg-[#075B45] text-white px-2.5 py-1 rounded-xl text-xs font-black shadow-2xs shrink-0">
-                    <Users className="w-3.5 h-3.5 text-[#D9B45B]" />
-                    <span>{allDelegates.length} Total Santri</span>
-                  </div>
-                </div>
-
-                {/* Baris Bawah: Identitas Kelas Diniyah & Wali Kelas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-100 flex items-center space-x-2.5 shadow-2xs">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-800 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-4 h-4 text-emerald-800" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Kelas Diniyah
-                      </span>
-                      <p className="font-black text-[#075B45] text-xs sm:text-sm truncate">
-                        {kelasDiniyah}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/90 p-2.5 rounded-xl border border-emerald-100 flex items-center space-x-2.5 shadow-2xs">
-                    <div className="w-8 h-8 rounded-lg bg-teal-100/70 text-teal-800 flex items-center justify-center shrink-0">
-                      <UserCheck className="w-4 h-4 text-teal-800" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Wali Kelas Pengampu
-                      </span>
-                      <p className="font-bold text-slate-800 text-xs truncate">
-                        {waliInput}
-                      </p>
-                      {nomorWA && (
-                        <span className="text-[10.5px] font-mono text-slate-500 block truncate">
-                          WA: {nomorWA}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Ringkasan 10 Cabang: Terisi vs Dilewati */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-[9.5px] font-bold text-emerald-800 block uppercase">Cabang Diikuti</span>
-                    <span className="text-xs font-black text-emerald-950">{filledBranchesCount} dari 10 Cabang</span>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 flex items-center space-x-2">
-                  <FastForward className="w-4 h-4 text-amber-700 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-[9.5px] font-bold text-amber-800 block uppercase">Cabang Dilewati</span>
-                    <span className="text-xs font-black text-amber-950">{skippedBranchesCount} Cabang</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filter Tab Ringkasan (Smooth Horizontal Scroll di Mobile) */}
-              <div className="flex items-center space-x-1.5 pt-1 overflow-x-auto pb-1 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setSummaryFilterTab('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                    summaryFilterTab === 'all'
-                      ? 'bg-[#075B45] text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Semua Cabang (10)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSummaryFilterTab('filled')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                    summaryFilterTab === 'filled'
-                      ? 'bg-emerald-800 text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Terisi ({filledBranchesCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSummaryFilterTab('skipped')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                    summaryFilterTab === 'skipped'
-                      ? 'bg-amber-800 text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Dilewati ({skippedBranchesCount})
-                </button>
-              </div>
-
-              {/* Daftar Seluruh 10 Cabang (Terisi & Dilewati) */}
-              <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                {branchesSummary
-                  .filter(b => {
-                    if (summaryFilterTab === 'filled') return b.isFilled;
-                    if (summaryFilterTab === 'skipped') return !b.isFilled;
-                    return true;
-                  })
-                  .map((b) => (
-                    <div 
-                      key={b.step} 
-                      className={`p-3 rounded-2xl border transition-all ${
-                        b.isFilled
-                          ? 'bg-white border-emerald-300 shadow-2xs'
-                          : 'bg-slate-50/80 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
-                        <div className="flex items-start space-x-1.5 min-w-0 flex-1">
-                          {b.isFilled ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                          ) : (
-                            <MinusCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                          )}
-                          <div className="min-w-0">
-                            <h4 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
-                              {b.name}
-                            </h4>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-1.5 shrink-0">
-                          {b.isFilled ? (
-                            <span className="text-[9.5px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
-                              {b.delegates.length} Santri
-                            </span>
-                          ) : (
-                            <span className="text-[9.5px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md">
-                              Dilewati
-                            </span>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCurrentStep(b.step);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className={`text-[10.5px] font-bold px-2 py-1 rounded-lg flex items-center space-x-1 transition-all cursor-pointer ${
-                              b.isFilled
-                                ? 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
-                                : 'text-[#075B45] bg-emerald-50/80 hover:bg-emerald-100 font-bold'
-                            }`}
-                          >
-                            <Edit3 className="w-3 h-3" />
-                            <span>{b.isFilled ? 'Ubah' : 'Isi'}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Detail Delegasi Santri */}
-                      {b.isFilled ? (
-                        <div className="pt-2 space-y-1">
-                          {b.delegates.map((d, dIdx) => (
-                            <div key={dIdx} className="flex items-center justify-between text-xs text-slate-700 bg-slate-50/70 px-2.5 py-1 rounded-lg">
-                              <span className="font-bold text-slate-900 truncate">{dIdx + 1}. {d.nama}</span>
-                              <span className="text-[10.5px] text-slate-500 shrink-0 ml-2">{d.detail}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="pt-1.5 text-[11px] text-slate-400 italic">
-                          Cabang ini dilewati (Kelas Diniyah tidak mengirimkan delegasi).
-                        </p>
-                      )}
-                    </div>
-                  ))}
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p className="font-bold text-slate-800">Ketentuan Pengiriman Sekali Kirim:</p>
-                <p>Seluruh santri pada cabang yang terisi di atas akan langsung didaftarkan serentak ke database panitia dalam 1 kali kirim tanpa perlu mengisi ulang formulir.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Form Error Alert */}
-          {formError && (
-            <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start space-x-2 animate-fadeIn">
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <span className="leading-tight font-semibold">{formError}</span>
-            </div>
-          )}
-
-          {/* Hint jika langkah cabang masih kosong */}
-          {!isStepValid && currentStep >= 2 && currentStep <= 11 && (
-            <div className="mt-3 p-2.5 rounded-xl bg-amber-50/80 border border-amber-300 text-[11px] text-amber-900 flex items-center justify-between gap-2 animate-fadeIn">
-              <span className="leading-tight">
-                Kolom santri masih kosong. Isi nama santri untuk melanjutkan, atau:
-              </span>
+            {/* Tombol Aksi Editor Cabang */}
+            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
               <button
                 type="button"
-                onClick={handleSkipStep}
-                className="underline font-bold text-amber-950 hover:text-black shrink-0 cursor-pointer"
+                onClick={handleClearCurrentBranch}
+                className="px-3.5 py-2.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Lewati Cabang Ini
+                Kosongkan Cabang Ini
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleNextBranchInSequence}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Lanjut ke Cabang Berikutnya
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBackToHub}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                >
+                  Simpan & Selesai
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Tombol Navigasi Bawah: SEBELUMNYA & BERIKUTNYA / KIRIM (RESPONSIF MOBILE) */}
-          <div className="pt-4 border-t border-slate-200 mt-6">
-            {currentStep === 12 ? (
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={handlePrevStep}
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Sebelumnya</span>
-                </button>
+          </div>
+        </div>
+      )}
 
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  disabled={isSubmitting || allDelegates.length === 0}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] bg-gradient-to-r from-[#075B45] to-[#054736] hover:from-[#054736] hover:to-[#033024] text-white border border-[#D9B45B]/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center space-x-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Menyimpan Seluruh Delegasi...</span>
-                    </span>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 text-[#D9B45B]" />
-                      <span className="text-center">Kirim Semua Pendaftaran Sekaligus ({allDelegates.length} Santri)</span>
-                    </>
-                  )}
-                </button>
+      {/* ========================================================= */}
+      {/* TAHAP 4: PRATINJAU AKHIR & PENGIRIMAN KOLEKTIF            */}
+      {/* ========================================================= */}
+      {formStage === 'review' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeIn space-y-0">
+          
+          {/* Header Hijau Tua Resmi */}
+          <div className="bg-[#075B45] text-white p-4 sm:p-5 border-b border-[#054736]">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
+                <Send className="w-5 h-5 text-[#D9B45B]" />
               </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                {currentStep > 1 && (
-                  <button
-                    type="button"
-                    onClick={handlePrevStep}
-                    className="px-3.5 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm flex items-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Sebelumnya</span>
-                  </button>
-                )}
-
-                <div className="ml-auto flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    disabled={!isStepValid}
-                    className={`px-5 py-2.5 sm:px-7 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center space-x-2 transition-all min-h-[44px] ${
-                      isStepValid
-                        ? 'bg-[#075B45] hover:bg-[#054736] text-white cursor-pointer active:scale-95'
-                        : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
-                    }`}
-                    title={!isStepValid ? 'Isi minimal 1 santri atau klik tombol Lewati di kanan atas' : 'Lanjut ke langkah berikutnya'}
-                  >
-                    <span>{currentStep === 1 ? 'Lanjutkan ke Pengisian Delegasi' : 'Berikutnya'}</span>
-                    <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
-                  </button>
-                </div>
+              <div>
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  Tahap 3: Pratinjau & Konfirmasi Pengiriman Kolektif
+                </h1>
+                <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
+                  Periksa seluruh data delegasi santri sebelum disimpan permanen ke database panitia
+                </p>
               </div>
-            )}
+            </div>
           </div>
 
+          <div className="p-4 sm:p-6 space-y-5">
+            
+            {/* Rangkuman Metadata Kelas */}
+            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-0.5 text-xs">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Kelas Diniyah Terdaftar:</span>
+                <p className="font-black text-slate-900 text-sm">{kelasDiniyah}</p>
+                <p className="text-slate-600">
+                  Wali Kelas: <strong>{waliInput}</strong> • Kontak: {nomorWA}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[11px] font-black text-emerald-900 bg-white border border-emerald-200 px-3 py-1 rounded-full inline-block shadow-2xs">
+                  {allDelegates.length} Total Santri Delegasi
+                </span>
+              </div>
+            </div>
+
+            {/* Daftar Rincian Delegasi per Cabang Lomba */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs sm:text-[13px] font-black text-slate-900">
+                  Rincian Santri Terdaftar ({totalFilledBranches} Cabang Lomba):
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setFormStage('hub')}
+                  className="text-xs font-bold text-[#075B45] hover:underline cursor-pointer"
+                >
+                  Tambah / Ubah Cabang
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {branchesHubData.filter(b => b.isFilled).map((branch) => (
+                  <div key={branch.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-5 h-5 rounded-md bg-[#075B45] text-white text-[10px] font-bold flex items-center justify-center">
+                          {branch.orderNumber}
+                        </span>
+                        <strong className="text-xs text-slate-900">{branch.name}</strong>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBranchEdit(branch.id)}
+                        className="text-[11px] font-bold text-[#075B45] hover:underline cursor-pointer flex items-center space-x-1"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Ubah</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1 pl-7">
+                      {branch.names.map((n, i) => (
+                        <div key={i} className="text-xs text-slate-700 flex items-center space-x-1.5">
+                          <span className="text-slate-400">•</span>
+                          <span className="font-bold text-slate-800">{n}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Checklist Pernyataan Kebenaran Data */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+              <p className="font-bold text-slate-800">Ketentuan Resmi Panitia:</p>
+              <p className="leading-relaxed">
+                Data yang dikirimkan akan langsung tersimpan ke Google Sheets panitia. Santri yang didaftarkan wajib mematuhi ketentuan tata tertib dan hadir saat pemanggilan nomor urut undian perlombaan.
+              </p>
+            </div>
+
+            {/* Tombol Aksi Final: Kembali ke Hub vs Kirim Kolektif */}
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => setFormStage('hub')}
+                disabled={isSubmitting}
+                className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 transition-colors cursor-pointer min-h-[44px]"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali ke Dasbor Cabang</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitAll}
+                disabled={isSubmitting || allDelegates.length === 0 || ruleViolations.length > 0}
+                className={`px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] ${
+                  allDelegates.length > 0 && ruleViolations.length === 0
+                    ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-98'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {isSubmitting ? (
+                  <span className="inline-flex items-center space-x-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>Menyimpan ke Google Sheets...</span>
+                  </span>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 text-[#D9B45B]" />
+                    <span>Kirim Semua Pendaftaran Sekaligus ({allDelegates.length} Santri)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }
