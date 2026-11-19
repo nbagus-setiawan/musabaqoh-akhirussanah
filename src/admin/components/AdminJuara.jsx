@@ -277,7 +277,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Penetapan juara cabang lomba dan akumulasi skor per rombel kelas untuk penentuan Juara Umum Musabaqah.
+              Penetapan juara cabang lomba dan akumulasi skor per Kelas Diniyah untuk penentuan Juara Umum Musabaqah.
             </p>
           </div>
         </div>
@@ -401,7 +401,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               {stats.topClass ? stats.topClass.namaKelas : 'Belum Ada'}
             </span>
             <span className="text-[11px] font-bold text-amber-700 mt-0.5 block">
-              {stats.topClass ? `${stats.topClass.totalPoin} Poin (🥇 ${stats.topClass.juara1})` : 'Menunggu input juara'}
+              {stats.topClass ? `${stats.topClass.totalPoin} Poin (Juara 1: ${stats.topClass.juara1})` : 'Menunggu input juara'}
             </span>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-100/80 shrink-0">
@@ -449,7 +449,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
             <div className="relative flex-1 sm:w-72">
               <input
                 type="text"
-                placeholder={viewMode === 'klasemen' ? "Cari nama rombel kelas..." : "Cari mata perlombaan..."}
+                placeholder={viewMode === 'klasemen' ? "Cari nama Kelas Diniyah..." : "Cari mata perlombaan..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200/90 bg-slate-50/50 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none transition-all"
@@ -469,9 +469,9 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
             {viewMode === 'klasemen' && (
               <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl text-xs border border-slate-200/70">
                 {[
-                  { id: 'ALL', label: 'Semua Rombel' },
-                  { id: 'L', label: 'Putra ♂' },
-                  { id: 'P', label: 'Putri ♀' }
+                  { id: 'ALL', label: 'Semua Kelas' },
+                  { id: 'L', label: 'Putra' },
+                  { id: 'P', label: 'Putri' }
                 ].map(g => (
                   <button
                     key={g.id}
@@ -491,7 +491,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
 
           <div className="text-xs text-slate-500 font-medium shrink-0">
             {viewMode === 'klasemen' ? (
-              <span>Menampilkan <strong className="text-slate-800">{filteredKlasemen.length}</strong> rombel kelas</span>
+              <span>Menampilkan <strong className="text-slate-800">{filteredKlasemen.length}</strong> Kelas Diniyah</span>
             ) : (
               <span>Menampilkan <strong className="text-slate-800">{filteredKompetisi.length}</strong> mata lomba</span>
             )}
@@ -505,12 +505,12 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/70 text-slate-500 font-semibold text-xs">
                   <th className="py-3 px-4 text-center w-14">Rank</th>
-                  <th className="py-3 px-4">Rombel Kelas</th>
+                  <th className="py-3 px-4">Kelas Diniyah</th>
                   <th className="py-3 px-4 text-center">Jenjang Tingkat</th>
                   <th className="py-3 px-4 text-center">Kategori</th>
-                  <th className="py-3 px-4 text-center text-amber-700" title="Juara 1 (5 Poin)">🥇 Juara 1</th>
-                  <th className="py-3 px-4 text-center text-slate-600" title="Juara 2 (3 Poin)">🥈 Juara 2</th>
-                  <th className="py-3 px-4 text-center text-amber-900" title="Juara 3 (1 Poin)">🥉 Juara 3</th>
+                  <th className="py-3 px-4 text-center text-amber-700" title="Juara 1 (5 Poin)">Juara 1</th>
+                  <th className="py-3 px-4 text-center text-slate-600" title="Juara 2 (3 Poin)">Juara 2</th>
+                  <th className="py-3 px-4 text-center text-amber-900" title="Juara 3 (1 Poin)">Juara 3</th>
                   <th className="py-3 px-5 text-center text-emerald-800 font-black w-28">Total Poin</th>
                 </tr>
               </thead>
@@ -550,13 +550,13 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
                           )}
                         </td>
 
-                        {/* Rombel Kelas */}
+                        {/* Kelas Diniyah */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center space-x-2">
                             <span className="font-bold text-slate-900">{item.namaKelas}</span>
                             {isChampion && (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 shadow-2xs">
-                                🏆 JUARA UMUM
+                                JUARA UMUM
                               </span>
                             )}
                           </div>
@@ -578,11 +578,11 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
                         <td className="py-3.5 px-4 text-center">
                           {item.gender === 'P' ? (
                             <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-800 border border-rose-200/80">
-                              Putri ♀
+                              Putri
                             </span>
                           ) : (
                             <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-sky-50 text-sky-800 border border-sky-200/80">
-                              Putra ♂
+                              Putra
                             </span>
                           )}
                         </td>
@@ -662,7 +662,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
                         <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
                           {juara.juara1 && (
                             <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-950">
-                              <span className="font-bold">🥇 J1:</span>
+                              <span className="font-bold text-amber-800">Juara 1:</span>
                               <span className="font-extrabold">{juara.juara1.nama}</span>
                               <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-amber-300 font-semibold">
                                 {juara.juara1.kelas}
@@ -671,7 +671,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
                           )}
                           {juara.juara2 && (
                             <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800">
-                              <span className="font-bold">🥈 J2:</span>
+                              <span className="font-bold text-slate-600">Juara 2:</span>
                               <span className="font-extrabold">{juara.juara2.nama}</span>
                               <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-300 font-semibold">
                                 {juara.juara2.kelas}
@@ -680,7 +680,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
                           )}
                           {juara.juara3 && (
                             <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-50/60 border border-amber-700/30 text-amber-950">
-                              <span className="font-bold">🥉 J3:</span>
+                              <span className="font-bold text-amber-900">Juara 3:</span>
                               <span className="font-extrabold">{juara.juara3.nama}</span>
                               <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-amber-600/40 font-semibold">
                                 {juara.juara3.kelas}
@@ -813,7 +813,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               {/* JUARA 1 (+5 POIN) */}
               <div className="space-y-1.5 p-3 rounded-2xl bg-amber-50/70 border border-amber-200">
                 <div className="flex items-center justify-between font-bold text-amber-950">
-                  <span>🥇 Juara 1 (Emas)</span>
+                  <span>Juara 1 (Emas)</span>
                   <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
                     +5 Poin Kelas
                   </span>
@@ -835,7 +835,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               {/* JUARA 2 (+3 POIN) */}
               <div className="space-y-1.5 p-3 rounded-2xl bg-slate-100 border border-slate-200">
                 <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>🥈 Juara 2 (Perak)</span>
+                  <span>Juara 2 (Perak)</span>
                   <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
                     +3 Poin Kelas
                   </span>
@@ -857,7 +857,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
               {/* JUARA 3 (+1 POIN) */}
               <div className="space-y-1.5 p-3 rounded-2xl bg-amber-50/40 border border-amber-700/20">
                 <div className="flex items-center justify-between font-bold text-amber-900">
-                  <span>🥉 Juara 3 (Perunggu)</span>
+                  <span>Juara 3 (Perunggu)</span>
                   <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
                     +1 Poin Kelas
                   </span>

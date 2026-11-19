@@ -22,7 +22,7 @@ import { CABANG_LOMBA_LIST, SUB_KELAS_BY_TINGKAT } from '../../shared/data/compe
 
 export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
   const navigate = useNavigate();
-  const [showRombelDetail, setShowRombelDetail] = useState(false);
+  const [showKelasDetail, setShowKelasDetail] = useState(false);
 
   const handleGoToForm = () => {
     if (onGoToForm) {
@@ -56,9 +56,9 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     },
     {
       num: '3',
-      title: 'Batas Delegasi per Rombel Kelas (Putra & Putri Terpisah)',
-      text: 'Setiap kelas rombel (baik kelas putra maupun kelas putri) masing-masing berhak mengirimkan maksimal 3 delegasi santri di setiap cabang perlombaan. Kuota dihitung terpisah per rombel sehingga santri putra dan putri tidak saling mengurangi jatah kuota.',
-      badge: 'Maks. 3 per Rombel'
+      title: 'Batas Delegasi per Kelas Diniyah (Putra & Putri Terpisah)',
+      text: 'Setiap Kelas Diniyah (baik kelas putra maupun kelas putri) masing-masing berhak mengirimkan maksimal 3 delegasi santri di setiap cabang perlombaan. Kuota dihitung terpisah per Kelas Diniyah sehingga santri putra dan putri tidak saling mengurangi jatah kuota.',
+      badge: 'Maks. 3 per Kelas'
     },
     {
       num: '4',
@@ -92,7 +92,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     {
       step: '2',
       title: 'Pilih Nama Wali Kelas Terdaftar',
-      desc: 'Ketik nama Ustadz / Ustadzah Wali Kelas pada kolom Langkah 1. Pilih nama dari saran yang muncul. Jenjang tingkat (Ula, Wustho, Ulya) dan Rombel Kelas otomatis terhubung dari database guru.',
+      desc: 'Ketik nama Ustadz / Ustadzah Wali Kelas pada kolom Langkah 1. Pilih nama dari saran yang muncul. Jenjang tingkat (Ula, Wustho) dan Kelas Diniyah otomatis terhubung dari database guru.',
       tip: 'Nama Wali Kelas wajib sudah didaftarkan panitia terlebih dahulu.'
     },
     {
@@ -122,8 +122,8 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     {
       step: '7',
       title: 'Simpan Bukti & Daftarkan Delegasi Lainnya',
-      desc: 'Simpan kartu bukti pendaftaran digital yang diterbitkan. Untuk mendaftarkan delegasi santri berikutnya dari kelas yang sama, klik tombol "Daftarkan Peserta Lain" — Nama Wali Kelas, Rombel Kelas, dan Nomor WhatsApp otomatis tetap tersimpan tanpa perlu diketik ulang.',
-      tip: 'Nama Wali, Rombel Kelas, dan No. WA tetap tersimpan untuk delegasi berikutnya.'
+      desc: 'Simpan kartu bukti pendaftaran digital yang diterbitkan. Untuk mendaftarkan delegasi santri berikutnya dari kelas yang sama, klik tombol "Daftarkan Peserta Lain" — Nama Wali Kelas, Kelas Diniyah, dan Nomor WhatsApp otomatis tetap tersimpan tanpa perlu diketik ulang.',
+      tip: 'Nama Wali, Kelas Diniyah, dan No. WA tetap tersimpan untuk delegasi berikutnya.'
     }
   ];
 
@@ -161,7 +161,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         {/* Pengantar & Tombol Aksi Cepat */}
         <div className="p-4 sm:p-5 bg-emerald-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed max-w-xl">
-            Panduan lengkap ketentuan delegasi santri antar-kelas, batas kuota 3 delegasi per rombel putra/putri terpisah, serta sistem poin penentuan Juara Umum Kelas.
+            Panduan lengkap ketentuan delegasi santri antar-kelas, batas kuota 3 delegasi per Kelas Diniyah putra/putri terpisah, serta sistem poin penentuan Juara Umum Kelas.
           </p>
           <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
             <button
@@ -299,7 +299,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </section>
 
-      {/* ================= BAGIAN C: 10 CABANG PERLOMBAAN & ROMBEL KELAS ================= */}
+      {/* ================= BAGIAN C: 10 CABANG PERLOMBAAN & KELAS DINIYAH ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
@@ -341,7 +341,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 </p>
                 <div className="pt-1 flex flex-wrap gap-1">
                   <span className="text-[9.5px] font-semibold bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200/60">
-                    Jenjang: Ula, Wustho, Ulya
+                    Jenjang: Ula, Wustho
                   </span>
                   {c.isMHQ && (
                     <span className="text-[9.5px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200">
@@ -354,31 +354,31 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           ))}
         </div>
 
-        {/* Toggle Lihat Rincian Rombel Kelas (Ula, Wustho, Ulya) */}
+        {/* Toggle Lihat Rincian Kelas Diniyah Lengkap */}
         <div className="pt-1 border-t border-slate-100">
           <button
             type="button"
-            onClick={() => setShowRombelDetail(!showRombelDetail)}
+            onClick={() => setShowKelasDetail(!showKelasDetail)}
             className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors"
           >
             <div className="flex items-center space-x-1.5">
               <Building2 className="w-4 h-4 text-[#075B45]" />
-              <span>Lihat Pembagian Jenjang Tingkat & Kelas Rombel Lengkap</span>
+              <span>Lihat Pembagian Jenjang Tingkat & Kelas Diniyah Lengkap</span>
             </div>
-            {showRombelDetail ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showKelasDetail ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
-          {showRombelDetail && (
+          {showKelasDetail && (
             <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs animate-fadeIn">
               {/* ULA */}
               <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-1.5">
                 <div className="flex items-center justify-between pb-1 border-b border-emerald-200/70">
                   <span className="font-extrabold text-emerald-950">Tingkat Ula</span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
-                    8 Kelas (Pa/Pi)
+                    16 Kelas (Pa/Pi)
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-800">Santri Tingkat Dasar / TPA</p>
+                <p className="text-[11px] text-emerald-800">Sifir & Jurumiyah</p>
                 <ul className="text-[11px] text-slate-700 space-y-0.5 pl-3 list-disc">
                   {(SUB_KELAS_BY_TINGKAT.ula || []).map(k => (
                     <li key={k}><strong className="text-slate-900">{k}</strong></li>
@@ -391,10 +391,10 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 <div className="flex items-center justify-between pb-1 border-b border-blue-200/70">
                   <span className="font-extrabold text-blue-950">Tingkat Wustho</span>
                   <span className="text-[10px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200">
-                    16 Kelas (Pa/Pi)
+                    8 Kelas (Pa/Pi)
                   </span>
                 </div>
-                <p className="text-[11px] text-blue-800">Sifir & Matan Jurumiyah</p>
+                <p className="text-[11px] text-blue-800">Imrithi & Alfiyah</p>
                 <ul className="text-[11px] text-slate-700 space-y-0.5 pl-3 list-disc">
                   {(SUB_KELAS_BY_TINGKAT.wustho || []).map(k => (
                     <li key={k}><strong className="text-slate-900">{k}</strong></li>
@@ -402,17 +402,17 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 </ul>
               </div>
 
-              {/* ULYA */}
+              {/* MHQ */}
               <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200 space-y-1.5">
                 <div className="flex items-center justify-between pb-1 border-b border-purple-200/70">
-                  <span className="font-extrabold text-purple-950">Tingkat Ulya</span>
+                  <span className="font-extrabold text-purple-950">Cabang MHQ</span>
                   <span className="text-[10px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-full border border-purple-200">
-                    8 Kelas (Pa/Pi)
+                    6 Kategori Juz
                   </span>
                 </div>
-                <p className="text-[11px] text-purple-800">Imrithi & Alfiyah</p>
+                <p className="text-[11px] text-purple-800">Hifdzil Qur'an</p>
                 <ul className="text-[11px] text-slate-700 space-y-0.5 pl-3 list-disc">
-                  {(SUB_KELAS_BY_TINGKAT.ulya || []).map(k => (
+                  {(SUB_KELAS_BY_TINGKAT.mhq_juz || []).map(k => (
                     <li key={k}><strong className="text-slate-900">{k}</strong></li>
                   ))}
                 </ul>
@@ -439,24 +439,27 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
 
           <div className="grid grid-cols-3 gap-2 text-center pt-1">
             <div className="p-2 rounded-xl bg-white border border-amber-300 shadow-2xs">
-              <span className="text-base sm:text-lg block">🥇</span>
-              <span className="text-xs font-black text-amber-900 block">Juara 1</span>
+              <span className="text-xs sm:text-sm font-black text-amber-900 block bg-amber-100/80 rounded-md py-1 mb-1 border border-amber-200">
+                Juara 1
+              </span>
               <span className="text-[11px] font-extrabold text-[#075B45]">+5 Poin</span>
             </div>
             <div className="p-2 rounded-xl bg-white border border-slate-300 shadow-2xs">
-              <span className="text-base sm:text-lg block">🥈</span>
-              <span className="text-xs font-black text-slate-800 block">Juara 2</span>
+              <span className="text-xs sm:text-sm font-black text-slate-800 block bg-slate-100 rounded-md py-1 mb-1 border border-slate-200">
+                Juara 2
+              </span>
               <span className="text-[11px] font-extrabold text-[#075B45]">+3 Poin</span>
             </div>
             <div className="p-2 rounded-xl bg-white border border-amber-700/30 shadow-2xs">
-              <span className="text-base sm:text-lg block">🥉</span>
-              <span className="text-xs font-black text-amber-900 block">Juara 3</span>
+              <span className="text-xs sm:text-sm font-black text-amber-900 block bg-amber-50 rounded-md py-1 mb-1 border border-amber-200">
+                Juara 3
+              </span>
               <span className="text-[11px] font-extrabold text-[#075B45]">+1 Poin</span>
             </div>
           </div>
 
           <p className="text-[10.5px] sm:text-[11px] text-slate-700 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-amber-200">
-            💡 <strong>Ketentuan Juara Umum:</strong> Kelas dengan total akumulasi poin terbanyak dinobatkan sebagai <strong>Juara Umum Kelas</strong>. Apabila terdapat poin yang sama (seri), penentuan pemenang dihitung berdasarkan perolehan Juara 1 terbanyak.
+            <span className="font-bold text-[#075B45] mr-1.5">[Catatan]</span><strong>Ketentuan Juara Umum:</strong> Kelas dengan total akumulasi poin terbanyak dinobatkan sebagai <strong>Juara Umum Kelas</strong>. Apabila terdapat poin yang sama (seri), penentuan pemenang dihitung berdasarkan perolehan Juara 1 terbanyak.
           </p>
         </div>
       </section>
@@ -504,7 +507,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Cek Status Secara Berkala:</strong> Setelah pendaftaran dikirimkan, gunakan menu "Cek Status" untuk melihat nomor urut peserta (dimulai dari No. 050) dan verifikasi panitia.
+              <strong>Cek Status Secara Berkala:</strong> Setelah pendaftaran dikirimkan, gunakan menu "Cek Status" untuk melihat nomor urut undian 3 digit unik dan verifikasi panitia.
             </p>
           </div>
         </div>

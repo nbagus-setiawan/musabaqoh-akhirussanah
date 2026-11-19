@@ -202,7 +202,7 @@ export default function AdminApp() {
             />
           )}
 
-          {/* 4. VIEW: TINGKAT DAN KELAS (CRUD TINGKAT & ROMBEL) */}
+          {/* 4. VIEW: TINGKAT DAN KELAS (CRUD TINGKAT & KELAS DINIYAH) */}
           {activeView === 'tingkat_kelas' && (
             <AdminTingkatKelas
               registrations={registrations}

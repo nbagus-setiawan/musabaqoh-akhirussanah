@@ -840,7 +840,7 @@ export default function AdminSantri({
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola pendaftaran santri, verifikasi berkas, dan undian nomor urut mulai dari angka 050.
+              Kelola pendaftaran santri, verifikasi berkas, dan pengundian nomor urut (format 3 digit, bebas duplikat seluruh cabang lomba).
             </p>
           </div>
         </div>
@@ -1129,9 +1129,9 @@ export default function AdminSantri({
                       <div className="flex items-center space-x-1.5 font-medium text-slate-800">
                         <span>{item.Kelas_Kategori}</span>
                         {item.Jenis_Kelamin === 'P' || (item.Kelas_Kategori && item.Kelas_Kategori.toLowerCase().includes('putri')) ? (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">Pi ♀</span>
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">Putri</span>
                         ) : (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-800">Pa ♂</span>
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-800">Putra</span>
                         )}
                       </div>
                       <div className="text-[10px] text-slate-400">{item.Tingkat}</div>
@@ -1470,7 +1470,7 @@ export default function AdminSantri({
                 </div>
               </div>
 
-              {/* Row 2: Tingkat & Kelas Rombel */}
+              {/* Row 2: Tingkat & Kelas Diniyah */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Jenjang Tingkat</label>
@@ -1495,7 +1495,7 @@ export default function AdminSantri({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Kelas / Rombel</label>
+                  <label className="font-bold text-slate-700">Kelas Diniyah</label>
                   <input
                     type="text"
                     value={editForm.Kelas_Kategori}
@@ -1550,13 +1550,13 @@ export default function AdminSantri({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nomor Urut Undian (Mulai 050)</label>
+                  <label className="font-bold text-slate-700">Nomor Urut Undian (3 Digit)</label>
                   <input
                     type="text"
                     value={editForm.Nomor_Urut}
                     onChange={(e) => setEditForm(prev => ({ ...prev, Nomor_Urut: e.target.value }))}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-mono font-bold text-emerald-900 focus:border-emerald-700 outline-none bg-slate-50/50 focus:bg-white transition-all"
-                    placeholder="Contoh: 050"
+                    placeholder="Contoh: 001"
                   />
                 </div>
               </div>

@@ -38,8 +38,8 @@ export default function AdminSidebar({
     return typeof guruCount === 'number' ? guruCount : 0;
   }, [guruCount, activeView]);
 
-  // Hitung jumlah riil rombel kelas (Ula + Wustho + Ulya)
-  const realRombelCount = useMemo(() => {
+  // Hitung jumlah riil kelas diniyah (Ula + Wustho)
+  const realKelasCount = useMemo(() => {
     try {
       const sub = getSubKelasByTingkat();
       let count = 0;
@@ -48,9 +48,9 @@ export default function AdminSidebar({
           if (k !== 'mhq_juz' && Array.isArray(arr)) count += arr.length;
         });
       }
-      return count > 0 ? count : (tingkatCount || 16);
+      return count > 0 ? count : (tingkatCount || 24);
     } catch (e) {
-      return tingkatCount || 16;
+      return tingkatCount || 24;
     }
   }, [tingkatCount, activeView]);
 
@@ -86,7 +86,7 @@ export default function AdminSidebar({
       id: 'tingkat_kelas', 
       label: 'Tingkat & Kelas', 
       icon: GraduationCap, 
-      count: realRombelCount,
+      count: realKelasCount,
       badgeColor: 'slate'
     },
     { 

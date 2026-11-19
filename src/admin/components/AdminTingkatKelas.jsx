@@ -127,7 +127,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
       const res = await syncAllTingkatKelasToGas(subKelasData);
       setSyncMessage({
         type: 'success',
-        text: res.message || 'Alhamdulillah! Seluruh 38 kelas diniyah (Putra & Putri) berhasil dikirim & disinkronkan ke Google Sheets.'
+        text: res.message || 'Alhamdulillah! Seluruh kelas diniyah (Putra & Putri) berhasil dikirim & disinkronkan ke Google Sheets.'
       });
     } catch (err) {
       setSyncMessage({
@@ -225,8 +225,8 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
     }
   };
 
-  // 1. Flatten Data Semua Rombel Lengkap
-  const allRombelList = useMemo(() => {
+  // 1. Flatten Data Semua Kelas Diniyah Lengkap
+  const allKelasList = useMemo(() => {
     const list = [];
     tingkatList.forEach(t => {
       const classes = subKelasData[t.id] || [];
@@ -258,27 +258,27 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
   // 2. Metrik Ringkasan Bersih
   const stats = useMemo(() => {
-    const totalRombel = allRombelList.length;
-    const putraRombel = allRombelList.filter(r => r.gender === 'L').length;
-    const putriRombel = allRombelList.filter(r => r.gender === 'P').length;
+    const totalKelas = allKelasList.length;
+    const putraKelas = allKelasList.filter(r => r.gender === 'L').length;
+    const putriKelas = allKelasList.filter(r => r.gender === 'P').length;
     const totalSantri = registrations.length;
     const santriPutra = registrations.filter(r => (r.Jenis_Kelamin || '').toLowerCase().startsWith('l')).length;
     const santriPutri = registrations.filter(r => (r.Jenis_Kelamin || '').toLowerCase().startsWith('p')).length;
 
     return {
       totalJenjang: tingkatList.length,
-      totalRombel,
-      putraRombel,
-      putriRombel,
+      totalKelas,
+      putraKelas,
+      putriKelas,
       totalSantri,
       santriPutra,
       santriPutri
     };
-  }, [tingkatList, allRombelList, registrations]);
+  }, [tingkatList, allKelasList, registrations]);
 
-  // 3. Filter Rombel berdasarkan Tingkat, Gender, dan Pencarian
-  const filteredRombel = useMemo(() => {
-    return allRombelList.filter(item => {
+  // 3. Filter Kelas Diniyah berdasarkan Tingkat, Gender, dan Pencarian
+  const filteredKelas = useMemo(() => {
+    return allKelasList.filter(item => {
       // Filter Pencarian
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -302,21 +302,21 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
       return true;
     });
-  }, [allRombelList, searchQuery, filterTingkat, filterGender]);
+  }, [allKelasList, searchQuery, filterTingkat, filterGender]);
 
   // 4. Paginasi Tabel
-  const totalPages = Math.max(1, Math.ceil(filteredRombel.length / itemsPerPage));
-  const paginatedRombel = useMemo(() => {
+  const totalPages = Math.max(1, Math.ceil(filteredKelas.length / itemsPerPage));
+  const paginatedKelas = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredRombel.slice(start, start + itemsPerPage);
-  }, [filteredRombel, currentPage, itemsPerPage]);
+    return filteredKelas.slice(start, start + itemsPerPage);
+  }, [filteredKelas, currentPage, itemsPerPage]);
 
-  const startIndex = filteredRombel.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const endIndex = Math.min(currentPage * itemsPerPage, filteredRombel.length);
+  const startIndex = filteredKelas.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(currentPage * itemsPerPage, filteredKelas.length);
 
   // Tab Navigasi Jenjang
   const tabPills = [
-    { id: 'ALL', label: 'Semua Jenjang', count: allRombelList.length },
+    { id: 'ALL', label: 'Semua Jenjang', count: allKelasList.length },
     ...tingkatList.map(t => {
       const count = (subKelasData[t.id] || []).length;
       return { id: t.id, label: t.name, count };
@@ -346,7 +346,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
     setShowModal(true);
   };
 
-  // Simpan / Edit Rombel
+  // Simpan / Edit Kelas Diniyah
   const handleSubmit = (e) => {
     e.preventDefault();
     setFormError('');
@@ -382,7 +382,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
     }
   };
 
-  // Hapus Rombel
+  // Hapus Kelas Diniyah
   const handleDelete = () => {
     if (!deleteTarget) return;
     try {
@@ -415,7 +415,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                   Tingkat Pendidikan & Kelas Diniyah
                 </h2>
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {stats.totalRombel} Kelas Terdaftar
+                  {stats.totalKelas} Kelas Terdaftar
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -497,9 +497,9 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           </div>
           <button 
             onClick={() => setSyncMessage(null)}
-            className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer p-1"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -512,7 +512,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Kelas Diniyah</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalRombel}</span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900">{stats.totalKelas}</span>
               <span className="text-[11px] text-slate-500 font-medium">Kelas</span>
             </div>
             <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">4 Jenjang Pendidikan</span>
@@ -542,7 +542,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block">Kelas Putra</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl sm:text-2xl font-black text-blue-900">{stats.putraRombel}</span>
+              <span className="text-xl sm:text-2xl font-black text-blue-900">{stats.putraKelas}</span>
               <span className="text-[11px] text-blue-700 font-medium">Kelas Pa</span>
             </div>
             <span className="text-[10px] text-blue-600 font-medium mt-0.5 block">{stats.santriPutra} Santri Putra</span>
@@ -557,7 +557,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">Kelas Putri</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl sm:text-2xl font-black text-rose-900">{stats.putriRombel}</span>
+              <span className="text-xl sm:text-2xl font-black text-rose-900">{stats.putriKelas}</span>
               <span className="text-[11px] text-rose-700 font-medium">Kelas Pi</span>
             </div>
             <span className="text-[10px] text-rose-600 font-medium mt-0.5 block">{stats.santriPutri} Santri Putri</span>
@@ -620,7 +620,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>Putra ({stats.putraRombel})</span>
+              <span>Putra ({stats.putraKelas})</span>
             </button>
             <button
               onClick={() => setFilterGender('P')}
@@ -631,7 +631,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>Putri ({stats.putriRombel})</span>
+              <span>Putri ({stats.putriKelas})</span>
             </button>
           </div>
 
@@ -661,7 +661,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
             <span className="text-xs text-slate-500">
-              Menampilkan <strong className="text-slate-800">{filteredRombel.length}</strong> kelas terfilter
+              Menampilkan <strong className="text-slate-800">{filteredKelas.length}</strong> kelas terfilter
             </span>
 
             {/* View Mode Switcher */}
@@ -695,7 +695,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
         </div>
 
-        {/* 4A. VIEW MODE: KARTU ROMBEL SPASIOUS (TIDAK SEMPIT, LEGA & RAPI) */}
+        {/* 4A. VIEW MODE: KARTU KELAS DINIYAH SPASIOUS (TIDAK SEMPIT, LEGA & RAPI) */}
         {viewMode === 'cards' && (
           <div className="p-4 sm:p-6 bg-slate-50/40 space-y-8">
             {tingkatList
@@ -761,7 +761,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                       </div>
                     </div>
 
-                    {/* Responsive Grid Rombel Cards: 1 kol di mobile, 2 di tablet, 3-4 di desktop */}
+                    {/* Responsive Grid Cards: 1 kol di mobile, 2 di tablet, 3-4 di desktop */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {classes.map((kelasName) => {
                         const gender = detectKelasGender(kelasName);
@@ -885,7 +885,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredRombel.length === 0 ? (
+                  {filteredKelas.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="py-16 text-center text-slate-400">
                         <div className="max-w-xs mx-auto space-y-2">
@@ -896,7 +896,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                       </td>
                     </tr>
                   ) : (
-                    paginatedRombel.map((item, idx) => {
+                    paginatedKelas.map((item, idx) => {
                       const theme = getTingkatTheme(item.tingkatId);
                       const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
                       const isPutra = item.gender === 'L';
@@ -910,7 +910,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
                             {rowNumber}
                           </td>
 
-                          {/* Nama Rombel */}
+                          {/* Nama Kelas Diniyah */}
                           <td className="py-4 px-4">
                             <div className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-emerald-800 transition-colors">
                               {item.namaKelas}
@@ -1016,7 +1016,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
             <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="text-slate-500 font-medium flex items-center gap-2 flex-wrap justify-center sm:justify-start">
                 <span>
-                  Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari <strong className="text-slate-800">{filteredRombel.length}</strong> kelas
+                  Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari <strong className="text-slate-800">{filteredKelas.length}</strong> kelas
                 </span>
                 <span className="text-slate-300">•</span>
                 <div className="flex items-center space-x-1">
@@ -1076,7 +1076,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages || filteredRombel.length === 0}
+                  disabled={currentPage === totalPages || filteredKelas.length === 0}
                   className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
                 >
                   <span>Berikutnya</span>

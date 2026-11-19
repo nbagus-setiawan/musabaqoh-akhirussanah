@@ -1,93 +1,13 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet, Copy, Check, ExternalLink, X } from 'lucide-react';
+import rawScriptCode from '../../../google-apps-script/Code.gs?raw';
 
 export default function GoogleSheetGuideModal({ isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  const scriptCode = `/**
- * BACKEND GOOGLE APPS SCRIPT
- * Pendaftaran Lomba Akhirusanah & Generator Nomor Urut (Mulai 050)
- */
-const SHEET_NAME = 'Pendaftaran';
-
-function getSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    const headers = [
-      'Timestamp', 'Wali_Kelas', 'ID_Pendaftaran', 'Nomor_Urut', 
-      'Nama_Lengkap', 'Jenis_Kelamin', 'Tingkat', 'Kelas_Kategori', 
-      'Cabang_Lomba', 'Nomor_WA', 'Status', 'Catatan'
-    ];
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#059669').setFontColor('#ffffff');
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
-
-function doGet(e) {
-  try {
-    const sheet = getSheet();
-    const rows = sheet.getDataRange().getValues();
-    const headers = rows[0];
-    const data = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row[0] && !row[2]) continue;
-      const item = { rowIndex: i + 1 };
-      headers.forEach((h, idx) => { item[h] = row[idx]; });
-      data.push(item);
-    }
-    return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: data })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  try {
-    const sheet = getSheet();
-    let contents = {};
-    if (e.postData && e.postData.contents) contents = JSON.parse(e.postData.contents);
-    else if (e.parameter) contents = e.parameter;
-    const action = contents.action || 'register';
-
-    if (action === 'register') {
-      const timestamp = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
-      const idPendaftaran = contents.ID_Pendaftaran || ('AKH-' + String(sheet.getLastRow()).padStart(3, '0'));
-      sheet.appendRow([
-        timestamp, contents.Wali_Kelas || '', idPendaftaran, contents.Nomor_Urut || '',
-        contents.Nama_Lengkap || '', contents.Jenis_Kelamin || 'L', contents.Tingkat || '',
-        contents.Kelas_Kategori || '', contents.Cabang_Lomba || '', contents.Nomor_WA || '',
-        contents.Status || 'Pending', contents.Catatan || ''
-      ]);
-      return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: { ID_Pendaftaran: idPendaftaran } })).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    if (action === 'batch_update' && Array.isArray(contents.updates)) {
-      const rows = sheet.getDataRange().getValues();
-      contents.updates.forEach(u => {
-        for (let i = 1; i < rows.length; i++) {
-          if (rows[i][2] == u.ID_Pendaftaran) {
-            const rowNumber = i + 1;
-            if (u.Nomor_Urut !== undefined) sheet.getRange(rowNumber, 4).setValue(u.Nomor_Urut);
-            if (u.Status !== undefined) sheet.getRange(rowNumber, 11).setValue(u.Status);
-            break;
-          }
-        }
-      });
-      return ContentService.createTextOutput(JSON.stringify({ status: 'success' })).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
+  const scriptCode = rawScriptCode;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(scriptCode);

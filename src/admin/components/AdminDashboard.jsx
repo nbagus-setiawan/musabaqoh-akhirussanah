@@ -209,7 +209,7 @@ export default function AdminDashboard({
           </div>
 
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-            Ahlan wa Sahlan, <span className="text-emerald-800">Ustadz Admin!</span> 👋
+            Ahlan wa Sahlan, <span className="text-emerald-800">Ustadz Admin!</span>
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">

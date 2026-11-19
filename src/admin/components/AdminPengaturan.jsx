@@ -109,9 +109,9 @@ export default function AdminPengaturan({ onRefresh }) {
 
         setTestResult({
           success: true,
-          message: `Alhamdulillah! Terhubung ke ${ssName}. Ketiga sheet resmi aktif & tersinkronisasi: "Pendaftaran" (${santriCount} data santri), "Data_Guru" (${guruCount} wali kelas), dan "Tingkat_dan_Kelas" (${kelasCount} kelas diniyah).`
+          message: `Alhamdulillah! Terhubung ke ${ssName}. Seluruh 6 lembar kerja resmi aktif & tersinkronisasi: Admin, Pendaftaran, Tingkat_dan_Kelas, Ustadz, Juara_Lomba, dan Pengaturan.`
         });
-        addActivityLog('Tes Koneksi Sheets', `Koneksi 3 sheet sukses tersambung ke ${ssName}`, 'system');
+        addActivityLog('Tes Koneksi Sheets', `Koneksi 6 sheet sukses tersambung ke ${ssName}`, 'system');
       } else {
         setTestResult({
           success: false,
@@ -189,38 +189,40 @@ export default function AdminPengaturan({ onRefresh }) {
 
   const sheetsDefinition = [
     {
-      id: 'Pendaftaran',
-      title: 'Sheet 1: "Pendaftaran"',
-      tag: 'Data Transaksional Santri',
-      totalCols: 12,
-      desc: 'Menyimpan seluruh data pendaftaran santri riil, nomor undian (mulai 050), status verifikasi panitia, dan catatan lomba.',
+      id: 'Admin',
+      title: 'Sheet 1: "Admin"',
+      tag: 'Otentikasi & Akun Panitia',
+      totalCols: 6,
+      desc: 'Menyimpan kredensial login panitia, PIN otentikasi, peran hak akses, dan status keaktifan panitia.',
       columns: [
-        { name: 'Timestamp', desc: 'Waktu Pendaftaran' },
-        { name: 'Wali_Kelas', desc: 'Wali Kelas Pembina' },
-        { name: 'ID_Pendaftaran', desc: 'ID Unik (AKH-001)' },
-        { name: 'Nomor_Urut', desc: 'No. Undi (Mulai 050)' },
-        { name: 'Nama_Lengkap', desc: 'Nama Santri' },
-        { name: 'Jenis_Kelamin', desc: 'L (Putra) / P (Putri)' },
-        { name: 'Tingkat', desc: 'Ula / Wustho / Ulya / MHQ' },
-        { name: 'Kelas_Kategori', desc: 'Kelas Diniyah' },
-        { name: 'Cabang_Lomba', desc: '10 Cabang Musabaqah' },
-        { name: 'Nomor_WA', desc: 'Nomor WhatsApp Aktif' },
-        { name: 'Status', desc: 'Pending / Terverifikasi / Ditolak' },
-        { name: 'Catatan', desc: 'Keterangan Tambahan' }
+        { name: 'ID_Admin', desc: 'ID Unik Admin (ADM-001)' },
+        { name: 'Username', desc: 'Username Login Panitia' },
+        { name: 'PIN_Password', desc: 'PIN Password Akses' },
+        { name: 'Nama_Panitia', desc: 'Nama Lengkap Panitia' },
+        { name: 'Role', desc: 'Super Admin / Panitia' },
+        { name: 'Status_Aktif', desc: 'Aktif / Nonaktif' }
       ]
     },
     {
-      id: 'Data_Guru',
-      title: 'Sheet 2: "Data_Guru"',
-      tag: 'Master Wali Kelas',
-      totalCols: 5,
-      desc: 'Menyimpan master data Ustadz / Ustadzah wali kelas pembina dan nomor kontak resmi Pondok Pesantren.',
+      id: 'Pendaftaran',
+      title: 'Sheet 2: "Pendaftaran"',
+      tag: 'Data Transaksional Santri',
+      totalCols: 13,
+      desc: 'Menyimpan seluruh data pendaftaran santri delegasi, nomor urut undian 3 digit (unik global), cabang lomba, dan status verifikasi.',
       columns: [
-        { name: 'ID_Guru', desc: 'ID Unik Guru (wk-1, dst)' },
-        { name: 'Nama_Guru', desc: 'Nama Lengkap Asatidz' },
-        { name: 'Tingkat', desc: 'Jenjang (ula / wustho / ulya)' },
-        { name: 'Kelas_Diampu', desc: 'Kelas Diniyah yang Diampu' },
-        { name: 'Kontak_WA', desc: 'Nomor WhatsApp Aktif' }
+        { name: 'Timestamp', desc: 'Waktu Pendaftaran' },
+        { name: 'Wali_Kelas', desc: 'Wali Kelas Pembina' },
+        { name: 'Nomor_WA', desc: 'Nomor WhatsApp Aktif' },
+        { name: 'ID_Pendaftaran', desc: 'ID Unik (AKH-001)' },
+        { name: 'Nomor_Urut', desc: 'No. Undian 3 Digit (001)' },
+        { name: 'Nama_Santri', desc: 'Nama Lengkap Santri' },
+        { name: 'Jenis_Kelamin', desc: 'L (Putra) / P (Putri)' },
+        { name: 'Tingkat', desc: 'Jenjang Tingkat Santri' },
+        { name: 'Kelas_Diniyah', desc: 'Kelas Diniyah Santri' },
+        { name: 'Cabang_Lomba', desc: '10 Cabang Musabaqah' },
+        { name: 'Detail_Cabang', desc: 'Detail Bahasa / Regu' },
+        { name: 'Status', desc: 'Pending / Terverifikasi / Ditolak' },
+        { name: 'Catatan', desc: 'Catatan Khusus Delegasi' }
       ]
     },
     {
@@ -228,12 +230,54 @@ export default function AdminPengaturan({ onRefresh }) {
       title: 'Sheet 3: "Tingkat_dan_Kelas"',
       tag: 'Master Jenjang & Kelas Diniyah',
       totalCols: 4,
-      desc: 'Menyimpan daftar jenjang pendidikan pesantren dan kelas diniyah yang dipertandingkan.',
+      desc: 'Menyimpan daftar master 30 Kelas Diniyah santri putra dan santri putri terpisah rapi serta jenjang tingkat pendidikan.',
       columns: [
-        { name: 'Kode_Tingkat', desc: 'Kode (ula, wustho, ulya, mhq_juz)' },
+        { name: 'Kode_Tingkat', desc: 'Kode (ula, wustho, mhq_juz)' },
         { name: 'Nama_Tingkat', desc: 'Nama Lengkap Jenjang' },
-        { name: 'Nama_Kelas_Rombel', desc: 'Nama Kelas Diniyah' },
-        { name: 'Keterangan', desc: 'Keterangan Jenjang' }
+        { name: 'Nama_Kelas_Diniyah', desc: 'Nama Kelas Diniyah' },
+        { name: 'Keterangan', desc: 'Keterangan Santri Putra / Putri' }
+      ]
+    },
+    {
+      id: 'Ustadz',
+      title: 'Sheet 4: "Ustadz"',
+      tag: 'Master Ustadz Wali Kelas',
+      totalCols: 5,
+      desc: 'Menyimpan 24 Ustadz / Ustadzah wali kelas pembina yang diurutkan rapi dari jenjang Ula Sifir hingga Wustho Alfiyah.',
+      columns: [
+        { name: 'ID_Ustadz', desc: 'ID Unik Ustadz (ust-01, dst)' },
+        { name: 'Nama_Ustadz', desc: 'Nama Lengkap Asatidz' },
+        { name: 'Tingkat', desc: 'Jenjang (ula / wustho)' },
+        { name: 'Kelas_Diniyah', desc: 'Kelas Diniyah yang Diampu' },
+        { name: 'Nomor_WA', desc: 'Nomor WhatsApp Resmi' }
+      ]
+    },
+    {
+      id: 'Juara_Lomba',
+      title: 'Sheet 5: "Juara_Lomba"',
+      tag: 'Rekap Juara & Klasemen',
+      totalCols: 7,
+      desc: 'Menyimpan daftar peraih Juara 1, 2, dan 3 di setiap cabang lomba untuk akumulasi skor Juara Umum Kelas.',
+      columns: [
+        { name: 'ID_Juara', desc: 'ID Unik Juara' },
+        { name: 'Cabang_Lomba', desc: 'Mata Perlombaan' },
+        { name: 'Tingkat', desc: 'Kategori Tingkat' },
+        { name: 'Juara_Ke', desc: 'Peringkat (1, 2, atau 3)' },
+        { name: 'Nama_Santri', desc: 'Nama Lengkap Pemenang' },
+        { name: 'Kelas_Diniyah', desc: 'Kelas Diniyah Pemenang' },
+        { name: 'Poin', desc: 'Poin Juara (5, 3, atau 1)' }
+      ]
+    },
+    {
+      id: 'Pengaturan',
+      title: 'Sheet 6: "Pengaturan"',
+      tag: 'Konfigurasi Sistem',
+      totalCols: 3,
+      desc: 'Menyimpan konfigurasi umum perlombaan, status pendaftaran, dan nomor undian awal.',
+      columns: [
+        { name: 'Kunci_Pengaturan', desc: 'Nama Kunci Konfigurasi' },
+        { name: 'Nilai_Pengaturan', desc: 'Nilai Pengaturan' },
+        { name: 'Keterangan', desc: 'Deskripsi Kegunaan' }
       ]
     }
   ];
@@ -492,8 +536,8 @@ export default function AdminPengaturan({ onRefresh }) {
               <div className="pt-1 flex items-start space-x-2 text-[11px] text-emerald-900 leading-relaxed">
                 <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
                 <div>
-                  <strong>Kenapa di spreadsheet baru hanya muncul sheet Pendaftaran?</strong><br />
-                  Jika spreadsheet baru Anda belum memunculkan sheet <strong>Data_Guru</strong> dan <strong>Tingkat_dan_Kelas</strong>, cukup klik tombol <strong>"Uji Koneksi Spreadsheet Sekarang"</strong> di bawah atau jalankan fungsi <code>inisialisasiTigaLembarKerja</code> di Apps Script. Script akan otomatis membuat dan melengkapi ketiga sheet seketika!
+                  <strong>Bagaimana jika lembar kerja di spreadsheet belum lengkap?</strong><br />
+                  Buka Google Spreadsheet Anda, lalu klik menu <strong>"Menu Musabaqah Al-Falah" &gt; "1. Buat / Siapkan Seluruh Lembar Kerja (6 Sheet)"</strong> atau jalankan fungsi <code>inisialisasiEnamLembarKerja</code> di Apps Script. Seluruh 6 sheet resmi akan dibuat dan dirapikan seketika.
                 </div>
               </div>
             </div>
@@ -587,11 +631,11 @@ export default function AdminPengaturan({ onRefresh }) {
                   3
                 </span>
                 <h4 className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
-                  <span>MUNCULKAN 3 SHEET</span>
+                  <span>MUNCULKAN 6 SHEET</span>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-800 text-white uppercase">Penting</span>
                 </h4>
                 <p className="text-emerald-900 text-[11px] leading-relaxed">
-                  Di dropdown fungsi atas editor, pilih <strong>"inisialisasiTigaLembarKerja"</strong> lalu klik ▶ <strong>Run (Jalankan)</strong>. Seketika 3 sheet otomatis dibuat!
+                  Di dropdown fungsi atas editor, pilih <strong>"inisialisasiEnamLembarKerja"</strong> lalu klik <strong>Run (Jalankan)</strong>. Seketika 6 sheet resmi otomatis dibuat dan dirapikan!
                 </p>
               </div>
 

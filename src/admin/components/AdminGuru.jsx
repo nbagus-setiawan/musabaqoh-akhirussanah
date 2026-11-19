@@ -123,7 +123,7 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
 
     const finalKelas = kelasGuru === 'CUSTOM' ? customKelas.trim() : kelasGuru;
     if (!finalKelas) {
-      setFormError('Kelas atau rombel binaan wajib dipilih atau diisi.');
+      setFormError('Kelas Diniyah binaan wajib dipilih atau diisi.');
       return;
     }
 
@@ -337,7 +337,7 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola master data asatidz, rombel kelas binaan, dan pantau santri bimbingan di Musabaqah Akhirussanah.
+              Kelola master data asatidz, Kelas Diniyah binaan, dan pantau santri bimbingan di Musabaqah Akhirussanah.
             </p>
           </div>
         </div>
@@ -916,7 +916,7 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
               {/* Kelas yang Diampu */}
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-                  Kelas / Rombel yang Diampu <span className="text-rose-500">*</span>:
+                  Kelas Diniyah yang Diampu <span className="text-rose-500">*</span>:
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-700">
