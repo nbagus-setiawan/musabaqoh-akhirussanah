@@ -20,7 +20,8 @@ import {
   Sparkles,
   ChevronRight,
   ChevronLeft,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { 
   getWaliKelasList, 
@@ -31,7 +32,12 @@ import {
   getTingkatList
 } from '../../shared/services/api';
 
-export default function AdminGuru({ registrations = [], onRefresh }) {
+export default function AdminGuru({ 
+  registrations = [], 
+  onRefresh, 
+  setActiveView,
+  setSearchTerm
+}) {
   const [guruList, setGuruList] = useState(() => getWaliKelasList());
   const [tingkatList, setTingkatList] = useState(() => getTingkatList());
   const [subKelasData, setSubKelasData] = useState(() => getSubKelasByTingkat());
@@ -40,9 +46,9 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Pagination State (5 Data Per Halaman)
+  // Pagination State (Default 25 Data Per Halaman untuk 24 Wali Kelas)
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Modal Tambah / Edit State
   const [showModal, setShowModal] = useState(false);
@@ -182,7 +188,7 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
       case 'ula':
         return {
           label: 'Tingkat Ula',
-          subLabel: 'Dasar / TPA',
+          subLabel: 'Sifir & Jurumiyah',
           bg: 'bg-emerald-50',
           text: 'text-emerald-800',
           border: 'border-emerald-200/80',
@@ -192,22 +198,12 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
       case 'wustho':
         return {
           label: 'Tingkat Wustho',
-          subLabel: 'Sifir & Jurumiyah',
+          subLabel: 'Imrithi & Alfiyah',
           bg: 'bg-sky-50',
           text: 'text-sky-800',
           border: 'border-sky-200/80',
           dot: 'bg-sky-600',
           avatarBg: 'bg-sky-100 text-sky-800'
-        };
-      case 'ulya':
-        return {
-          label: 'Tingkat Ulya',
-          subLabel: 'Imrithi & Alfiyah',
-          bg: 'bg-indigo-50',
-          text: 'text-indigo-800',
-          border: 'border-indigo-200/80',
-          dot: 'bg-indigo-600',
-          avatarBg: 'bg-indigo-100 text-indigo-800'
         };
       case 'mhq_juz':
         return {
@@ -236,7 +232,6 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
   const stats = useMemo(() => {
     const ulaGurus = guruList.filter(g => g.tingkat === 'ula');
     const wusthoGurus = guruList.filter(g => g.tingkat === 'wustho');
-    const ulyaGurus = guruList.filter(g => g.tingkat === 'ulya');
     const mhqGurus = guruList.filter(g => g.tingkat === 'mhq_juz');
 
     const countSantriByTingkat = (tKey) => {
@@ -253,10 +248,6 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
       wustho: {
         count: wusthoGurus.length,
         santri: countSantriByTingkat('wustho')
-      },
-      ulya: {
-        count: ulyaGurus.length,
-        santri: countSantriByTingkat('ulya')
       },
       mhq: {
         count: mhqGurus.length,
@@ -291,7 +282,7 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
     setCurrentPage(1);
   }, [searchGuru, filterTingkat, itemsPerPage]);
 
-  // Hitung total halaman & data yang ditampilkan per 5 item
+  // Hitung total halaman & data yang ditampilkan
   const totalPages = Math.max(1, Math.ceil(filteredGuru.length / itemsPerPage));
 
   useEffect(() => {
@@ -313,7 +304,6 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
     { id: 'ALL', label: 'Semua Jenjang', count: guruList.length },
     { id: 'ula', label: 'Tingkat Ula', count: stats.ula.count },
     { id: 'wustho', label: 'Tingkat Wustho', count: stats.wustho.count },
-    { id: 'ulya', label: 'Tingkat Ulya', count: stats.ulya.count },
     { id: 'mhq_juz', label: 'Tingkat MHQ', count: stats.mhq.count }
   ];
 
@@ -446,17 +436,17 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
           </div>
         </div>
 
-        {/* Card Ulya & MHQ */}
+        {/* Card MHQ */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Tingkat Ulya & MHQ
+              Cabang MHQ (Tahfidz)
             </span>
             <span className="text-2xl font-black text-slate-900 mt-1 block">
-              {stats.ulya.count + stats.mhq.count} <span className="text-xs font-normal text-slate-400">Guru</span>
+              {stats.mhq.count} <span className="text-xs font-normal text-slate-400">Kategori</span>
             </span>
             <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
-              {stats.ulya.santri + stats.mhq.santri} Santri Terdaftar
+              {stats.mhq.santri} Santri Terdaftar
             </span>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-800 flex items-center justify-center border border-indigo-100/80">
@@ -560,9 +550,13 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
                   </tr>
                 ) : (
                   paginatedGuru.map((guru, idx) => {
-                    const santriCount = registrations.filter(r => 
-                      (r.Wali_Kelas || '').toLowerCase() === (guru.nama || '').toLowerCase()
-                    ).length;
+                    const santriList = registrations.filter(r => 
+                      ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
+                      ((r.Kelas_Kategori || '').toLowerCase().trim() === (guru.kelas || '').toLowerCase().trim())
+                    );
+                    const santriCount = santriList.length;
+                    const isLengkap = santriCount >= 10;
+                    const isSebagian = santriCount > 0 && santriCount < 10;
 
                     const badge = getTingkatBadge(guru.tingkat);
                     const initials = getInitials(guru.nama);
@@ -622,24 +616,42 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
 
                         {/* Santri Masuk */}
                         <td className="py-3.5 px-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                            santriCount > 0 
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' 
-                              : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {santriCount} Santri
-                          </span>
+                          {isLengkap ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Lengkap ({santriCount})
+                            </span>
+                          ) : isSebagian ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              Sebagian ({santriCount})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 animate-pulse">
+                              Belum Ada (0)
+                            </span>
+                          )}
                         </td>
 
                         {/* Aksi */}
                         <td className="py-3.5 px-4 text-center">
                           <div className="flex items-center justify-center space-x-1.5">
                             
+                            {/* Tombol Lihat Santri */}
+                            <button
+                              onClick={() => {
+                                if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
+                                if (setActiveView) setActiveView('santri');
+                              }}
+                              title={`Lihat delegasi santri ${guru.kelas}`}
+                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+
                             {guru.kontak && (
                               <button
                                 onClick={() => handleSendWA(guru)}
                                 title="Chat WhatsApp"
-                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
                               </button>
@@ -683,9 +695,13 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedGuru.map((guru, idx) => {
-                  const santriCount = registrations.filter(r => 
-                    (r.Wali_Kelas || '').toLowerCase() === (guru.nama || '').toLowerCase()
-                  ).length;
+                  const santriList = registrations.filter(r => 
+                    ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
+                    ((r.Kelas_Kategori || '').toLowerCase().trim() === (guru.kelas || '').toLowerCase().trim())
+                  );
+                  const santriCount = santriList.length;
+                  const isLengkap = santriCount >= 10;
+                  const isSebagian = santriCount > 0 && santriCount < 10;
 
                   const badge = getTingkatBadge(guru.tingkat);
                   const initials = getInitials(guru.nama);
@@ -721,9 +737,13 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
                         <div className="mt-3.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
                           <span className="text-[11px] text-slate-500 font-medium">Santri Bimbingan:</span>
                           <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
-                            santriCount > 0 ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-600'
+                            isLengkap 
+                              ? 'bg-emerald-800 text-white' 
+                              : isSebagian 
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                              : 'bg-rose-100 text-rose-800 border border-rose-200'
                           }`}>
-                            {santriCount} Santri
+                            {isLengkap ? `Lengkap (${santriCount})` : isSebagian ? `Sebagian (${santriCount})` : 'Belum Ada (0)'}
                           </span>
                         </div>
                       </div>
@@ -744,6 +764,16 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
                         )}
 
                         <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => {
+                              if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
+                              if (setActiveView) setActiveView('santri');
+                            }}
+                            title={`Lihat santri delegasi ${guru.kelas}`}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => openEditModal(guru)}
                             className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
@@ -769,15 +799,26 @@ export default function AdminGuru({ registrations = [], onRefresh }) {
           </div>
         )}
 
-        {/* 4C. PAGINATION FOOTER (5 DATA PER HALAMAN) */}
+        {/* 4C. PAGINATION FOOTER */}
         <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="text-slate-500 font-medium text-center sm:text-left flex items-center gap-2">
+          <div className="text-slate-500 font-medium text-center sm:text-left flex flex-wrap items-center gap-2">
             <span>
               Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari total <strong className="text-slate-800">{filteredGuru.length}</strong> wali kelas
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-100 text-[10px] font-bold">
-              {itemsPerPage} data / halaman
-            </span>
+            <div className="flex items-center space-x-1.5 ml-1">
+              <span className="text-[11px] text-slate-400 font-medium">Tampilkan:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-300"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={Math.max(1000, filteredGuru.length)}>Semua ({filteredGuru.length})</option>
+              </select>
+              <span className="text-[11px] text-slate-400 font-medium">/ halaman</span>
+            </div>
           </div>
 
           <div className="flex items-center space-x-1.5">

@@ -182,6 +182,7 @@ export default function AdminApp() {
               registrations={registrations}
               onRefresh={loadData}
               setActiveView={setActiveView}
+              setSearchTerm={setSearchTerm}
             />
           )}
 
@@ -191,6 +192,7 @@ export default function AdminApp() {
               registrations={registrations}
               onRefresh={loadData}
               searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
             />
           )}
 
@@ -199,6 +201,8 @@ export default function AdminApp() {
             <AdminGuru
               registrations={registrations}
               onRefresh={loadData}
+              setActiveView={setActiveView}
+              setSearchTerm={setSearchTerm}
             />
           )}
 

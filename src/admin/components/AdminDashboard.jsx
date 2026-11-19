@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { 
   Users, 
@@ -29,17 +29,25 @@ import {
   AlertCircle,
   HelpCircle,
   Check,
-  TrendingUp
+  TrendingUp,
+  MessageSquare,
+  Phone,
+  Search,
+  Building2,
+  X
 } from 'lucide-react';
 import { 
   getActivityLogs, 
-  clearActivityLogs
+  clearActivityLogs,
+  getWaliKelasList
 } from '../../shared/services/api';
+import { MASTER_WALI_KELAS } from '../../shared/data/competitions';
 
 export default function AdminDashboard({ 
   registrations = [], 
   onRefresh, 
-  setActiveView 
+  setActiveView,
+  setSearchTerm
 }) {
   const [logs, setLogs] = useState(() => getActivityLogs());
   const [logFilter, setLogFilter] = useState('ALL');
@@ -86,35 +94,125 @@ export default function AdminDashboard({
     XLSX.writeFile(workbook, `Rekap_Musabaqah_1447H_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  // Statistik Utama
+  // Statistik Utama (Tanpa Ulya, Sesuai 24 Kelas Diniyah & MHQ)
   const totalPeserta = registrations.length;
   
   const santriUla = registrations.filter(r => (r.Tingkat || '').toLowerCase().includes('ula'));
   const santriWustho = registrations.filter(r => (r.Tingkat || '').toLowerCase().includes('wustho'));
-  const santriUlya = registrations.filter(r => (r.Tingkat || '').toLowerCase().includes('ulya'));
   const santriMHQ = registrations.filter(r => {
     const t = (r.Tingkat || '').toLowerCase();
-    return t.includes('mhq') || t.includes('qur\'an');
+    const c = (r.Cabang_Lomba || '').toLowerCase();
+    return t.includes('mhq') || t.includes('qur\'an') || c.includes('mhq');
   });
 
   const totalUla = santriUla.length;
   const totalWustho = santriWustho.length;
-  const totalUlya = santriUlya.length;
   const totalMHQ = santriMHQ.length;
 
   const totalTerverifikasi = registrations.filter(r => r.Status === 'Terverifikasi').length;
   const totalPending = registrations.filter(r => r.Status === 'Pending').length;
   const totalDitolak = registrations.filter(r => r.Status === 'Ditolak').length;
+  const totalDiundi = registrations.filter(r => r.Nomor_Urut && String(r.Nomor_Urut).trim() !== '').length;
 
   // Persentase
   const pctUla = totalPeserta > 0 ? Math.round((totalUla / totalPeserta) * 100) : 0;
   const pctWustho = totalPeserta > 0 ? Math.round((totalWustho / totalPeserta) * 100) : 0;
-  const pctUlya = totalPeserta > 0 ? Math.round((totalUlya / totalPeserta) * 100) : 0;
   const pctMHQ = totalPeserta > 0 ? Math.round((totalMHQ / totalPeserta) * 100) : 0;
 
   const pctTerverifikasi = totalPeserta > 0 ? Math.round((totalTerverifikasi / totalPeserta) * 100) : 0;
   const pctPending = totalPeserta > 0 ? Math.round((totalPending / totalPeserta) * 100) : 0;
   const pctDitolak = totalPeserta > 0 ? Math.round((totalDitolak / totalPeserta) * 100) : 0;
+  const pctDiundi = totalPeserta > 0 ? Math.round((totalDiundi / totalPeserta) * 100) : 0;
+
+  // =========================================================
+  // MATRIKS KEPATUHAN & KESIAPAN 24 KELAS DINIYAH (ZERO GUESSWORK)
+  // =========================================================
+  const [matrixFilter, setMatrixFilter] = useState('ALL'); // 'ALL' | 'BELUM' | 'SEBAGIAN' | 'LENGKAP'
+  const [matrixSearch, setMatrixSearch] = useState('');
+
+  const waliList = useMemo(() => {
+    try {
+      const stored = getWaliKelasList();
+      if (Array.isArray(stored) && stored.length > 0) return stored;
+    } catch (e) {}
+    return MASTER_WALI_KELAS;
+  }, []);
+
+  const complianceMatrix = useMemo(() => {
+    return waliList.map((wali, idx) => {
+      const kelasName = (wali.kelas || '').trim();
+      const waliName = (wali.nama || '').trim();
+
+      const santriList = registrations.filter(r => {
+        const k = (r.Kelas_Kategori || '').toLowerCase().trim();
+        const w = (r.Wali_Kelas || '').toLowerCase().trim();
+        return (k && k === kelasName.toLowerCase()) || (w && w === waliName.toLowerCase());
+      });
+
+      const totalCount = santriList.length;
+      const verifiedCount = santriList.filter(r => r.Status === 'Terverifikasi').length;
+      const diundiCount = santriList.filter(r => r.Nomor_Urut && String(r.Nomor_Urut).trim() !== '').length;
+
+      let status = 'BELUM';
+      if (totalCount >= 10) {
+        status = 'LENGKAP';
+      } else if (totalCount > 0) {
+        status = 'SEBAGIAN';
+      }
+
+      return {
+        ...wali,
+        no: idx + 1,
+        totalCount,
+        verifiedCount,
+        diundiCount,
+        status,
+        santriList
+      };
+    });
+  }, [waliList, registrations]);
+
+  const countLengkap = complianceMatrix.filter(m => m.status === 'LENGKAP').length;
+  const countSebagian = complianceMatrix.filter(m => m.status === 'SEBAGIAN').length;
+  const countBelum = complianceMatrix.filter(m => m.status === 'BELUM').length;
+
+  const filteredMatrix = complianceMatrix.filter(m => {
+    if (matrixFilter !== 'ALL' && m.status !== matrixFilter) return false;
+    if (matrixSearch) {
+      const q = matrixSearch.toLowerCase();
+      const match = (
+        (m.kelas || '').toLowerCase().includes(q) ||
+        (m.nama || '').toLowerCase().includes(q) ||
+        (m.kontak || '').includes(q)
+      );
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const handleJumpToClass = (kelasName) => {
+    if (setSearchTerm) setSearchTerm(kelasName);
+    if (setActiveView) setActiveView('santri');
+  };
+
+  const handleSendReminderWA = (item) => {
+    const cleanPhone = (item.kontak || '').replace(/^0/, '62').replace(/\D/g, '');
+    const statusDesc = item.totalCount === 0 
+      ? 'belum ada delegasi santri yang didaftarkan' 
+      : `baru terdaftar ${item.totalCount} santri (kuota lengkap: minimal 10 delegasi)`;
+    const msg = encodeURIComponent(
+      `Assalamu'alaikum Wr. Wb. Yth. ${item.nama}.\n\n` +
+      `Mengingatkan terkait pendaftaran delegasi santri Musabaqah Akhirussanah 1447 H untuk kelas binaan: *${item.kelas}*.\n` +
+      `Status pendaftaran saat ini: *${statusDesc}*.\n\n` +
+      `Sesuai ketentuan lomba, setiap kelas wajib mengirimkan delegasi. Mohon kiranya dapat segera melengkapi pendaftaran santri melalui sistem formulir musabaqah.\n\n` +
+      `Jazakumullah Khairan Katsiran.`
+    );
+    if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
+  };
 
   // =========================================================
   // DATA & KOORDINAT GRAFIK GARIS GUNUNG (AREA CHART)
@@ -220,11 +318,15 @@ export default function AdminDashboard({
           <div className="pt-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-700">
             <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-white/90 border border-emerald-200/80 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Undian Acak 050+ Aktif</span>
+              <span>Undian 3 Digit Bebas Duplikat</span>
             </span>
             <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white/90 border border-slate-200/80 shadow-2xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>{totalTerverifikasi} Santri Lolos Verifikasi</span>
+            </span>
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white/90 border border-slate-200/80 shadow-2xs">
+              <Dices className="w-3.5 h-3.5 text-indigo-600" />
+              <span>{totalDiundi} / {totalPeserta} Sudah Diundi</span>
             </span>
             <button
               onClick={() => setActiveView('juara')}
@@ -253,7 +355,7 @@ export default function AdminDashboard({
           </div>
           <div>
             <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
-              Total Santri
+              Total Delegasi
             </span>
             <span className="text-2xl font-black text-slate-900 leading-none">
               {totalPeserta}
@@ -263,7 +365,10 @@ export default function AdminDashboard({
 
         {/* KPI 2: TINGKAT ULA */}
         <div 
-          onClick={() => setActiveView('santri')}
+          onClick={() => {
+            if (setSearchTerm) setSearchTerm('Ula');
+            setActiveView('santri');
+          }}
           className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center space-x-3 group"
         >
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-100 group-hover:scale-105 transition-transform">
@@ -271,7 +376,7 @@ export default function AdminDashboard({
           </div>
           <div>
             <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
-              Tingkat Ula
+              Tingkat Ula ({pctUla}%)
             </span>
             <span className="text-2xl font-black text-slate-900 leading-none">
               {totalUla}
@@ -281,7 +386,10 @@ export default function AdminDashboard({
 
         {/* KPI 3: TINGKAT WUSTHO */}
         <div 
-          onClick={() => setActiveView('santri')}
+          onClick={() => {
+            if (setSearchTerm) setSearchTerm('Wustho');
+            setActiveView('santri');
+          }}
           className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center space-x-3 group"
         >
           <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 border border-teal-100 group-hover:scale-105 transition-transform">
@@ -289,7 +397,7 @@ export default function AdminDashboard({
           </div>
           <div>
             <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
-              Tingkat Wustho
+              Tingkat Wustho ({pctWustho}%)
             </span>
             <span className="text-2xl font-black text-slate-900 leading-none">
               {totalWustho}
@@ -297,9 +405,12 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        {/* KPI 4: TINGKAT ULYA */}
+        {/* KPI 4: CABANG MHQ */}
         <div 
-          onClick={() => setActiveView('santri')}
+          onClick={() => {
+            if (setSearchTerm) setSearchTerm('MHQ');
+            setActiveView('santri');
+          }}
           className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center space-x-3 group"
         >
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-105 transition-transform">
@@ -307,10 +418,10 @@ export default function AdminDashboard({
           </div>
           <div>
             <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
-              Tingkat Ulya
+              Cabang MHQ
             </span>
             <span className="text-2xl font-black text-slate-900 leading-none">
-              {totalUlya}
+              {totalMHQ}
             </span>
           </div>
         </div>
@@ -325,12 +436,251 @@ export default function AdminDashboard({
           </div>
           <div>
             <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
-              Terverifikasi
+              Terverifikasi ({pctTerverifikasi}%)
             </span>
             <span className="text-2xl font-black text-emerald-800 leading-none">
               {totalTerverifikasi}
             </span>
           </div>
+        </div>
+
+      </div>
+
+      {/* =========================================================
+          3. MATRIKS KEPATUHAN & KESIAPAN 24 KELAS DINIYAH (ZERO GUESSWORK)
+          ========================================================= */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
+        
+        {/* Header Matriks */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-start sm:items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                  Matriks Kepatuhan 24 Kelas Diniyah
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200">
+                  16 Ula + 8 Wustho
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pantau kepatuhan delegasi kelas tanpa tebak-tebakan. Klik nama kelas untuk melihat santri atau hubungi Wali Kelas via WhatsApp.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Counter Chips */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              onClick={() => setMatrixFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                matrixFilter === 'ALL'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              Semua (24)
+            </button>
+            <button
+              onClick={() => setMatrixFilter('LENGKAP')}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                matrixFilter === 'LENGKAP'
+                  ? 'bg-emerald-800 text-white border-emerald-800 shadow-2xs'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+              }`}
+            >
+              Lengkap ({countLengkap})
+            </button>
+            <button
+              onClick={() => setMatrixFilter('SEBAGIAN')}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                matrixFilter === 'SEBAGIAN'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                  : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100/70'
+              }`}
+            >
+              Sebagian ({countSebagian})
+            </button>
+            <button
+              onClick={() => setMatrixFilter('BELUM')}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                matrixFilter === 'BELUM'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                  : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100/70'
+              }`}
+            >
+              Belum Mendaftar ({countBelum})
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar dalam Matriks */}
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari kelas Diniyah, ustadz wali kelas, atau kontak..."
+            value={matrixSearch}
+            onChange={(e) => setMatrixSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-700 focus:bg-white bg-slate-50/60 transition-all placeholder:text-slate-400"
+          />
+          {matrixSearch && (
+            <button
+              type="button"
+              onClick={() => setMatrixSearch('')}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Tabel Matriks 24 Kelas */}
+        <div className="overflow-x-auto rounded-xl border border-slate-200/70">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200">
+              <tr>
+                <th className="py-3 px-3 text-center w-12">No</th>
+                <th className="py-3 px-3">Kelas Diniyah</th>
+                <th className="py-3 px-3">Wali Kelas</th>
+                <th className="py-3 px-3">Progres Delegasi</th>
+                <th className="py-3 px-3 text-center">Status</th>
+                <th className="py-3 px-3 text-center w-40">Aksi Panitia</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredMatrix.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-slate-400 text-xs">
+                    Tidak ada kelas yang cocok dengan filter pencarian.
+                  </td>
+                </tr>
+              ) : (
+                filteredMatrix.map((item) => {
+                  const isPutri = (item.kelas || '').toLowerCase().includes('putri');
+                  const isUla = (item.tingkat || '').toLowerCase() === 'ula';
+                  const pct = Math.min(100, Math.round((item.totalCount / 10) * 100));
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* No */}
+                      <td className="py-2.5 px-3 text-center font-mono text-slate-400 text-[11px]">
+                        {item.no}
+                      </td>
+
+                      {/* Kelas Diniyah */}
+                      <td className="py-2.5 px-3">
+                        <div className="font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+                          <span>{item.kelas}</span>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            isPutri ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}>
+                            {isPutri ? 'Putri' : 'Putra'}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] font-semibold ${
+                          isUla ? 'text-amber-700' : 'text-teal-700'
+                        }`}>
+                          {isUla ? 'Tingkat Ula' : 'Tingkat Wustho'}
+                        </span>
+                      </td>
+
+                      {/* Wali Kelas */}
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-slate-800 leading-tight">
+                          {item.nama}
+                        </div>
+                        {item.kontak ? (
+                          <span className="text-[10px] font-mono text-slate-500">
+                            {item.kontak}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">
+                            Kontak belum diisi
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Progres Delegasi */}
+                      <td className="py-2.5 px-3">
+                        <div className="space-y-1 max-w-[170px]">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
+                            <span>{item.totalCount} Delegasi</span>
+                            <span className="text-[10px] text-slate-400 font-mono">{pct}%</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                item.status === 'LENGKAP' 
+                                  ? 'bg-emerald-600' 
+                                  : item.status === 'SEBAGIAN' 
+                                  ? 'bg-amber-500' 
+                                  : 'bg-slate-300'
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2 text-[9.5px] text-slate-400 font-mono">
+                            <span>Sah: {item.verifiedCount}</span>
+                            <span>•</span>
+                            <span>Diundi: {item.diundiCount}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-2.5 px-3 text-center">
+                        {item.status === 'LENGKAP' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <Check className="w-3 h-3 mr-1 text-emerald-600" />
+                            <span>Lengkap</span>
+                          </span>
+                        ) : item.status === 'SEBAGIAN' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <Clock className="w-3 h-3 mr-1 text-amber-600" />
+                            <span>Sebagian ({item.totalCount})</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 animate-pulse">
+                            <AlertCircle className="w-3 h-3 mr-1 text-rose-600" />
+                            <span>Belum Mendaftar</span>
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Aksi Panitia */}
+                      <td className="py-2.5 px-3 text-center">
+                        <div className="flex items-center justify-center space-x-1.5">
+                          {/* Tombol Lihat Santri */}
+                          <button
+                            onClick={() => handleJumpToClass(item.kelas)}
+                            title={`Lihat delegasi santri ${item.kelas}`}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[10px] border border-emerald-200 transition-colors cursor-pointer flex items-center space-x-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Santri</span>
+                          </button>
+
+                          {/* Tombol Ingatkan via WA */}
+                          <button
+                            onClick={() => handleSendReminderWA(item)}
+                            title={`Kirim pesan pengingat WA ke ${item.nama}`}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 font-semibold text-[10px] border border-slate-200 transition-colors cursor-pointer flex items-center space-x-1"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>WA</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
       </div>

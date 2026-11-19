@@ -62,17 +62,23 @@ const getBase64Image = async (url) => {
 export default function AdminSantri({ 
   registrations = [], 
   onRefresh, 
-  searchTerm: parentSearch = '' 
+  searchTerm: parentSearch = '',
+  setSearchTerm
 }) {
   const [localSearch, setLocalSearch] = useState('');
   const [filterTingkat, setFilterTingkat] = useState('ALL');
   const [filterWaliKelas, setFilterWaliKelas] = useState('ALL');
   const [statusTab, setStatusTab] = useState('ALL');
   const [filterGender, setFilterGender] = useState('ALL');
+  const [filterLottery, setFilterLottery] = useState('ALL'); // 'ALL' | 'ASSIGNED' | 'UNASSIGNED'
 
-  // Pagination State (5 Data Per Halaman)
+  // Pagination State (Default 25 Data Per Halaman untuk kenyamanan operasional panitia)
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // Modal Detail Santri
   const [selectedSantri, setSelectedSantri] = useState(null);
@@ -234,14 +240,17 @@ export default function AdminSantri({
   };
 
   // Status apakah ada filter aktif
-  const isFilterActive = filterTingkat !== 'ALL' || filterWaliKelas !== 'ALL' || filterGender !== 'ALL' || localSearch.trim() !== '' || statusTab !== 'ALL';
+  const isFilterActive = filterTingkat !== 'ALL' || filterWaliKelas !== 'ALL' || filterGender !== 'ALL' || filterLottery !== 'ALL' || localSearch.trim() !== '' || parentSearch.trim() !== '' || statusTab !== 'ALL';
 
   const handleResetFilters = () => {
     setLocalSearch('');
+    if (setSearchTerm) setSearchTerm('');
     setFilterTingkat('ALL');
     setFilterWaliKelas('ALL');
     setFilterGender('ALL');
+    setFilterLottery('ALL');
     setStatusTab('ALL');
+    setSelectedIds(new Set());
   };
 
   // Filter Data
@@ -276,15 +285,21 @@ export default function AdminSantri({
       if (item.Jenis_Kelamin !== filterGender) return false;
     }
 
+    if (filterLottery === 'ASSIGNED') {
+      if (!item.Nomor_Urut || String(item.Nomor_Urut).trim() === '') return false;
+    } else if (filterLottery === 'UNASSIGNED') {
+      if (item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '') return false;
+    }
+
     return true;
   });
 
   // Reset halaman ke 1 jika filter atau pencarian berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [effectiveSearch, filterTingkat, filterWaliKelas, statusTab, filterGender, itemsPerPage]);
+  }, [effectiveSearch, filterTingkat, filterWaliKelas, statusTab, filterGender, filterLottery, itemsPerPage]);
 
-  // Hitung total halaman & slice 5 data per halaman
+  // Hitung total halaman & slice data per halaman
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
 
   useEffect(() => {
@@ -312,6 +327,125 @@ export default function AdminSantri({
       if (onRefresh) onRefresh();
     } catch (e) {
       alert('Gagal memperbarui status: ' + e.message);
+    }
+  };
+
+  // Bulk Action Handlers
+  const handleToggleSelectAllVisible = () => {
+    const visibleIds = paginatedData.map(d => d.ID_Pendaftaran).filter(Boolean);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+    
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        visibleIds.forEach(id => next.delete(id));
+      } else {
+        visibleIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectOne = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkVerify = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedIds);
+      let successCount = 0;
+      for (const id of ids) {
+        await updateStatus(id, 'Terverifikasi');
+        successCount++;
+      }
+      setSelectedIds(new Set());
+      Swal.fire({
+        icon: 'success',
+        title: 'Verifikasi Berhasil!',
+        text: `${successCount} santri berhasil diverifikasi serentak.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      Swal.fire('Gagal!', 'Terjadi kesalahan saat verifikasi: ' + e.message, 'error');
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkPending = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedIds);
+      let successCount = 0;
+      for (const id of ids) {
+        await updateStatus(id, 'Pending');
+        successCount++;
+      }
+      setSelectedIds(new Set());
+      Swal.fire({
+        icon: 'success',
+        title: 'Status Diperbarui!',
+        text: `${successCount} santri dikembalikan ke status Pending.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      Swal.fire('Gagal!', 'Terjadi kesalahan: ' + e.message, 'error');
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirm = await Swal.fire({
+      title: `Hapus ${selectedIds.size} Santri Terpilih?`,
+      html: `Apakah Anda yakin ingin menghapus <strong>${selectedIds.size} santri</strong> terpilih?<br/><span class="text-xs text-rose-600">Data akan dihapus permanen dari sistem dan Google Sheets.</span>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Hapus Data',
+      cancelButtonText: 'Batal'
+    });
+
+    if (confirm.isConfirmed) {
+      setIsBulkProcessing(true);
+      try {
+        const ids = Array.from(selectedIds);
+        let count = 0;
+        for (const id of ids) {
+          await deleteRegistration(id);
+          count++;
+        }
+        setSelectedIds(new Set());
+        Swal.fire({
+          icon: 'success',
+          title: 'Terhapus!',
+          text: `${count} santri telah dihapus dari sistem.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        if (onRefresh) onRefresh();
+      } catch (e) {
+        Swal.fire('Gagal!', 'Sebagian data gagal dihapus: ' + e.message, 'error');
+      } finally {
+        setIsBulkProcessing(false);
+      }
     }
   };
 
@@ -984,7 +1118,6 @@ export default function AdminSantri({
                 <option value="ALL">Semua Tingkat</option>
                 <option value="Ula">Tingkat Ula</option>
                 <option value="Wustho">Tingkat Wustho</option>
-                <option value="Ulya">Tingkat Ulya</option>
                 <option value="MHQ">Tingkat MHQ</option>
               </select>
             </div>
@@ -1027,6 +1160,23 @@ export default function AdminSantri({
               </select>
             </div>
 
+            {/* Filter 4: Status Nomor Undian (3 Digit) */}
+            <div className="relative">
+              <select
+                value={filterLottery}
+                onChange={(e) => setFilterLottery(e.target.value)}
+                className={`pl-3 pr-8 py-2 rounded-xl border text-xs font-medium outline-none bg-white transition-all cursor-pointer ${
+                  filterLottery !== 'ALL' 
+                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 font-semibold' 
+                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="ALL">Semua Undian</option>
+                <option value="ASSIGNED">Sudah Diundi (3 Digit)</option>
+                <option value="UNASSIGNED">Belum Diundi</option>
+              </select>
+            </div>
+
             {/* Reset Filter Button */}
             {isFilterActive && (
               <button
@@ -1048,7 +1198,16 @@ export default function AdminSantri({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/60">
               <tr>
-                <th className="py-3.5 px-4 text-center w-24">No. Urut</th>
+                <th className="py-3.5 px-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(d.ID_Pendaftaran))}
+                    onChange={handleToggleSelectAllVisible}
+                    className="rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                    title="Pilih Semua di Halaman Ini"
+                  />
+                </th>
+                <th className="py-3.5 px-4 text-center w-28">No. Urut</th>
                 <th className="py-3.5 px-4">Nama Santri</th>
                 <th className="py-3.5 px-4">Cabang Perlombaan</th>
                 <th className="py-3.5 px-4">Jenjang & Kelas</th>
@@ -1060,7 +1219,7 @@ export default function AdminSantri({
             <tbody className="divide-y divide-slate-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-16 text-center">
+                  <td colSpan="8" className="py-16 text-center">
                     <div className="max-w-xs mx-auto text-center space-y-2">
                       <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
                         <Users className="w-5 h-5" />
@@ -1085,17 +1244,27 @@ export default function AdminSantri({
                 </tr>
               ) : (
                 paginatedData.map((item, idx) => (
-                  <tr key={item.ID_Pendaftaran || idx} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={item.ID_Pendaftaran || idx} className={`transition-colors ${selectedIds.has(item.ID_Pendaftaran) ? 'bg-emerald-50/50' : 'hover:bg-slate-50/60'}`}>
                     
-                    {/* Nomor Urut */}
+                    {/* Checkbox Pilihan Baris */}
+                    <td className="py-3.5 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(item.ID_Pendaftaran)}
+                        onChange={() => handleToggleSelectOne(item.ID_Pendaftaran)}
+                        className="rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                      />
+                    </td>
+
+                    {/* Nomor Urut (Format 3 Digit Monospace) */}
                     <td className="py-3.5 px-4 text-center">
-                      {item.Nomor_Urut ? (
+                      {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
                         <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-mono font-bold text-xs border border-emerald-200">
-                          {item.Nomor_Urut}
+                          {String(item.Nomor_Urut).padStart(3, '0')}
                         </span>
                       ) : (
                         <span className="inline-block text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                          -
+                          Belum Diundi
                         </span>
                       )}
                     </td>
@@ -1224,15 +1393,27 @@ export default function AdminSantri({
           </table>
         </div>
 
-        {/* PAGINATION FOOTER (5 DATA PER HALAMAN) */}
+        {/* PAGINATION FOOTER */}
         <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="text-slate-500 font-medium text-center sm:text-left flex items-center gap-2">
+          <div className="text-slate-500 font-medium text-center sm:text-left flex flex-wrap items-center gap-2">
             <span>
               Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari total <strong className="text-slate-800">{filteredData.length}</strong> santri
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-100 text-[10px] font-bold">
-              {itemsPerPage} data / halaman
-            </span>
+            <div className="flex items-center space-x-1.5 ml-1">
+              <span className="text-[11px] text-slate-400 font-medium">Tampilkan:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-300"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={Math.max(1000, filteredData.length)}>Semua ({filteredData.length})</option>
+              </select>
+              <span className="text-[11px] text-slate-400 font-medium">/ halaman</span>
+            </div>
           </div>
 
           <div className="flex items-center space-x-1.5">
@@ -1753,6 +1934,57 @@ export default function AdminSantri({
                 <span>{isDownloading ? 'Menyusun PDF...' : 'Unduh PDF'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. STICKY FLOATING BULK ACTION BAR */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex flex-wrap items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-bold font-mono">
+              {selectedIds.size} Santri Terpilih
+            </span>
+          </div>
+
+          <div className="hidden sm:block h-4 w-px bg-slate-700" />
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkVerify}
+              disabled={isBulkProcessing}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Verifikasi Terpilih</span>
+            </button>
+
+            <button
+              onClick={handleBulkPending}
+              disabled={isBulkProcessing}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Pending</span>
+            </button>
+
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkProcessing}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Hapus</span>
+            </button>
+
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Batalkan pilihan"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
