@@ -99,7 +99,11 @@ export const getLocalRegistrations = () => {
 /**
  * Mengambil seluruh data santri langsung dari Google Sheets tab Pendaftaran
  */
-export const fetchRegistrations = async (forceRemote = true) => {
+export const fetchRegistrations = async (forceRemote = false) => {
+  if (!forceRemote) {
+    const local = getLocalRegistrations();
+    if (local && local.length > 0) return local;
+  }
   const gasUrl = getStoredGasUrl();
   if (!gasUrl) return getLocalRegistrations();
 
@@ -309,19 +313,17 @@ export const updateStatus = async (idPendaftaran, newStatus) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'update_single',
-          ID_Pendaftaran: cleanId,
-          Status: newStatus
-        })
-      });
-    } catch (e) {
+    fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'update_single',
+        ID_Pendaftaran: cleanId,
+        Status: newStatus
+      })
+    }).catch(e => {
       console.warn('Update status ke GAS gagal:', e);
-    }
+    });
   }
 
   return updated;
@@ -352,19 +354,17 @@ export const batchUpdateStatus = async (idList = [], newStatus) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'batch_update_status',
-          ids: Array.from(cleanIds),
-          status: newStatus
-        })
-      });
-    } catch (e) {
+    fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'batch_update_status',
+        ids: Array.from(cleanIds),
+        status: newStatus
+      })
+    }).catch(e => {
       console.warn('Batch update status ke GAS gagal:', e);
-    }
+    });
   }
 
   return updated;
