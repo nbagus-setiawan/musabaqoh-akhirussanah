@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import Swal from 'sweetalert2';
 import { 
   Users, 
   GraduationCap, 
@@ -26,6 +25,7 @@ import {
   FileSpreadsheet, 
   ShieldCheck,
   Send,
+  Calendar,
   FileText,
   Settings,
   X,
@@ -35,8 +35,7 @@ import {
 import { 
   getActivityLogs, 
   clearActivityLogs,
-  getWaliKelasList,
-  updateStatus
+  getWaliKelasList
 } from '../../shared/services/api';
 import { MASTER_WALI_KELAS } from '../../shared/data/competitions';
 
@@ -48,7 +47,6 @@ export default function AdminDashboard({
 }) {
   const [logs, setLogs] = useState(() => getActivityLogs());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [quickVerifyingId, setQuickVerifyingId] = useState(null);
 
   // State Paginasi & Filter Matriks Kepatuhan 24 Kelas Diniyah
   // Ditampilkan bertahap (8 kelas per halaman) dengan tombol Lanjutkan / Sebelumnya
@@ -194,44 +192,10 @@ export default function AdminDashboard({
     setMatrixPage(1);
   };
 
-  // Antrean Cepat Verifikasi Santri (Status: Pending)
-  const pendingQueue = useMemo(() => {
-    return registrations.filter(r => r.Status === 'Pending').slice(0, 5);
-  }, [registrations]);
-
   // 5 Santri Terdaftar Terbaru
   const recentSantri = useMemo(() => {
     return [...registrations].reverse().slice(0, 5);
   }, [registrations]);
-
-  // Handler Verifikasi Cepat (Terima) di Dashboard dalam 0ms
-  const handleQuickAccept = async (item) => {
-    if (!item || !item.ID_Pendaftaran) return;
-    const cleanId = String(item.ID_Pendaftaran).trim();
-    setQuickVerifyingId(cleanId);
-    try {
-      await updateStatus(cleanId, 'Terverifikasi');
-      Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 1800,
-        timerProgressBar: true
-      }).fire({
-        icon: 'success',
-        title: `Santri ${item.Nama_Lengkap} Diterima (Terverifikasi)`
-      });
-      if (onRefresh) onRefresh(false);
-    } catch (e) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Gagal Memverifikasi',
-        text: e.message || 'Terjadi kesalahan saat memverifikasi santri.'
-      });
-    } finally {
-      setQuickVerifyingId(null);
-    }
-  };
 
   const handleJumpToClass = (kelasName) => {
     if (setSearchTerm) setSearchTerm(kelasName);
@@ -257,6 +221,39 @@ export default function AdminDashboard({
     }
   };
 
+  // =========================================================
+  // HELPER KALENDER MUSABAQAH (WIDGET TANGGAL SEPERTI TADI)
+  // =========================================================
+  const todayDate = new Date();
+  const currentYear = todayDate.getFullYear();
+  const currentMonth = todayDate.getMonth();
+  const currentDayNum = todayDate.getDate();
+  const currentMonthName = todayDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+  // Perhitungan Hari Kalender Bulan Ini
+  const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); // 0: Ahad, 1: Senin, ...
+  const startDayOffset = (firstDayIndex + 6) % 7; // Mengatur Senin sebagai kolom pertama (0..6)
+  const prevMonthTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+
+  const calendarDays = useMemo(() => {
+    const days = [];
+    // Hari dari bulan sebelumnya sebagai padding
+    for (let i = startDayOffset - 1; i >= 0; i--) {
+      days.push({ day: prevMonthTotalDays - i, isCurrentMonth: false, isToday: false });
+    }
+    // Hari di bulan berjalan
+    for (let i = 1; i <= daysInCurrentMonth; i++) {
+      days.push({ day: i, isCurrentMonth: true, isToday: i === currentDayNum });
+    }
+    // Hari di bulan berikutnya untuk melengkapi baris grid
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({ day: i, isCurrentMonth: false, isToday: false });
+    }
+    return days;
+  }, [currentYear, currentMonth, currentDayNum, daysInCurrentMonth, startDayOffset, prevMonthTotalDays]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-7 space-y-7 max-w-7xl mx-auto bg-[#F4F7FC]">
       
@@ -277,7 +274,7 @@ export default function AdminDashboard({
             Pusat Kendali Administrasi & Verifikasi
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-            Monitoring kepatuhan 24 Kelas Diniyah, verifikasi antrean berkas delegasi santri, dan pengundian nomor urut 3 digit.
+            Monitoring kepatuhan 24 Kelas Diniyah, verifikasi berkas delegasi santri, dan pengundian nomor urut 3 digit.
           </p>
         </div>
 
@@ -629,132 +626,97 @@ export default function AdminDashboard({
       </div>
 
       {/* =========================================================
-          4. ANTREAN VERIFIKASI CEPAT & DATA SANTRI TERBARU
-             Memudahkan panitia langsung memverifikasi berkas santri
+          4. KALENDER MUSABAQAH (TANGGAL SEPERTI TADI) & DATA SANTRI TERKINI
+             Menggantikan antrean verifikasi dengan widget tanggal (kalender)
+             sesuai permintaan pengguna
           ========================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* KIRI (7 KOLOM): ANTREAN VERIFIKASI CEPAT (STATUS: PENDING) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
+        {/* KIRI (5 KOLOM): KALENDER MUSABAQAH (WIDGET TANGGAL SEPERTI TADI) */}
+        <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/70">
-                  <Clock className="w-4 h-4" />
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/70">
+                  <Calendar className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Antrean Verifikasi Berkas
+                    Kalender Musabaqah
                   </h3>
                   <span className="text-[11px] text-slate-400">
-                    Klik Terima untuk memvalidasi delegasi santri langsung
+                    Jadwal & Agenda Perlombaan
                   </span>
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  if (setActiveView) setActiveView('santri');
-                }}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-              >
-                Lihat Semua ({totalPending})
-              </button>
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-100/70">
+                {currentMonthName}
+              </span>
             </div>
 
-            {/* List Antrean Santri Pending */}
-            <div className="divide-y divide-slate-100 pt-1">
-              {pendingQueue.length === 0 ? (
-                <div className="py-8 text-center space-y-2">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center border border-emerald-200/60">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <p className="text-xs font-bold text-slate-700">
-                    Alhamdulillah, seluruh berkas telah diverifikasi!
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    Tidak ada santri yang berstatus pending saat ini.
-                  </p>
-                </div>
-              ) : (
-                pendingQueue.map((item) => (
-                  <div 
-                    key={item.ID_Pendaftaran}
-                    className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 px-2 rounded-2xl transition-colors"
-                  >
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-slate-900 text-xs truncate">
-                          {item.Nama_Lengkap}
-                        </span>
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                          item.Jenis_Kelamin === 'P' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
-                        }`}>
-                          {item.Jenis_Kelamin === 'P' ? 'Putri' : 'Putra'}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-slate-500 truncate">
-                        <span className="font-semibold text-slate-700">{item.Cabang_Lomba}</span> • {item.Kelas_Kategori || item.Kelas_Diniyah} ({item.Wali_Kelas})
-                      </div>
-                    </div>
+            {/* Grid Kalender Mini (Sn Sl Rb Km Jm Sb Ah) */}
+            <div className="pt-3 text-center text-xs">
+              <div className="grid grid-cols-7 text-[10.5px] font-bold text-slate-400 mb-2.5">
+                <span>Sn</span>
+                <span>Sl</span>
+                <span>Rb</span>
+                <span>Km</span>
+                <span>Jm</span>
+                <span>Sb</span>
+                <span className="text-rose-500">Ah</span>
+              </div>
 
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      <button
-                        onClick={() => handleQuickAccept(item)}
-                        disabled={quickVerifyingId === item.ID_Pendaftaran}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-all shadow-2xs flex items-center space-x-1 cursor-pointer active:scale-95 disabled:opacity-50"
+              <div className="grid grid-cols-7 gap-y-2 text-[11px] font-semibold text-slate-700">
+                {calendarDays.map((item, idx) => {
+                  const isAhad = idx % 7 === 6;
+                  return (
+                    <div key={idx} className="flex items-center justify-center">
+                      <span
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                          item.isToday
+                            ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+                            : !item.isCurrentMonth
+                            ? 'text-slate-300 font-normal cursor-default'
+                            : isAhad
+                            ? 'text-rose-500 hover:bg-rose-50 cursor-pointer font-bold'
+                            : 'text-slate-700 hover:bg-slate-100 cursor-pointer'
+                        }`}
                       >
-                        {quickVerifyingId === item.ID_Pendaftaran ? (
-                          <>
-                            <RefreshCw className="w-3 h-3 animate-spin text-white" />
-                            <span>Proses...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-white" />
-                            <span>Terima</span>
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (setSearchTerm) setSearchTerm(item.Nama_Lengkap);
-                          setActiveView('santri');
-                        }}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-all cursor-pointer"
-                        title="Periksa Lengkap"
-                      >
-                        Detail
-                      </button>
+                        {item.day}
+                      </span>
                     </div>
-                  </div>
-                ))
-              )}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <div className="pt-2 text-right border-t border-slate-100">
-            <span className="text-[10.5px] text-slate-400 font-medium">
-              Verifikasi mengubah status di aplikasi dan sinkron ke Google Sheets
+          <div className="pt-2.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 font-medium">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span>Hari Ini: {currentDayNum} {currentMonthName}</span>
+            </span>
+            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/60">
+              Agenda Aktif
             </span>
           </div>
         </div>
 
-        {/* KANAN (5 KOLOM): SANTRI TERDAFTAR TERBARU & NO URUT 3 DIGIT */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
+        {/* KANAN (7 KOLOM): DATA SANTRI TERDAFTAR TERKINI */}
+        <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200/70">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/70">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Pendaftar Terbaru
+                    Data Santri Terdaftar Terkini
                   </h3>
                   <span className="text-[11px] text-slate-400">
-                    5 santri delegasi terakhir
+                    5 delegasi santri pendaftar terakhir
                   </span>
                 </div>
               </div>
@@ -763,54 +725,83 @@ export default function AdminDashboard({
                 onClick={() => setActiveView('santri')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
               >
-                Lihat Semua
+                Lihat Semua ({totalPeserta})
               </button>
             </div>
 
-            {/* List Santri Terbaru */}
-            <div className="space-y-2.5 pt-1">
-              {recentSantri.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 text-xs">
-                  Belum ada santri yang didaftarkan.
-                </div>
-              ) : (
-                recentSantri.map((item, idx) => (
-                  <div 
-                    key={item.ID_Pendaftaran || idx}
-                    className="p-2.5 rounded-2xl bg-[#F8FAFC] border border-slate-100 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 text-xs truncate">
-                        {item.Nama_Lengkap}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-medium truncate">
-                        {item.Cabang_Lomba} • {item.Kelas_Kategori || item.Kelas_Diniyah}
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
-                        <span className="inline-block px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-mono font-bold text-[11px] border border-emerald-200">
-                          {String(item.Nomor_Urut).padStart(3, '0')}
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2 py-0.5 rounded-lg bg-slate-200/70 text-slate-500 font-mono text-[9.5px]">
-                          Belum Diundi
-                        </span>
-                      )}
-                      <div className="text-[9.5px] font-bold text-slate-400 mt-0.5">
-                        {item.Status}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            {/* Tabel Santri Terkini */}
+            <div className="overflow-x-auto pt-1">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-slate-400 font-semibold text-[11px] border-b border-slate-100">
+                    <th className="pb-3 font-normal">Nama Santri</th>
+                    <th className="pb-3 font-normal">Kelas Diniyah</th>
+                    <th className="pb-3 font-normal">Cabang Lomba</th>
+                    <th className="pb-3 font-normal text-center">No. Urut</th>
+                    <th className="pb-3 font-normal text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentSantri.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="py-8 text-center text-slate-400 text-xs">
+                        Belum ada santri yang didaftarkan.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentSantri.map((item, idx) => {
+                      const isPutri = item.Jenis_Kelamin === 'P';
+                      return (
+                        <tr key={item.ID_Pendaftaran || idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 pr-2">
+                            <span className="font-bold text-slate-900 block truncate max-w-[150px]">
+                              {item.Nama_Lengkap}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {item.ID_Pendaftaran}
+                            </span>
+                          </td>
+                          <td className="py-3 text-slate-600 font-medium">
+                            <span className="block truncate max-w-[130px]">{item.Kelas_Kategori || item.Kelas_Diniyah}</span>
+                            <span className={`inline-block px-1 rounded text-[9px] font-bold ${
+                              isPutri ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
+                            }`}>
+                              {isPutri ? 'Putri' : 'Putra'}
+                            </span>
+                          </td>
+                          <td className="py-3 text-slate-700 font-medium truncate max-w-[130px]">
+                            {item.Cabang_Lomba}
+                          </td>
+                          <td className="py-3 text-center font-mono">
+                            {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
+                              <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[11px] border border-emerald-200">
+                                {String(item.Nomor_Urut).padStart(3, '0')}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 text-center">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              item.Status === 'Terverifikasi'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {item.Status === 'Terverifikasi' ? 'Sah' : 'Pending'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div className="pt-2 text-right border-t border-slate-100">
-            <span className="text-[10.5px] text-slate-400 font-medium">
-              Total {totalPeserta} delegasi santri terdata
+            <span className="text-[10px] text-slate-400">
+              Total {totalPeserta} delegasi santri terdaftar di database
             </span>
           </div>
         </div>
