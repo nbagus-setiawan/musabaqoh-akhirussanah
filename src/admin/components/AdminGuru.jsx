@@ -311,18 +311,15 @@ export default function AdminGuru({
     <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
       
       {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        {/* Subtle accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
-
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
         <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-800 text-white flex items-center justify-center shadow-sm shrink-0">
-            <UserCheck className="w-6 h-6 text-emerald-200" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
+            <UserCheck className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Data Guru & Wali Kelas</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-100">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
                 {guruList.length} Wali Kelas
               </span>
             </h2>
@@ -336,12 +333,12 @@ export default function AdminGuru({
         <div className="flex items-center space-x-2 shrink-0">
           
           {/* View Mode Toggle */}
-          <div className="p-1 bg-slate-100 rounded-xl flex items-center border border-slate-200/70">
+          <div className="p-1 bg-slate-100 rounded-2xl flex items-center border border-slate-200/70">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-blue-600 shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
               title="Tampilan Tabel"
@@ -350,9 +347,9 @@ export default function AdminGuru({
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-blue-600 shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
               title="Tampilan Grid Kartu"
@@ -363,94 +360,94 @@ export default function AdminGuru({
 
           <button
             onClick={openAddModal}
-            className="px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-emerald-300" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Tambah Wali Kelas</span>
           </button>
 
           <button
             onClick={loadData}
             title="Segarkan Data"
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            className="p-2.5 rounded-2xl border border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-800' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* 2. STATISTIC METRIC CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* 2. STATISTIC METRIC CARDS (SESUAI REFERENSI DESAIN) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card Total */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
               Total Wali Kelas
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
               {stats.total}
             </span>
-            <span className="text-[11px] font-medium text-emerald-700 flex items-center gap-1 mt-0.5">
-              <span>Semua jenjang aktif</span>
+            <span className="text-[10.5px] font-semibold text-blue-600 block mt-0.5">
+              Semua jenjang aktif
             </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center border border-emerald-100/80">
-            <Users className="w-5 h-5 text-emerald-800" />
           </div>
         </div>
 
         {/* Card Ula */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Tingkat Ula (TPA)
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
+              Tingkat Ula
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
               {stats.ula.count} <span className="text-xs font-normal text-slate-400">Guru</span>
             </span>
-            <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
+            <span className="text-[10.5px] font-semibold text-emerald-600 block mt-0.5">
               {stats.ula.santri} Santri Terdaftar
             </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center border border-teal-100/80">
-            <GraduationCap className="w-5 h-5 text-teal-800" />
           </div>
         </div>
 
         {/* Card Wustho */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
               Tingkat Wustho
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
               {stats.wustho.count} <span className="text-xs font-normal text-slate-400">Guru</span>
             </span>
-            <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
+            <span className="text-[10.5px] font-semibold text-purple-600 block mt-0.5">
               {stats.wustho.santri} Santri Terdaftar
             </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-800 flex items-center justify-center border border-sky-100/80">
-            <BookOpen className="w-5 h-5 text-sky-800" />
           </div>
         </div>
 
         {/* Card MHQ */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Cabang MHQ (Tahfidz)
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Award className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
+              Cabang MHQ
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
               {stats.mhq.count} <span className="text-xs font-normal text-slate-400">Kategori</span>
             </span>
-            <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
+            <span className="text-[10.5px] font-semibold text-amber-600 block mt-0.5">
               {stats.mhq.santri} Santri Terdaftar
             </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-800 flex items-center justify-center border border-indigo-100/80">
-            <Award className="w-5 h-5 text-indigo-800" />
           </div>
         </div>
 

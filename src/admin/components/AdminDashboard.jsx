@@ -26,7 +26,12 @@ import {
   Layers, 
   FileSpreadsheet, 
   ShieldCheck,
-  Send
+  Send,
+  Calendar,
+  Megaphone,
+  Compass,
+  FileText,
+  Settings
 } from 'lucide-react';
 import { 
   getActivityLogs, 
@@ -42,8 +47,6 @@ export default function AdminDashboard({
   setSearchTerm
 }) {
   const [logs, setLogs] = useState(() => getActivityLogs());
-  const [logFilter, setLogFilter] = useState('ALL');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -55,12 +58,6 @@ export default function AdminDashboard({
     setLogs(getActivityLogs());
     if (onRefresh) onRefresh();
     setTimeout(() => setIsRefreshing(false), 500);
-  };
-
-  const handleClearLogs = () => {
-    clearActivityLogs();
-    setLogs([]);
-    setShowClearConfirm(false);
   };
 
   const handleExportExcel = () => {
@@ -87,14 +84,11 @@ export default function AdminDashboard({
   };
 
   // =========================================================
-  // METRIK UTAMA OPERASIONAL
+  // METRIK OPERASIONAL
   // =========================================================
   const totalPeserta = registrations.length;
   const totalPutra = registrations.filter(r => r.Jenis_Kelamin === 'L').length;
   const totalPutri = registrations.filter(r => r.Jenis_Kelamin === 'P').length;
-
-  const pctPutra = totalPeserta > 0 ? Math.round((totalPutra / totalPeserta) * 100) : 0;
-  const pctPutri = totalPeserta > 0 ? Math.round((totalPutri / totalPeserta) * 100) : 0;
 
   const santriUla = registrations.filter(r => (r.Tingkat || '').toLowerCase().includes('ula'));
   const santriWustho = registrations.filter(r => (r.Tingkat || '').toLowerCase().includes('wustho'));
@@ -113,18 +107,12 @@ export default function AdminDashboard({
   const totalDitolak = registrations.filter(r => r.Status === 'Ditolak').length;
   const totalDiundi = registrations.filter(r => r.Nomor_Urut && String(r.Nomor_Urut).trim() !== '').length;
 
-  const pctUla = totalPeserta > 0 ? Math.round((totalUla / totalPeserta) * 100) : 0;
-  const pctWustho = totalPeserta > 0 ? Math.round((totalWustho / totalPeserta) * 100) : 0;
-  const pctMHQ = totalPeserta > 0 ? Math.round((totalMHQ / totalPeserta) * 100) : 0;
-
   const pctTerverifikasi = totalPeserta > 0 ? Math.round((totalTerverifikasi / totalPeserta) * 100) : 0;
   const pctPending = totalPeserta > 0 ? Math.round((totalPending / totalPeserta) * 100) : 0;
   const pctDitolak = totalPeserta > 0 ? Math.round((totalDitolak / totalPeserta) * 100) : 0;
   const pctDiundi = totalPeserta > 0 ? Math.round((totalDiundi / totalPeserta) * 100) : 0;
 
-  // =========================================================
-  // ANALISIS KEPATUHAN 24 KELAS DINIYAH
-  // =========================================================
+  // Analisis 24 Kelas Diniyah
   const waliList = useMemo(() => {
     try {
       const stored = getWaliKelasList();
@@ -170,46 +158,56 @@ export default function AdminDashboard({
   const countLengkap = complianceMatrix.filter(m => m.status === 'LENGKAP').length;
   const countSebagian = complianceMatrix.filter(m => m.status === 'SEBAGIAN').length;
   const countBelum = complianceMatrix.filter(m => m.status === 'BELUM').length;
-  const pctKelasSiap = Math.round((countLengkap / complianceMatrix.length) * 100);
 
-  // Kelas yang butuh perhatian panitia (Belum mendaftar atau belum lengkap)
-  const attentionClasses = useMemo(() => {
-    return complianceMatrix
-      .filter(m => m.status === 'BELUM' || m.status === 'SEBAGIAN')
-      .sort((a, b) => a.totalCount - b.totalCount)
-      .slice(0, 5);
-  }, [complianceMatrix]);
-
-  // Pendaftaran Terkini (5 santri terakhir yang masuk)
-  const recentRegistrations = useMemo(() => {
-    return [...registrations]
-      .reverse()
-      .slice(0, 5);
+  // Recent 5 Santri (Mirip Recent Results di referensi)
+  const recentSantri = useMemo(() => {
+    return [...registrations].reverse().slice(0, 5);
   }, [registrations]);
 
-  // Sebaran 8 Cabang Lomba Utama
-  const branchDistribution = useMemo(() => {
-    const branches = [
-      { name: 'MQK (Kutub)', key: 'mqk', color: 'bg-emerald-600', border: 'border-emerald-200' },
-      { name: 'Pidato', key: 'pidato', color: 'bg-blue-600', border: 'border-blue-200' },
-      { name: 'Tilawatil Qur\'an', key: 'tilawah', color: 'bg-amber-600', border: 'border-amber-200' },
-      { name: 'CCM (Cerdas Cermat)', key: 'ccm', color: 'bg-indigo-600', border: 'border-indigo-200' },
-      { name: 'MHQ (Hifdzil Qur\'an)', key: 'mhq', color: 'bg-teal-600', border: 'border-teal-200' },
-      { name: 'Syarhil Qur\'an', key: 'syarhil', color: 'bg-purple-600', border: 'border-purple-200' },
-      { name: 'Khot / Kaligrafi', key: 'khot', color: 'bg-rose-600', border: 'border-rose-200' },
-      { name: 'Adzan & Doa', key: 'adzan', color: 'bg-cyan-600', border: 'border-cyan-200' },
-    ];
+  // Notice Board Items (Pemberitahuan & Kepatuhan Kelas)
+  const noticeItems = useMemo(() => {
+    const list = [];
+    
+    // Notice 1: Kelas yang belum ada delegasi
+    const belumKelas = complianceMatrix.filter(m => m.status === 'BELUM');
+    if (belumKelas.length > 0) {
+      list.push({
+        id: 'notice-belum',
+        title: `${belumKelas.length} Kelas Belum Mendaftar`,
+        desc: `Di antaranya: ${belumKelas.slice(0, 2).map(k => k.kelas).join(', ')}. Mohon segera ingatkan Wali Kelas.`,
+        date: 'Hari Ini',
+        type: 'alert',
+        actionItem: belumKelas[0]
+      });
+    }
 
-    return branches.map(b => {
-      const count = registrations.filter(r => {
-        const c = (r.Cabang_Lomba || '').toLowerCase();
-        const t = (r.Tingkat || '').toLowerCase();
-        return c.includes(b.key) || t.includes(b.key);
-      }).length;
-      const pct = totalPeserta > 0 ? Math.round((count / totalPeserta) * 100) : 0;
-      return { ...b, count, pct };
+    // Notice 2: Kelas yang delegasinya masih kurang dari kuota 10
+    const sebagianKelas = complianceMatrix.filter(m => m.status === 'SEBAGIAN');
+    if (sebagianKelas.length > 0) {
+      list.push({
+        id: 'notice-sebagian',
+        title: `${sebagianKelas.length} Kelas Kuota Belum Lengkap`,
+        desc: `Sebagian kelas baru mengirimkan kurang dari 10 santri delegasi musabaqah.`,
+        date: 'Penting',
+        type: 'warning',
+        actionItem: sebagianKelas[0]
+      });
+    }
+
+    // Notice 3: Status Nomor Undian
+    const belumUndiCount = totalPeserta - totalDiundi;
+    list.push({
+      id: 'notice-undian',
+      title: 'Pengundian Nomor Urut 3 Digit',
+      desc: belumUndiCount > 0 
+        ? `Terdapat ${belumUndiCount} santri terdaftar yang belum diundi nomor panggilannya.`
+        : 'Alhamdulillah, seluruh santri terdaftar telah memiliki nomor undian 3 digit.',
+      date: 'Operasional',
+      type: 'info'
     });
-  }, [registrations, totalPeserta]);
+
+    return list;
+  }, [complianceMatrix, totalPeserta, totalDiundi]);
 
   const handleJumpToClass = (kelasName) => {
     if (setSearchTerm) setSearchTerm(kelasName);
@@ -235,412 +233,378 @@ export default function AdminDashboard({
     }
   };
 
-  // =========================================================
-  // DATA & KOORDINAT GRAFIK GARIS GUNUNG (AREA CHART)
-  // =========================================================
-  const timelineDays = 7;
-  const today = new Date();
-  
-  const dailyStats = Array.from({ length: timelineDays }).map((_, i) => {
-    const d = new Date();
-    d.setDate(today.getDate() - (timelineDays - 1 - i));
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const dateKeySlash = `${day}/${month}/${year}`;
-    const dateKeyDash = `${year}-${month}-${day}`;
-    const shortLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-    const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
-
-    const count = registrations.filter(r => {
-      const ts = r.Timestamp || '';
-      return ts.includes(dateKeySlash) || ts.startsWith(`${day}/${month}`) || ts.includes(dateKeyDash);
-    }).length;
-
-    return { label: shortLabel, dayName, count, dateKey: dateKeySlash };
-  });
-
-  const svgWidth = 840;
-  const svgHeight = 210;
-  const padLeft = 45;
-  const padRight = 45;
-  const padTop = 35;
-  const padBottom = 25;
-  const usableWidth = svgWidth - padLeft - padRight;
-  const usableHeight = svgHeight - padTop - padBottom;
-
-  const maxDailyVal = Math.max(...dailyStats.map(d => d.count), 4);
-  const peakDay = [...dailyStats].sort((a, b) => b.count - a.count)[0];
-
-  const mountainPoints = dailyStats.map((item, idx) => {
-    const x = padLeft + (idx / (timelineDays - 1)) * usableWidth;
-    const y = padTop + usableHeight - (item.count / maxDailyVal) * usableHeight;
-    return { x, y, ...item };
-  });
-
-  // Spline Catmull-Rom ke Cubic Bezier yang melengkung mulus (bentuk kurva gunung)
-  const generateSmoothPath = (pts) => {
-    if (pts.length < 2) return '';
-    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = i > 0 ? pts[i - 1] : pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = i < pts.length - 2 ? pts[i + 2] : p2;
-
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-      d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-    }
-    return d;
-  };
-
-  const linePathD = generateSmoothPath(mountainPoints);
-  const baselineY = (svgHeight - padBottom + 8).toFixed(1);
-  const areaPathD = `${linePathD} L ${mountainPoints[mountainPoints.length - 1].x.toFixed(1)},${baselineY} L ${mountainPoints[0].x.toFixed(1)},${baselineY} Z`;
-
-  // Filter Log
-  const filteredLogs = logs.filter(item => {
-    if (logFilter === 'ALL') return true;
-    return item.type === logFilter;
-  });
+  // Helper Kalender
+  const todayDate = new Date();
+  const currentMonthName = todayDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const currentDayNum = todayDate.getDate();
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto bg-[#F8FAFC]">
       
       {/* =========================================================
-          1. HEADER OPERASIONAL & TOOLBAR CEPAT
+          1. WELCOME HERO CARD (Persis Sesuai Referensi Desain)
           ========================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div>
+      <div className="relative rounded-3xl p-6 sm:p-7 bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-indigo-50/70 border border-blue-100/80 shadow-xs overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+        
+        {/* Konten Sambutan Kiri */}
+        <div className="space-y-1.5 z-10">
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Sistem Siap Lomba</span>
+            <span className="text-xs sm:text-sm font-semibold text-slate-500">
+              Ahlan wa Sahlan,
             </span>
-            <span className="text-xs text-slate-400 font-medium">•</span>
-            <span className="text-xs text-slate-500 font-medium">Musabaqah Akhirussanah 1447 H</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
-            Dasbor Pusat Kendali Panitia
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            Ustadz Panitia Musabaqah!
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Ringkasan eksekutif, analisis tren pendaftaran, dan pemantauan kepatuhan kelas binaan secara real-time.
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl leading-relaxed">
+            Pusat kendali pendaftaran delegasi santri Musabaqah Akhirussanah 1447 H • YPPS Al-Falah Putak.
           </p>
         </div>
 
-        {/* Toolbar Aksi Cepat */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setActiveView('santri')}
-            className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold text-xs border border-indigo-200 transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
-          >
-            <Dices className="w-4 h-4 text-indigo-700" />
-            <span>Undian 3 Digit</span>
-          </button>
-
-          <button
-            onClick={handleExportExcel}
-            className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs"
-          >
-            <Download className="w-4 h-4 text-slate-600" />
-            <span>Export Rekap</span>
-          </button>
-
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Segarkan</span>
-          </button>
+        {/* Ornamen Grafis Kanan (Visual 3D Books & Tanaman Sesuai Referensi) */}
+        <div className="flex items-center space-x-3 shrink-0 self-end md:self-center">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setActiveView('santri')}
+              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-200/90 transition-all shadow-xs flex items-center space-x-2 cursor-pointer"
+            >
+              <Dices className="w-4 h-4 text-blue-600" />
+              <span>Undian 3 Digit</span>
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-200/90 transition-all shadow-xs flex items-center space-x-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-emerald-600" />
+              <span>Export Rekap</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* =========================================================
-          2. KARTU METRIK UTAMA (5 KPI EKSEKUTIF)
+          2. KARTU METRIK UTAMA (5 KARTU SEJAJAR SEPERTI REFERENSI)
           ========================================================= */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         
-        {/* KPI 1: TOTAL SANTRI */}
+        {/* KPI 1: TOTAL DELEGASI (Ikon Dokumen Biru) */}
         <div 
           onClick={() => setActiveView('santri')}
-          className="col-span-2 sm:col-span-1 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total Delegasi</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
-              <Users className="w-4 h-4" />
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/70 group-hover:scale-105 transition-transform">
+            <FileText className="w-6 h-6" />
           </div>
-          <div className="mt-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-none">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Total Delegasi
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
               {totalPeserta}
             </span>
-            <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 font-medium mt-1.5">
-              <span className="text-blue-700 font-bold">{totalPutra} Pa</span>
-              <span>•</span>
-              <span className="text-rose-700 font-bold">{totalPutri} Pi</span>
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 2: TERVERIFIKASI (SAH) */}
-        <div 
-          onClick={() => setActiveView('santri')}
-          className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Lolos Sah</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 group-hover:scale-105 transition-transform">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-800 leading-none">
-              {totalTerverifikasi}
+            <span className="text-[10.5px] font-semibold text-blue-600 block mt-0.5">
+              {totalPutra} Pa • {totalPutri} Pi
             </span>
-            <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-medium mt-1.5">
-              <span className="font-bold text-emerald-700">{pctTerverifikasi}%</span>
-              <span>siap bertanding</span>
-            </div>
           </div>
         </div>
 
-        {/* KPI 3: MENUNGGU VERIFIKASI */}
+        {/* KPI 2: TINGKAT ULA (Ikon Cap Hijau) */}
         <div 
-          onClick={() => setActiveView('santri')}
-          className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group"
+          onClick={() => {
+            if (setSearchTerm) setSearchTerm('Ula');
+            setActiveView('santri');
+          }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Menunggu</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-100 group-hover:scale-105 transition-transform">
-              <Clock className="w-4 h-4" />
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/70 group-hover:scale-105 transition-transform">
+            <GraduationCap className="w-6 h-6" />
           </div>
-          <div className="mt-2">
-            <span className="text-2xl sm:text-3xl font-black text-amber-700 leading-none">
-              {totalPending}
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Tingkat Ula
             </span>
-            <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-medium mt-1.5">
-              <span>{pctPending}% butuh cek berkas</span>
-            </div>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {totalUla}
+            </span>
+            <span className="text-[10.5px] font-semibold text-emerald-600 block mt-0.5">
+              16 Kelas Diniyah
+            </span>
           </div>
         </div>
 
-        {/* KPI 4: UNDIAN 3 DIGIT */}
+        {/* KPI 3: TINGKAT WUSTHO (Ikon Clipboard Ungu) */}
+        <div 
+          onClick={() => {
+            if (setSearchTerm) setSearchTerm('Wustho');
+            setActiveView('santri');
+          }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/70 group-hover:scale-105 transition-transform">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Tingkat Wustho
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {totalWustho}
+            </span>
+            <span className="text-[10.5px] font-semibold text-purple-600 block mt-0.5">
+              8 Kelas Diniyah
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 4: UNDIAN 3 DIGIT (Ikon Piala Oranye) */}
         <div 
           onClick={() => setActiveView('santri')}
-          className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Nomor Diundi</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100 group-hover:scale-105 transition-transform">
-              <Dices className="w-4 h-4" />
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/70 group-hover:scale-105 transition-transform">
+            <Trophy className="w-6 h-6" />
           </div>
-          <div className="mt-2">
-            <span className="text-2xl sm:text-3xl font-black text-indigo-800 leading-none">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Nomor Diundi
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1 font-mono">
               {totalDiundi}
             </span>
-            <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-medium mt-1.5 font-mono">
-              <span>{totalPeserta - totalDiundi} belum diundi</span>
-            </div>
+            <span className="text-[10.5px] font-semibold text-amber-600 block mt-0.5">
+              {pctDiundi}% Siap Tampil
+            </span>
           </div>
         </div>
 
-        {/* KPI 5: KESIAPAN 24 KELAS DINIYAH */}
+        {/* KPI 5: STATUS TERVERIFIKASI (Ikon Checklist Merah Muda) */}
         <div 
-          onClick={() => setActiveView('guru')}
-          className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group"
+          onClick={() => setActiveView('santri')}
+          className="col-span-2 sm:col-span-1 bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Kelas Siap</span>
-            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center border border-teal-100 group-hover:scale-105 transition-transform">
-              <Building2 className="w-4 h-4" />
-            </div>
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100/70 group-hover:scale-105 transition-transform">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <div className="mt-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-none">
-              {countLengkap} <span className="text-sm font-semibold text-slate-400">/ 24</span>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Lolos Sah
             </span>
-            <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-medium mt-1.5">
-              <span className="font-bold text-teal-700">{pctKelasSiap}%</span>
-              <span>kelas lengkap kuota</span>
-            </div>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {pctTerverifikasi}%
+            </span>
+            <span className="text-[10.5px] font-semibold text-rose-600 block mt-0.5">
+              {totalTerverifikasi} Terverifikasi
+            </span>
           </div>
         </div>
 
       </div>
 
       {/* =========================================================
-          3. BAGIAN ANALITIK VISUAL (TREN GUNUNG & DISTRIBUSI VERIFIKASI)
+          3. BARIS TENGAH: RECENT RESULTS (KIRI) & NOTICE BOARD (KANAN)
+             (PERSIS STRUKTUR PADA GAMBAR REFERENSI DESAIN)
           ========================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* KIRI (8 KOLOM): GRAFIK GARIS GUNUNG (TREN PENDAFTARAN) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
+        {/* KIRI (7 KOLOM): RECENT RESULTS / DATA SANTRI TERKINI */}
+        <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center border border-emerald-200">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Tren Pendaftaran Delegasi
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Kurva pendaftaran santri harian dalam 7 hari terakhir
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-mono text-[11px]">
-                  Puncak: <strong className="text-slate-900">{peakDay.count} Santri</strong> ({peakDay.label})
-                </span>
-              </div>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                Data Santri Terdaftar Terkini
+              </h3>
+              <button
+                onClick={() => setActiveView('santri')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+              >
+                Lihat Semua Santri
+              </button>
             </div>
 
-            {/* Visualisasi SVG Kurva Gunung & Gradasi */}
-            <div className="relative w-full overflow-hidden pt-3">
-              <svg 
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-                className="w-full h-48 sm:h-56"
-                preserveAspectRatio="none"
+            {/* Tabel Ringkas Persis Recent Results */}
+            <div className="overflow-x-auto pt-2">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-slate-400 font-semibold text-[11px] border-b border-slate-100">
+                    <th className="pb-3 font-normal">Nama Santri</th>
+                    <th className="pb-3 font-normal">Kelas Diniyah</th>
+                    <th className="pb-3 font-normal">Cabang Lomba</th>
+                    <th className="pb-3 font-normal text-center">No. Urut</th>
+                    <th className="pb-3 font-normal text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {recentSantri.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="py-8 text-center text-slate-400 text-xs">
+                        Belum ada santri yang didaftarkan.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentSantri.map((item, idx) => {
+                      const isPutri = item.Jenis_Kelamin === 'P';
+                      return (
+                        <tr key={item.ID_Pendaftaran || idx} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 pr-2">
+                            <span className="font-bold text-slate-900 block truncate max-w-[140px]">
+                              {item.Nama_Lengkap}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {item.ID_Pendaftaran}
+                            </span>
+                          </td>
+                          <td className="py-3 text-slate-600 font-medium">
+                            <span className="block truncate max-w-[120px]">{item.Kelas_Kategori}</span>
+                            <span className={`inline-block px-1 rounded text-[9px] font-bold ${
+                              isPutri ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
+                            }`}>
+                              {isPutri ? 'Putri' : 'Putra'}
+                            </span>
+                          </td>
+                          <td className="py-3 text-slate-700 font-medium truncate max-w-[120px]">
+                            {item.Cabang_Lomba}
+                          </td>
+                          <td className="py-3 text-center font-mono">
+                            {item.Nomor_Urut ? (
+                              <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[11px] border border-emerald-200">
+                                {item.Nomor_Urut}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 text-center">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              item.Status === 'Terverifikasi'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {item.Status === 'Terverifikasi' ? 'Sah' : 'Pending'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="pt-2 text-right border-t border-slate-100">
+            <span className="text-[10px] text-slate-400">
+              Total {totalPeserta} santri terdaftar di database
+            </span>
+          </div>
+        </div>
+
+        {/* KANAN (5 KOLOM): NOTICE BOARD (PAPAN INFORMASI & KEPATUHAN KELAS) */}
+        <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                Papan Informasi & Kepatuhan
+              </h3>
+              <button
+                onClick={() => setActiveView('guru')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
               >
-                <defs>
-                  <linearGradient id="mountainAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#047857" stopOpacity="0.38" />
-                    <stop offset="50%" stopColor="#059669" stopOpacity="0.14" />
-                    <stop offset="90%" stopColor="#10B981" stopOpacity="0.02" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                  </linearGradient>
+                Kelola 24 Kelas
+              </button>
+            </div>
 
-                  <linearGradient id="mountainLineGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#065F46" />
-                    <stop offset="50%" stopColor="#047857" />
-                    <stop offset="100%" stopColor="#059669" />
-                  </linearGradient>
-
-                  <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#065F46" floodOpacity="0.25" />
-                  </filter>
-                </defs>
-
-                {/* Gridlines */}
-                {[0.25, 0.5, 0.75, 1].map((ratio, i) => {
-                  const yGrid = padTop + usableHeight - ratio * usableHeight;
-                  const valLabel = Math.round(ratio * maxDailyVal);
-                  return (
-                    <g key={i}>
-                      <line 
-                        x1={padLeft - 10} 
-                        y1={yGrid} 
-                        x2={svgWidth - padRight + 10} 
-                        y2={yGrid} 
-                        stroke="#F1F5F9" 
-                        strokeDasharray="4 4" 
-                        strokeWidth="1.2" 
-                      />
-                      <text 
-                        x={padLeft - 16} 
-                        y={yGrid + 3} 
-                        textAnchor="end" 
-                        className="text-[10px] fill-slate-300 font-mono select-none"
-                      >
-                        {valLabel}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* Baseline Garis Bawah */}
-                <line 
-                  x1={padLeft - 10} 
-                  y1={padTop + usableHeight} 
-                  x2={svgWidth - padRight + 10} 
-                  y2={padTop + usableHeight} 
-                  stroke="#E2E8F0" 
-                  strokeWidth="1.5" 
-                />
-
-                {/* Area Lereng Gunung */}
-                <path d={areaPathD} fill="url(#mountainAreaGrad)" />
-
-                {/* Garis Kurva Puncak Gunung */}
-                <path 
-                  d={linePathD} 
-                  fill="none" 
-                  stroke="url(#mountainLineGrad)" 
-                  strokeWidth="3.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  filter="url(#softGlow)"
-                />
-
-                {/* Titik Puncak Data */}
-                {mountainPoints.map((pt, idx) => {
-                  const isPeak = pt.count === peakDay.count && pt.count > 0;
-                  return (
-                    <g key={idx} className="group cursor-pointer">
-                      <circle 
-                        cx={pt.x} 
-                        cy={pt.y} 
-                        r={isPeak ? "6" : "4.5"} 
-                        className={`fill-white transition-all duration-200 group-hover:scale-125 ${
-                          isPeak 
-                            ? 'stroke-emerald-800 stroke-[3.5]' 
-                            : pt.count > 0 
-                            ? 'stroke-emerald-700 stroke-[3]' 
-                            : 'stroke-slate-300 stroke-[2]'
-                        }`}
-                      />
-
-                      {pt.count > 0 && (
-                        <g>
-                          <rect 
-                            x={pt.x - 22} 
-                            y={pt.y - 28} 
-                            width="44" 
-                            height="18" 
-                            rx="5" 
-                            className={isPeak ? "fill-[#064E3B]" : "fill-slate-800"} 
-                          />
-                          <text 
-                            x={pt.x} 
-                            y={pt.y - 16} 
-                            textAnchor="middle" 
-                            fill="#FFFFFF" 
-                            fontSize="9.5" 
-                            fontWeight="bold" 
-                            fontFamily="monospace"
-                          >
-                            {pt.count} Snt
-                          </text>
-                        </g>
-                      )}
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {/* Label Tanggal */}
-              <div className="grid grid-cols-7 pt-2 text-center text-xs">
-                {dailyStats.map((item, idx) => {
-                  const isToday = idx === dailyStats.length - 1;
-                  return (
-                    <div key={idx} className="space-y-0.5">
-                      <span className={`block text-[11px] font-bold ${isToday ? 'text-emerald-800' : 'text-slate-700'}`}>
-                        {item.label}
+            {/* List Notices Persis Tampilan Notice Board */}
+            <div className="space-y-3.5 pt-2">
+              {noticeItems.map((n) => (
+                <div key={n.id} className="flex items-start space-x-3 group">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/70 mt-0.5">
+                    <Megaphone className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-bold text-slate-900 truncate">
+                        {n.title}
+                      </h4>
+                      <span className="text-[10px] font-semibold text-blue-600 shrink-0">
+                        {n.date}
                       </span>
-                      <span className="block text-[10px] text-slate-400 font-medium">
-                        {isToday ? 'Hari Ini' : item.dayName}
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      {n.desc}
+                    </p>
+                    {n.actionItem && (
+                      <div className="pt-1 flex items-center space-x-2">
+                        <button
+                          onClick={() => handleSendReminderWA(n.actionItem)}
+                          className="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200 transition-colors cursor-pointer flex items-center space-x-1"
+                        >
+                          <MessageSquare className="w-2.5 h-2.5" />
+                          <span>Kirim WA Pengingat</span>
+                        </button>
+                        <button
+                          onClick={() => handleJumpToClass(n.actionItem.kelas)}
+                          className="text-[10px] text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
+                        >
+                          Lihat Kelas
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 text-right border-t border-slate-100">
+            <span className="text-[10px] text-slate-400">
+              Notifikasi otomatis diperbarui dari status kelas
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* =========================================================
+          4. BARIS BAWAH: 3 KARTU (KALENDER, AKSES CEPAT, STATISTIK)
+             (PERSIS 3 KARTU SEJAJAR PADA REFERENSI DESAIN)
+          ========================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        
+        {/* KARTU 1: KALENDER AKADEMIK / MUSABAQAH */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                Kalender Musabaqah
+              </h3>
+              <span className="text-[11px] font-bold text-blue-600">
+                {currentMonthName}
+              </span>
+            </div>
+
+            {/* Grid Kalender Mini */}
+            <div className="pt-2 text-center text-xs">
+              <div className="grid grid-cols-7 text-[10px] font-bold text-slate-400 mb-2">
+                <span>Sn</span>
+                <span>Sl</span>
+                <span>Rb</span>
+                <span>Km</span>
+                <span>Jm</span>
+                <span>Sb</span>
+                <span className="text-rose-500">Ah</span>
+              </div>
+              <div className="grid grid-cols-7 gap-y-1.5 text-[11px] font-semibold text-slate-700">
+                {Array.from({ length: 31 }, (_, i) => {
+                  const day = i + 1;
+                  const isToday = day === currentDayNum;
+                  return (
+                    <div key={day} className="flex items-center justify-center">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                        isToday 
+                          ? 'bg-blue-600 text-white font-bold shadow-xs' 
+                          : 'hover:bg-slate-100 cursor-pointer'
+                      }`}>
+                        {day}
                       </span>
                     </div>
                   );
@@ -649,63 +613,136 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* 4 Mini Insight Chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 text-xs">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-              <div>
-                <span className="text-[10px] text-slate-400 block">Total Masuk</span>
-                <span className="font-bold text-slate-800">{totalPeserta} Peserta</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-              <div>
-                <span className="text-[10px] text-slate-400 block">Tingkat Ula</span>
-                <span className="font-bold text-slate-800">{totalUla} ({pctUla}%)</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-teal-600 shrink-0"></span>
-              <div>
-                <span className="text-[10px] text-slate-400 block">Tingkat Wustho</span>
-                <span className="font-bold text-slate-800">{totalWustho} ({pctWustho}%)</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
-              <div>
-                <span className="text-[10px] text-slate-400 block">Cabang MHQ</span>
-                <span className="font-bold text-slate-800">{totalMHQ} Santri</span>
-              </div>
-            </div>
+          <div className="pt-2 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span>Hari Ini ({currentDayNum} {currentMonthName})</span>
+            </span>
+            <span className="font-semibold text-emerald-700">Agenda Aktif</span>
           </div>
         </div>
 
-        {/* KANAN (4 KOLOM): DONUT STATUS VERIFIKASI & DISTRIBUSI GENDER */}
-        <div className="lg:col-span-4 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
+        {/* KARTU 2: QUICK ACCESS (6 TOMBOL PASTEL SQUIRCLE SEPERTI REFERENSI) */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between space-y-3">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                  Status Verifikasi
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Kesiapan data tampil lomba</p>
-              </div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                Akses Cepat Panitia
+              </h3>
+              <span className="text-[11px] text-slate-400 font-semibold">Pintasan</span>
+            </div>
+
+            {/* Grid 3x2 Icon Pastel */}
+            <div className="grid grid-cols-3 gap-3 pt-2 text-center">
+              
+              {/* Tombol 1: Undian 3 Digit */}
+              <button 
+                onClick={() => setActiveView('santri')}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/60 group-hover:scale-105 transition-transform">
+                  <Dices className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Undian 3D
+                </span>
+              </button>
+
+              {/* Tombol 2: Data Santri */}
+              <button 
+                onClick={() => setActiveView('santri')}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100/60 group-hover:scale-105 transition-transform">
+                  <Users className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Data Santri
+                </span>
+              </button>
+
+              {/* Tombol 3: 24 Wali Kelas */}
+              <button 
+                onClick={() => setActiveView('guru')}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100/60 group-hover:scale-105 transition-transform">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Wali Kelas
+                </span>
+              </button>
+
+              {/* Tombol 4: Juara Umum */}
+              <button 
+                onClick={() => setActiveView('juara')}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100/60 group-hover:scale-105 transition-transform">
+                  <Trophy className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Juara Umum
+                </span>
+              </button>
+
+              {/* Tombol 5: Export Excel */}
+              <button 
+                onClick={handleExportExcel}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100/60 group-hover:scale-105 transition-transform">
+                  <Download className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Unduh Excel
+                </span>
+              </button>
+
+              {/* Tombol 6: Pengaturan Sheet */}
+              <button 
+                onClick={() => setActiveView('pengaturan')}
+                className="p-2.5 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer flex flex-col items-center space-y-1 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100/60 group-hover:scale-105 transition-transform">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 block leading-tight">
+                  Pengaturan
+                </span>
+              </button>
+
+            </div>
+          </div>
+
+          <div className="pt-2 text-center border-t border-slate-100">
+            <span className="text-[10px] text-slate-400">
+              Navigasi langsung ke seluruh fungsi operasional
+            </span>
+          </div>
+        </div>
+
+        {/* KARTU 3: PERFORMANCE OVERVIEW (DONUT CHART & BREAKDOWN SEPERTI REFERENSI) */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                Kesiapan Operasional
+              </h3>
               <button
                 onClick={() => setActiveView('santri')}
-                className="text-xs font-bold text-emerald-800 hover:underline cursor-pointer"
+                className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
               >
-                Lihat Semua
+                Detail
               </button>
             </div>
 
-            {/* SVG Donut Chart */}
-            <div className="flex items-center justify-center py-4">
-              <div className="relative w-36 h-36 flex items-center justify-center">
+            {/* Donut Chart & Legend Sejajar Sesuai Referensi */}
+            <div className="flex items-center justify-between pt-2 gap-3">
+              
+              {/* Donut Lingkaran */}
+              <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                   <circle
                     cx="18"
@@ -720,7 +757,7 @@ export default function AdminDashboard({
                     cy="18"
                     r="14"
                     fill="none"
-                    className="stroke-emerald-700 transition-all duration-700"
+                    className="stroke-emerald-500 transition-all duration-700"
                     strokeWidth="3.8"
                     strokeDasharray={`${totalPeserta > 0 ? (totalTerverifikasi / totalPeserta) * 88 : 0} 100`}
                     strokeLinecap="round"
@@ -730,7 +767,7 @@ export default function AdminDashboard({
                     cy="18"
                     r="14"
                     fill="none"
-                    className="stroke-amber-400 transition-all duration-700"
+                    className="stroke-blue-500 transition-all duration-700"
                     strokeWidth="3.8"
                     strokeDasharray={`${totalPeserta > 0 ? (totalPending / totalPeserta) * 88 : 0} 100`}
                     strokeDashoffset={`-${totalPeserta > 0 ? (totalTerverifikasi / totalPeserta) * 88 : 0}`}
@@ -739,506 +776,56 @@ export default function AdminDashboard({
                 </svg>
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-xl font-extrabold text-slate-900 leading-none">
+                  <span className="text-lg font-black text-slate-900 leading-none">
                     {pctTerverifikasi}%
                   </span>
-                  <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                    Lolos Sah
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">
+                    Kesiapan
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Legend & Breakdown */}
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between text-slate-700">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-700"></span>
-                  <span>Terverifikasi (Sah)</span>
-                </div>
-                <span className="font-bold text-slate-900 font-mono">{totalTerverifikasi} ({pctTerverifikasi}%)</span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-700">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                  <span>Menunggu Verifikasi</span>
-                </div>
-                <span className="font-bold text-slate-900 font-mono">{totalPending} ({pctPending}%)</span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-700">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                  <span>Ditolak / Batal</span>
-                </div>
-                <span className="font-bold text-slate-900 font-mono">{totalDitolak} ({pctDitolak}%)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Breakdown Gender Mini */}
-          <div className="pt-3 border-t border-slate-100">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="text-slate-500 font-medium">Proporsi Gender:</span>
-              <span className="font-mono text-slate-700 font-bold">{totalPutra} Pa / {totalPutri} Pi</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex">
-              <div style={{ width: `${pctPutra}%` }} className="bg-blue-600 h-full"></div>
-              <div style={{ width: `${pctPutri}%` }} className="bg-rose-500 h-full"></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* =========================================================
-          4. PUSAT KENDALI OPERASIONAL: 
-             KIRI: KEPATUHAN KELAS DINIYAH (ACTIONABLE ALERT LIST)
-             KANAN: PENDAFTARAN SANTRI TERKINI (LIVE RECENT FEED)
-          ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* WIDGET KIRI (6 KOLOM): KEPATUHAN 24 KELAS DINIYAH */}
-        <div className="lg:col-span-6 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-800 flex items-center justify-center border border-teal-200">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Kepatuhan Kelas Diniyah
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Kesiapan delegasi 24 kelas binaan (16 Ula & 8 Wustho)
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setActiveView('guru')}
-                className="text-xs font-bold text-emerald-800 hover:underline flex items-center space-x-0.5 cursor-pointer"
-              >
-                <span>Kelola 24 Kelas</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Progress Bar Kesiapan Kelas */}
-            <div className="space-y-1.5 pt-3">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-700">Kesiapan Kuota Kelas:</span>
-                <span className="font-mono text-emerald-800">{countLengkap} dari 24 Kelas Siap</span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
-                <div 
-                  style={{ width: `${(countLengkap / 24) * 100}%` }} 
-                  className="bg-emerald-600 h-full"
-                  title={`${countLengkap} Lengkap`}
-                ></div>
-                <div 
-                  style={{ width: `${(countSebagian / 24) * 100}%` }} 
-                  className="bg-amber-500 h-full"
-                  title={`${countSebagian} Sebagian`}
-                ></div>
-                <div 
-                  style={{ width: `${(countBelum / 24) * 100}%` }} 
-                  className="bg-rose-500 h-full"
-                  title={`${countBelum} Belum`}
-                ></div>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                <span className="text-emerald-700 font-bold">• Lengkap: {countLengkap}</span>
-                <span className="text-amber-700 font-bold">• Sebagian: {countSebagian}</span>
-                <span className="text-rose-700 font-bold">• Belum: {countBelum}</span>
-              </div>
-            </div>
-
-            {/* Daftar Kelas yang Perlu Perhatian Segera */}
-            <div className="pt-3 space-y-2">
-              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block">
-                Perlu Perhatian Segera Panitia
-              </span>
-
-              {attentionClasses.length === 0 ? (
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-700 mx-auto" />
-                  <p className="text-xs font-bold text-emerald-900">
-                    Alhamdulillah, Semua 24 Kelas Lengkap!
-                  </p>
-                  <p className="text-[11px] text-emerald-700">
-                    Seluruh kelas diniyah telah mendaftarkan delegasi minimal 10 santri.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
-                  {attentionClasses.map((item) => {
-                    const isPutri = (item.kelas || '').toLowerCase().includes('putri');
-                    return (
-                      <div 
-                        key={item.id} 
-                        className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors bg-white"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="font-bold text-xs text-slate-900 truncate">
-                              {item.kelas}
-                            </span>
-                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                              isPutri ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                            }`}>
-                              {isPutri ? 'Putri' : 'Putra'}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {item.nama} • <span className="font-mono text-slate-400">{item.kontak || 'Tanpa Kontak'}</span>
-                          </p>
-                        </div>
-
-                        <div className="flex items-center space-x-2 shrink-0">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            item.totalCount === 0 
-                              ? 'bg-rose-50 text-rose-800 border-rose-200' 
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
-                          }`}>
-                            {item.totalCount === 0 ? 'Belum Ada' : `${item.totalCount} Delegasi`}
-                          </span>
-
-                          {/* Tombol Ingatkan via WhatsApp */}
-                          <button
-                            onClick={() => handleSendReminderWA(item)}
-                            title={`Ingatkan via WhatsApp ke ${item.nama}`}
-                            className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 text-[10px] font-bold transition-colors cursor-pointer flex items-center space-x-1"
-                          >
-                            <MessageSquare className="w-3 h-3" />
-                            <span>WA</span>
-                          </button>
-
-                          {/* Tombol Lihat Santri */}
-                          <button
-                            onClick={() => handleJumpToClass(item.kelas)}
-                            title={`Lihat delegasi santri ${item.kelas}`}
-                            className="p-1 rounded-lg bg-slate-50 hover:bg-slate-200 text-slate-600 text-[10px] font-bold transition-colors cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-2 text-right border-t border-slate-100">
-            <button
-              onClick={() => setActiveView('guru')}
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 inline-flex items-center space-x-1 cursor-pointer"
-            >
-              <span>Buka Data 24 Wali Kelas & Delegasi Lengkap</span>
-              <ArrowRight className="w-3 h-3 text-slate-400" />
-            </button>
-          </div>
-        </div>
-
-        {/* WIDGET KANAN (6 KOLOM): PENDAFTARAN SANTRI TERKINI (LIVE RECENT FEED) */}
-        <div className="lg:col-span-6 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
-                  <UserPlus className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Pendaftaran Santri Terkini
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    5 delegasi santri terakhir yang terdaftar ke sistem
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setActiveView('santri')}
-                className="text-xs font-bold text-emerald-800 hover:underline flex items-center space-x-0.5 cursor-pointer"
-              >
-                <span>Kelola Data Santri</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* List Pendaftaran Terkini */}
-            <div className="pt-3">
-              {recentRegistrations.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-400">
-                  Belum ada santri yang didaftarkan.
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
-                  {recentRegistrations.map((item, idx) => {
-                    const isPutri = item.Jenis_Kelamin === 'P';
-                    const hasLottery = item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '';
-
-                    return (
-                      <div 
-                        key={item.ID_Pendaftaran || idx} 
-                        className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors bg-white"
-                      >
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                              {item.ID_Pendaftaran || `AKH-${idx + 1}`}
-                            </span>
-                            <span className="font-bold text-xs text-slate-900 truncate">
-                              {item.Nama_Lengkap}
-                            </span>
-                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                              isPutri ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
-                            }`}>
-                              {isPutri ? 'Pi' : 'Pa'}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 truncate">
-                            {item.Kelas_Kategori} • <span className="font-semibold text-slate-700">{item.Cabang_Lomba}</span>
-                          </p>
-                        </div>
-
-                        <div className="flex items-center space-x-2 shrink-0">
-                          {hasLottery ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
-                              No. {item.Nomor_Urut}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
-                              Belum Undi
-                            </span>
-                          )}
-
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            item.Status === 'Terverifikasi' 
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                              : item.Status === 'Pending' 
-                              ? 'bg-amber-50 text-amber-800 border-amber-200' 
-                              : 'bg-rose-50 text-rose-800 border-rose-200'
-                          }`}>
-                            {item.Status || 'Pending'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-2 text-right border-t border-slate-100">
-            <button
-              onClick={() => setActiveView('santri')}
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 inline-flex items-center space-x-1 cursor-pointer"
-            >
-              <span>Buka Seluruh {totalPeserta} Data Delegasi Santri</span>
-              <ArrowRight className="w-3 h-3 text-slate-400" />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* =========================================================
-          5. BARIS 3: KESIAPAN CABANG LOMBA & AUDIT LOG SISTEM
-          ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* KIRI (6 KOLOM): DISTRIBUSI 8 CABANG LOMBA UTAMA */}
-        <div className="lg:col-span-6 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-200">
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Kesiapan Cabang Lomba
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Sebaran delegasi santri pada 8 cabang perlombaan
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setActiveView('juara')}
-                className="text-xs font-bold text-emerald-800 hover:underline flex items-center space-x-0.5 cursor-pointer"
-              >
-                <span>Rekap Juara Umum</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* List Cabang Lomba */}
-            <div className="pt-3 space-y-2.5">
-              {branchDistribution.map((b) => (
-                <div key={b.key} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">{b.name}</span>
-                    <span className="font-mono text-slate-500 font-medium">
-                      <strong className="text-slate-900">{b.count}</strong> Santri ({b.pct}%)
-                    </span>
+              {/* Legend di Kanan Donut (Persis Referensi) */}
+              <div className="space-y-1.5 text-xs flex-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span className="text-slate-600 font-medium">Terverifikasi</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div 
-                      className={`h-full ${b.color} transition-all duration-500`} 
-                      style={{ width: `${Math.max(b.pct, b.count > 0 ? 5 : 0)}%` }}
-                    />
-                  </div>
+                  <span className="font-bold text-slate-900 font-mono">{pctTerverifikasi}%</span>
                 </div>
-              ))}
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span className="text-slate-600 font-medium">Menunggu</span>
+                  </div>
+                  <span className="font-bold text-slate-900 font-mono">{pctPending}%</span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span className="text-slate-600 font-medium">Belum Diundi</span>
+                  </div>
+                  <span className="font-bold text-slate-900 font-mono">{100 - pctDiundi}%</span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                    <span className="text-slate-600 font-medium">Ditolak</span>
+                  </div>
+                  <span className="font-bold text-slate-900 font-mono">{pctDitolak}%</span>
+                </div>
+              </div>
+
             </div>
           </div>
 
           <div className="pt-2 text-right border-t border-slate-100">
             <span className="text-[10px] text-slate-400">
-              Total delegasi terdistribusi merata antar cabang
-            </span>
-          </div>
-        </div>
-
-        {/* KANAN (6 KOLOM): RIWAYAT AKTIVITAS SISTEM (AUDIT LOG) */}
-        <div className="lg:col-span-6 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                    Riwayat Aktivitas Sistem
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Audit log operasional undian dan perubahan data
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-1.5">
-                <select
-                  value={logFilter}
-                  onChange={(e) => setLogFilter(e.target.value)}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 outline-none bg-slate-50 hover:bg-white transition-colors"
-                >
-                  <option value="ALL">Semua ({logs.length})</option>
-                  <option value="registration">Pendaftaran</option>
-                  <option value="status">Status</option>
-                  <option value="lottery">Undian</option>
-                </select>
-
-                <button
-                  onClick={handleRefresh}
-                  title="Segarkan Log"
-                  className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-
-                {logs.length > 0 && (
-                  <button
-                    onClick={() => setShowClearConfirm(true)}
-                    title="Bersihkan Log"
-                    className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Konfirmasi Hapus Log */}
-            {showClearConfirm && (
-              <div className="p-3 my-2 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-2 text-xs">
-                <span className="font-semibold text-rose-800">
-                  Hapus seluruh catatan log aktivitas?
-                </span>
-                <div className="flex items-center space-x-1.5 shrink-0">
-                  <button
-                    onClick={() => setShowClearConfirm(false)}
-                    className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 bg-white font-medium hover:bg-slate-50"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleClearLogs}
-                    className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* List Aktivitas Terakhir */}
-            <div className="divide-y divide-slate-100 pt-2">
-              {filteredLogs.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-400">
-                  Belum ada catatan aktivitas pada kategori ini.
-                </div>
-              ) : (
-                filteredLogs.slice(0, 5).map(item => {
-                  let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-                  let IconComp = Activity;
-
-                  if (item.type === 'registration') {
-                    badgeColor = 'bg-blue-50 text-blue-800 border-blue-200/60';
-                    IconComp = UserPlus;
-                  } else if (item.type === 'status') {
-                    badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200/60';
-                    IconComp = CheckCircle2;
-                  } else if (item.type === 'lottery') {
-                    badgeColor = 'bg-amber-50 text-amber-800 border-amber-200/60';
-                    IconComp = Dices;
-                  } else if (item.type === 'guru') {
-                    badgeColor = 'bg-purple-50 text-purple-800 border-purple-200/60';
-                    IconComp = GraduationCap;
-                  } else if (item.type === 'tingkat') {
-                    badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-                    IconComp = Layers;
-                  }
-
-                  return (
-                    <div key={item.id} className="py-2.5 flex items-start space-x-3 hover:bg-slate-50/60 px-1 rounded-lg transition-colors">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 mt-0.5 border border-slate-200/60">
-                        <IconComp className="w-3.5 h-3.5" />
-                      </div>
-                      
-                      <div className="space-y-0.5 min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}`}>
-                            {item.action}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
-                            {item.timestamp}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 font-medium leading-relaxed truncate">
-                          {item.detail}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="pt-2 text-right border-t border-slate-100">
-            <span className="text-[10px] text-slate-400">
-              Audit log tersimpan di memori sistem panitia
+              Sinkron otomatis dengan Google Sheets
             </span>
           </div>
         </div>

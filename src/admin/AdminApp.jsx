@@ -132,7 +132,7 @@ export default function AdminApp() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-100 flex font-sans antialiased text-slate-800">
+    <div className="h-screen w-screen overflow-hidden bg-[#F4F7FC] flex font-sans antialiased text-slate-800">
       
       {/* 
         SIDEBAR PANITIA - Didesain Fixed Penuh 
@@ -156,7 +156,7 @@ export default function AdminApp() {
         lg:pl-64 memberikan ruang tepat untuk lebar sidebar (w-64)
         Hanya area <main> yang dapat discroll secara vertikal.
       */}
-      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-slate-100 lg:pl-64 transition-all">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden bg-[#F4F7FC] lg:pl-64 transition-all">
         
         {/* Header Sticky di Atas Main Content */}
         <AdminHeader
@@ -174,7 +174,7 @@ export default function AdminApp() {
           Main Scroll Container - SATU-SATUNYA area yang scroll! 
           Sidebar dan Header tetap statis/fixed di tempatnya.
         */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-100/80 scroll-smooth">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4F7FC] scroll-smooth">
           
           {/* 1. VIEW: DASHBOARD */}
           {activeView === 'dashboard' && (

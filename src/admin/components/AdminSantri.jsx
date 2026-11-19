@@ -979,18 +979,15 @@ export default function AdminSantri({
     <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
       
       {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        {/* Subtle accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
-
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
         <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-800 text-white flex items-center justify-center shadow-sm shrink-0">
-            <Users className="w-6 h-6 text-emerald-200" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
+            <Users className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Data Peserta Santri</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-100">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
                 {countAll} Santri
               </span>
             </h2>
@@ -1004,16 +1001,16 @@ export default function AdminSantri({
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={handleOpenLotteryModal}
-            className="px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-xs flex items-center space-x-2 transition-colors cursor-pointer active:scale-95"
+            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
             title="Undi nomor urut santri"
           >
-            <Dices className="w-4 h-4 text-emerald-300" />
+            <Dices className="w-4 h-4 text-white" />
             <span>Undi Nomor Urut</span>
           </button>
 
           <button
             onClick={handleOpenDownloadPdfModal}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-semibold text-xs flex items-center space-x-2 transition-colors shadow-2xs cursor-pointer active:scale-95"
+            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center space-x-2 transition-all shadow-2xs cursor-pointer active:scale-95"
             title="Pilih tingkat lalu unduh PDF"
           >
             <FileText className="w-4 h-4 text-rose-600" />
@@ -1022,66 +1019,102 @@ export default function AdminSantri({
         </div>
       </div>
 
-      {/* 2. KARTU METRIK KPI STATISTIK */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* 2. KARTU METRIK KPI STATISTIK (SEJAJAR PERSIS REFERENSI DESAIN) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Total Santri */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex items-center space-x-3.5 hover:border-emerald-200 transition-all">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
+        <div 
+          onClick={() => { setStatusTab('ALL'); }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Users className="w-6 h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block leading-tight">Total Pendaftar</span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-none">{countAll}</span>
-            <span className="text-[10.5px] text-slate-400 block mt-0.5">Semua delegasi masuk</span>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Total Pendaftar
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {countAll}
+            </span>
+            <span className="text-[10.5px] font-semibold text-blue-600 block mt-0.5">
+              Semua delegasi masuk
+            </span>
           </div>
         </div>
 
         {/* KPI 2: Terverifikasi */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex items-center space-x-3.5 hover:border-emerald-200 transition-all">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+        <div 
+          onClick={() => { setStatusTab('Terverifikasi'); }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block leading-tight">Lolos Verifikasi</span>
-            <span className="text-xl sm:text-2xl font-black text-emerald-800 leading-none">{countVerified}</span>
-            <span className="text-[10.5px] text-emerald-600 font-medium block mt-0.5">Siap diundi / tanding</span>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Lolos Verifikasi
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {countVerified}
+            </span>
+            <span className="text-[10.5px] font-semibold text-emerald-600 block mt-0.5">
+              Siap diundi / tanding
+            </span>
           </div>
         </div>
 
         {/* KPI 3: Menunggu Verifikasi */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex items-center space-x-3.5 hover:border-amber-200 transition-all">
-          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5" />
+        <div 
+          onClick={() => { setStatusTab('Pending'); }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Clock className="w-6 h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block leading-tight">Menunggu Verifikasi</span>
-            <span className="text-xl sm:text-2xl font-black text-amber-700 leading-none">{countPending}</span>
-            <span className="text-[10.5px] text-amber-600 font-medium block mt-0.5">Perlu dicek panitia</span>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Menunggu Verifikasi
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {countPending}
+            </span>
+            <span className="text-[10.5px] font-semibold text-amber-600 block mt-0.5">
+              Perlu dicek panitia
+            </span>
           </div>
         </div>
 
         {/* KPI 4: Ditolak */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex items-center space-x-3.5 hover:border-rose-200 transition-all">
-          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-5 h-5" />
+        <div 
+          onClick={() => { setStatusTab('Ditolak'); }}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <AlertCircle className="w-6 h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block leading-tight">Ditolak / Batal</span>
-            <span className="text-xl sm:text-2xl font-black text-rose-700 leading-none">{countRejected}</span>
-            <span className="text-[10.5px] text-rose-500 font-medium block mt-0.5">Tidak memenuhi syarat</span>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Ditolak / Batal
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
+              {countRejected}
+            </span>
+            <span className="text-[10.5px] font-semibold text-rose-600 block mt-0.5">
+              Tidak memenuhi syarat
+            </span>
           </div>
         </div>
       </div>
 
       {/* 3. TAB NAVIGATION PILLS */}
-      <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
         {tabPills.map(tab => (
           <button
             key={tab.id}
             onClick={() => setStatusTab(tab.id)}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
               statusTab === tab.id
-                ? 'bg-emerald-800 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
             }`}
           >
@@ -1096,26 +1129,26 @@ export default function AdminSantri({
       </div>
 
       {/* 4. MAIN TABLE CONTAINER */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
 
         {/* Filter Bar (Search + Tingkat + Wali Kelas + Gender + Reset) */}
         <div className="p-4 border-b border-slate-100 bg-white flex flex-col md:flex-row items-stretch md:items-center gap-3">
           
           {/* Input Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari santri, no. urut, cabang..."
+              placeholder="Cari nama santri, ID, nomor urut, cabang..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-700 focus:bg-white bg-slate-50/60 transition-all placeholder:text-slate-400"
+              className="w-full pl-9 pr-8 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-medium outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
             />
             {localSearch && (
               <button
                 type="button"
                 onClick={() => setLocalSearch('')}
-                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1130,10 +1163,10 @@ export default function AdminSantri({
               <select
                 value={filterTingkat}
                 onChange={(e) => handleTingkatChange(e.target.value)}
-                className={`pl-3 pr-8 py-2 rounded-xl border text-xs font-medium outline-none bg-white transition-all cursor-pointer ${
+                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterTingkat !== 'ALL' 
-                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 font-semibold' 
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
+                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
                 }`}
               >
                 <option value="ALL">Semua Tingkat</option>
@@ -1143,15 +1176,15 @@ export default function AdminSantri({
               </select>
             </div>
 
-            {/* Filter 2: Wali Kelas (Permintaan Khusus) */}
+            {/* Filter 2: Wali Kelas */}
             <div className="relative">
               <select
                 value={filterWaliKelas}
                 onChange={(e) => setFilterWaliKelas(e.target.value)}
-                className={`pl-3 pr-8 py-2 rounded-xl border text-xs font-medium outline-none bg-white transition-all cursor-pointer max-w-[210px] truncate ${
+                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer max-w-[210px] truncate ${
                   filterWaliKelas !== 'ALL' 
-                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 font-semibold' 
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
+                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
                 }`}
                 title="Filter berdasarkan Wali Kelas"
               >
@@ -1169,10 +1202,10 @@ export default function AdminSantri({
               <select
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
-                className={`pl-3 pr-8 py-2 rounded-xl border text-xs font-medium outline-none bg-white transition-all cursor-pointer ${
+                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterGender !== 'ALL' 
-                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 font-semibold' 
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
+                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
                 }`}
               >
                 <option value="ALL">Semua Gender</option>
@@ -1186,10 +1219,10 @@ export default function AdminSantri({
               <select
                 value={filterLottery}
                 onChange={(e) => setFilterLottery(e.target.value)}
-                className={`pl-3 pr-8 py-2 rounded-xl border text-xs font-medium outline-none bg-white transition-all cursor-pointer ${
+                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterLottery !== 'ALL' 
-                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 font-semibold' 
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
+                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
                 }`}
               >
                 <option value="ALL">Semua Undian</option>
@@ -1203,7 +1236,7 @@ export default function AdminSantri({
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center space-x-1.5 transition-colors cursor-pointer"
                 title="Reset semua filter"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1214,17 +1247,17 @@ export default function AdminSantri({
           </div>
         </div>
 
-        {/* Responsive Table yang Halus */}
+        {/* Responsive Table yang Halus Sesuai Referensi Desain */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/60">
+            <thead className="bg-[#F8FAFC] text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100">
               <tr>
                 <th className="py-3.5 px-3 text-center w-10">
                   <input
                     type="checkbox"
                     checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(d.ID_Pendaftaran))}
                     onChange={handleToggleSelectAllVisible}
-                    className="rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                    className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                     title="Pilih Semua di Halaman Ini"
                   />
                 </th>
@@ -1234,7 +1267,7 @@ export default function AdminSantri({
                 <th className="py-3.5 px-4">Jenjang & Kelas</th>
                 <th className="py-3.5 px-4">Wali Kelas</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-center w-32">Aksi</th>
+                <th className="py-3.5 px-4 text-center w-36">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1242,10 +1275,10 @@ export default function AdminSantri({
                 <tr>
                   <td colSpan="8" className="py-16 text-center">
                     <div className="max-w-xs mx-auto text-center space-y-2">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-                        <Users className="w-5 h-5" />
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                        <Users className="w-6 h-6" />
                       </div>
-                      <p className="text-xs font-semibold text-slate-700">
+                      <p className="text-xs font-bold text-slate-700">
                         Tidak ditemukan data santri yang cocok
                       </p>
                       <p className="text-[11px] text-slate-400">
@@ -1254,7 +1287,7 @@ export default function AdminSantri({
                       {isFilterActive && (
                         <button
                           onClick={handleResetFilters}
-                          className="mt-2 inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-medium border border-emerald-200 transition-colors"
+                          className="mt-2 inline-flex items-center space-x-1 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 transition-colors cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5 mr-1" />
                           <span>Reset Semua Filter</span>
@@ -1265,7 +1298,7 @@ export default function AdminSantri({
                 </tr>
               ) : (
                 paginatedData.map((item, idx) => (
-                  <tr key={item.ID_Pendaftaran || idx} className={`transition-colors ${selectedIds.has(item.ID_Pendaftaran) ? 'bg-emerald-50/50' : 'hover:bg-slate-50/60'}`}>
+                  <tr key={item.ID_Pendaftaran || idx} className={`transition-colors ${selectedIds.has(item.ID_Pendaftaran) ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'}`}>
                     
                     {/* Checkbox Pilihan Baris */}
                     <td className="py-3.5 px-3 text-center">
@@ -1273,18 +1306,18 @@ export default function AdminSantri({
                         type="checkbox"
                         checked={selectedIds.has(item.ID_Pendaftaran)}
                         onChange={() => handleToggleSelectOne(item.ID_Pendaftaran)}
-                        className="rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                        className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                       />
                     </td>
 
                     {/* Nomor Urut (Format 3 Digit Monospace) */}
                     <td className="py-3.5 px-4 text-center">
                       {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
-                        <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-mono font-bold text-xs border border-emerald-200">
+                        <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 font-mono font-bold text-xs border border-blue-200/70">
                           {String(item.Nomor_Urut).padStart(3, '0')}
                         </span>
                       ) : (
-                        <span className="inline-block text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                        <span className="inline-block text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg font-mono">
                           Belum Diundi
                         </span>
                       )}
@@ -1292,11 +1325,11 @@ export default function AdminSantri({
 
                     {/* Nama Santri */}
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900 leading-tight">
+                      <div className="font-bold text-slate-900 leading-snug">
                         {item.Nama_Lengkap}
                       </div>
                       <div className="flex items-center space-x-1.5 mt-0.5">
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold ${
+                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
                           item.Jenis_Kelamin === 'L' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
                         }`}>
                           {item.Jenis_Kelamin === 'L' ? 'Putra' : 'Putri'}
@@ -1309,7 +1342,7 @@ export default function AdminSantri({
 
                     {/* Cabang Lomba */}
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-emerald-800 leading-tight">
+                      <div className="font-bold text-slate-800 leading-snug">
                         {item.Cabang_Lomba}
                       </div>
                     </td>
@@ -1319,9 +1352,9 @@ export default function AdminSantri({
                       <div className="flex items-center space-x-1.5 font-medium text-slate-800">
                         <span>{item.Kelas_Kategori}</span>
                         {item.Jenis_Kelamin === 'P' || (item.Kelas_Kategori && item.Kelas_Kategori.toLowerCase().includes('putri')) ? (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">Putri</span>
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700">Putri</span>
                         ) : (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-800">Putra</span>
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700">Putra</span>
                         )}
                       </div>
                       <div className="text-[10px] text-slate-400">{item.Tingkat}</div>
@@ -1329,10 +1362,10 @@ export default function AdminSantri({
 
                     {/* Wali Kelas */}
                     <td className="py-3.5 px-4">
-                      <div className="text-slate-700 font-medium">{item.Wali_Kelas}</div>
+                      <div className="text-slate-800 font-semibold">{item.Wali_Kelas}</div>
                       <button
                         onClick={() => handleSendWA(item)}
-                        className="text-[10px] text-emerald-700 hover:underline flex items-center space-x-1 mt-0.5"
+                        className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center space-x-1 mt-0.5 cursor-pointer"
                       >
                         <MessageSquare className="w-2.5 h-2.5" />
                         <span>Chat WA</span>
@@ -1341,15 +1374,15 @@ export default function AdminSantri({
 
                     {/* Status */}
                     <td className="py-3.5 px-4 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
                         item.Status === 'Terverifikasi'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                           : item.Status === 'Ditolak'
-                          ? 'bg-rose-50 text-rose-800 border border-rose-100'
-                          : 'bg-amber-50 text-amber-800 border border-amber-100'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                          : 'bg-amber-50 text-amber-700 border border-amber-100'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                          item.Status === 'Terverifikasi' ? 'bg-emerald-600' : item.Status === 'Ditolak' ? 'bg-rose-600' : 'bg-amber-500'
+                          item.Status === 'Terverifikasi' ? 'bg-emerald-500' : item.Status === 'Ditolak' ? 'bg-rose-500' : 'bg-amber-500'
                         }`}></span>
                         {item.Status}
                       </span>
@@ -1365,16 +1398,16 @@ export default function AdminSantri({
                             disabled={statusProcessingId === item.ID_Pendaftaran}
                             onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Terverifikasi')}
                             title="Verifikasi / Terima Santri"
-                            className="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-white font-semibold text-[10px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {statusProcessingId === item.ID_Pendaftaran ? (
                               <>
-                                <RefreshCw className="w-3 h-3 animate-spin text-emerald-200" />
-                                <span>Memproses...</span>
+                                <RefreshCw className="w-3 h-3 animate-spin text-white" />
+                                <span>Proses...</span>
                               </>
                             ) : (
                               <>
-                                <CheckCircle2 className="w-3 h-3 text-emerald-200" />
+                                <CheckCircle2 className="w-3 h-3 text-white" />
                                 <span>Terima</span>
                               </>
                             )}
@@ -1385,12 +1418,12 @@ export default function AdminSantri({
                             disabled={statusProcessingId === item.ID_Pendaftaran}
                             onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Pending')}
                             title="Kembalikan ke status Pending"
-                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-medium text-[10px] border border-slate-200 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-[11px] border border-slate-200/80 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {statusProcessingId === item.ID_Pendaftaran ? (
                               <>
                                 <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />
-                                <span>Memproses...</span>
+                                <span>Proses...</span>
                               </>
                             ) : (
                               <>
@@ -1405,16 +1438,16 @@ export default function AdminSantri({
                         <button
                           onClick={() => setSelectedSantri(item)}
                           title="Lihat Detail Santri"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-100 transition-colors cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Tombol Edit Santri (Pembaruan Riil) */}
+                        {/* Tombol Edit Santri */}
                         <button
                           onClick={() => handleOpenEdit(item)}
                           title="Edit Lengkap Data Santri"
-                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 transition-colors cursor-pointer"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -1423,7 +1456,7 @@ export default function AdminSantri({
                         <button
                           onClick={() => handleDeleteSantri(item)}
                           title="Hapus Data Santri"
-                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/70 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-100 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1439,7 +1472,7 @@ export default function AdminSantri({
         </div>
 
         {/* PAGINATION FOOTER */}
-        <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-[#F8FAFC] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="text-slate-500 font-medium text-center sm:text-left flex flex-wrap items-center gap-2">
             <span>
               Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari total <strong className="text-slate-800">{filteredData.length}</strong> santri
@@ -1449,7 +1482,7 @@ export default function AdminSantri({
               <select
                 value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-300"
+                className="px-2.5 py-1 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white outline-none cursor-pointer hover:border-slate-300"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -1466,7 +1499,7 @@ export default function AdminSantri({
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
               title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -1495,7 +1528,7 @@ export default function AdminSantri({
                     onClick={() => setCurrentPage(page)}
                     className={`w-7 h-7 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer ${
                       isActive
-                        ? 'bg-emerald-800 text-white shadow-2xs'
+                        ? 'bg-blue-600 text-white shadow-2xs'
                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -1509,7 +1542,7 @@ export default function AdminSantri({
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages || filteredData.length === 0}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
               title="Halaman Berikutnya"
             >
               <span>Berikutnya</span>
@@ -1527,12 +1560,12 @@ export default function AdminSantri({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4 relative overflow-hidden">
             {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600" />
 
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 shrink-0 shadow-2xs">
-                  <Users className="w-5 h-5 text-emerald-800" />
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-2xs">
+                  <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
@@ -1553,45 +1586,45 @@ export default function AdminSantri({
 
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-[10px] text-slate-400 block font-medium">ID Pendaftaran</span>
-                  <span className="font-mono font-semibold text-slate-800 text-sm">{selectedSantri.ID_Pendaftaran}</span>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">ID Pendaftaran</span>
+                  <span className="font-mono font-bold text-slate-800 text-sm mt-0.5 block">{selectedSantri.ID_Pendaftaran}</span>
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <span className="text-[10px] text-emerald-700 block font-medium">Nomor Urut</span>
-                  <span className="font-mono font-bold text-emerald-900 text-sm">
+                <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                  <span className="text-[10px] text-blue-700 block font-bold uppercase tracking-wider">Nomor Urut</span>
+                  <span className="font-mono font-bold text-blue-800 text-sm mt-0.5 block">
                     {selectedSantri.Nomor_Urut || 'Belum Diundi'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
-                <span className="text-[10px] text-slate-400 block font-medium">Nama Lengkap</span>
-                <span className="text-sm font-semibold text-slate-900 block">{selectedSantri.Nama_Lengkap}</span>
-                <span className="text-slate-500 block text-[11px]">
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-0.5">
+                <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Nama Lengkap</span>
+                <span className="text-sm font-bold text-slate-900 block">{selectedSantri.Nama_Lengkap}</span>
+                <span className="text-slate-500 block text-[11px] font-medium mt-0.5">
                   Jenis Kelamin: {selectedSantri.Jenis_Kelamin === 'L' ? 'Putra' : 'Putri'}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-[10px] text-slate-400 block font-medium">Cabang Lomba</span>
-                  <span className="font-semibold text-slate-800">{selectedSantri.Cabang_Lomba}</span>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Cabang Lomba</span>
+                  <span className="font-bold text-slate-800 block mt-0.5">{selectedSantri.Cabang_Lomba}</span>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-[10px] text-slate-400 block font-medium">Tingkat & Kelas</span>
-                  <span className="font-semibold text-slate-800">{selectedSantri.Kelas_Kategori}</span>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Tingkat & Kelas</span>
+                  <span className="font-bold text-slate-800 block mt-0.5">{selectedSantri.Kelas_Kategori}</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] text-slate-400 block font-medium">Wali Kelas</span>
-                <span className="font-semibold text-slate-800">{selectedSantri.Wali_Kelas}</span>
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Wali Kelas</span>
+                <span className="font-bold text-slate-800 block mt-0.5">{selectedSantri.Wali_Kelas}</span>
                 <div className="font-mono text-slate-500 text-[11px] mt-0.5">WA: {selectedSantri.Nomor_WA}</div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] text-slate-400 block font-medium">Catatan Khusus</span>
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Catatan Khusus</span>
                 <p className="text-slate-600 italic mt-0.5">
                   {selectedSantri.Catatan || 'Tidak ada catatan tambahan.'}
                 </p>
@@ -1605,12 +1638,12 @@ export default function AdminSantri({
                     type="button"
                     disabled={statusProcessingId === selectedSantri.ID_Pendaftaran}
                     onClick={() => handleQuickStatus(selectedSantri.ID_Pendaftaran, 'Terverifikasi')}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-white font-semibold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {statusProcessingId === selectedSantri.ID_Pendaftaran ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-200" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
                     ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     )}
                     <span>{statusProcessingId === selectedSantri.ID_Pendaftaran ? 'Memproses...' : 'Terima Santri'}</span>
                   </button>
@@ -1637,9 +1670,9 @@ export default function AdminSantri({
                     setSelectedSantri(null);
                     handleOpenEdit(target);
                   }}
-                  className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center space-x-1.5 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                  className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs flex items-center space-x-1.5 border border-blue-100 transition-colors cursor-pointer shadow-2xs"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
                   <span>Edit Data</span>
                 </button>
               </div>
@@ -1661,18 +1694,18 @@ export default function AdminSantri({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 relative max-h-[90vh] overflow-y-auto">
             {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600" />
 
             {/* Header Modal */}
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 shrink-0 shadow-2xs">
-                  <Edit3 className="w-5 h-5 text-emerald-800" />
+                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-2xs">
+                  <Edit3 className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                     <span>Edit Data Santri</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-100">
                       {editingSantri.ID_Pendaftaran}
                     </span>
                   </h3>
@@ -1859,9 +1892,9 @@ export default function AdminSantri({
                 <button
                   type="submit"
                   disabled={isSavingEdit}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition-colors flex items-center space-x-2 cursor-pointer disabled:opacity-60"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-sm transition-colors flex items-center space-x-2 cursor-pointer disabled:opacity-60"
                 >
-                  <Save className={`w-4 h-4 text-emerald-200 ${isSavingEdit ? 'animate-spin' : ''}`} />
+                  <Save className={`w-4 h-4 text-white ${isSavingEdit ? 'animate-spin' : ''}`} />
                   <span>{isSavingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
                 </button>
               </div>
@@ -1876,13 +1909,13 @@ export default function AdminSantri({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 relative overflow-hidden">
             {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600" />
 
             {/* Header Modal */}
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 shrink-0 shadow-2xs">
-                  <FileText className="w-5 h-5 text-emerald-800" />
+                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-2xs">
+                  <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 tracking-tight">
@@ -1895,7 +1928,7 @@ export default function AdminSantri({
               </div>
               <button
                 onClick={() => setIsDownloadModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Tutup"
               >
                 <X className="w-5 h-5" />
@@ -1911,13 +1944,13 @@ export default function AdminSantri({
                   Tingkat Perlombaan
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-700">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-600">
                     <Layers className="w-4 h-4" />
                   </div>
                   <select
                     value={downloadTingkat}
                     onChange={(e) => setDownloadTingkat(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all appearance-none cursor-pointer"
+                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
                   >
                     <option value="ALL">Semua Tingkat</option>
                     <option value="Tingkat Ula">Tingkat Ula (Dasar / TPA)</option>
@@ -1937,13 +1970,13 @@ export default function AdminSantri({
                   Cabang Perlombaan
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-700">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-600">
                     <Trophy className="w-4 h-4" />
                   </div>
                   <select
                     value={downloadCabang}
                     onChange={(e) => setDownloadCabang(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all appearance-none cursor-pointer"
+                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
                   >
                     <option value="ALL">Semua Cabang Lomba</option>
                     {uniqueCabangOptions.map((c) => (
@@ -1961,26 +1994,26 @@ export default function AdminSantri({
               {/* Live Preview Summary Card */}
               <div className={`p-3.5 rounded-2xl border transition-all ${
                 downloadPreviewCount > 0 
-                  ? 'bg-emerald-50/70 border-emerald-100 text-emerald-950' 
+                  ? 'bg-blue-50/70 border-blue-100 text-blue-950' 
                   : 'bg-amber-50/70 border-amber-200 text-amber-900'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className={`w-2 h-2 rounded-full ${
-                      downloadPreviewCount > 0 ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'
+                      downloadPreviewCount > 0 ? 'bg-blue-600 animate-pulse' : 'bg-amber-500'
                     }`} />
-                    <span className="font-medium text-xs">
+                    <span className="font-semibold text-xs text-slate-800">
                       {downloadPreviewCount > 0 ? 'Jumlah santri terdata:' : 'Belum ada santri:'}
                     </span>
                   </div>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    downloadPreviewCount > 0 ? 'bg-emerald-800 text-white shadow-2xs' : 'bg-amber-200 text-amber-900'
+                    downloadPreviewCount > 0 ? 'bg-blue-600 text-white shadow-2xs' : 'bg-amber-200 text-amber-900'
                   }`}>
                     {downloadPreviewCount} Peserta
                   </span>
                 </div>
                 {downloadPreviewCount > 0 && (
-                  <div className="mt-2 pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[11px] text-emerald-900">
+                  <div className="mt-2 pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-blue-900">
                     <span className="font-medium">Komposisi:</span>
                     <span className="font-semibold">
                       {downloadPreviewStats.putri} Putri • {downloadPreviewStats.putra} Putra
@@ -2005,9 +2038,9 @@ export default function AdminSantri({
                 type="button"
                 disabled={downloadPreviewCount === 0 || isDownloading}
                 onClick={handleExecuteDownload}
-                className="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-sm flex items-center space-x-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center space-x-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                <Download className="w-4 h-4 text-emerald-300" />
+                <Download className="w-4 h-4 text-white" />
                 <span>{isDownloading ? 'Menyusun PDF...' : 'Unduh PDF'}</span>
               </button>
             </div>
