@@ -289,20 +289,21 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
  * Update Status Santri Langsung ke Google Sheets
  */
 export const updateStatus = async (idPendaftaran, newStatus) => {
+  const cleanId = String(idPendaftaran || '').trim();
   const currentList = getLocalRegistrations();
   const updated = currentList.map(item => {
-    if (item.ID_Pendaftaran === idPendaftaran) {
+    if (String(item.ID_Pendaftaran || '').trim() === cleanId) {
       return { ...item, Status: newStatus };
     }
     return item;
   });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  notifyDataChanged('registrations', { idPendaftaran, newStatus });
+  notifyDataChanged('registrations', { idPendaftaran: cleanId, newStatus });
 
   addActivityLog(
     'Perubahan Status Santri',
-    `Status santri ID ${idPendaftaran} diubah menjadi "${newStatus}"`,
+    `Status santri ID ${cleanId} diubah menjadi "${newStatus}"`,
     'status'
   );
 
@@ -314,12 +315,55 @@ export const updateStatus = async (idPendaftaran, newStatus) => {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'update_single',
-          ID_Pendaftaran: idPendaftaran,
+          ID_Pendaftaran: cleanId,
           Status: newStatus
         })
       });
     } catch (e) {
       console.warn('Update status ke GAS gagal:', e);
+    }
+  }
+
+  return updated;
+};
+
+/**
+ * Batch Update Status Santri Sekaligus (Verifikasi Massal)
+ */
+export const batchUpdateStatus = async (idList = [], newStatus) => {
+  if (!Array.isArray(idList) || idList.length === 0) return [];
+  const cleanIds = new Set(idList.map(id => String(id || '').trim()));
+  const currentList = getLocalRegistrations();
+  const updated = currentList.map(item => {
+    if (cleanIds.has(String(item.ID_Pendaftaran || '').trim())) {
+      return { ...item, Status: newStatus };
+    }
+    return item;
+  });
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  notifyDataChanged('registrations', { updatedIds: Array.from(cleanIds), newStatus });
+
+  addActivityLog(
+    'Verifikasi Massal Santri',
+    `${cleanIds.size} santri diubah statusnya menjadi "${newStatus}"`,
+    'status'
+  );
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'batch_update_status',
+          ids: Array.from(cleanIds),
+          status: newStatus
+        })
+      });
+    } catch (e) {
+      console.warn('Batch update status ke GAS gagal:', e);
     }
   }
 

@@ -901,16 +901,18 @@ function doPost(e) {
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       let updated = false;
 
-      const colId = headers.indexOf('ID_Pendaftaran');
+      const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
       if (colId !== -1) {
         for (let i = 1; i < rows.length; i++) {
           if (String(rows[i][colId]).trim() === idPendaftaran) {
             const rowNum = i + 1;
             Object.keys(contents).forEach(key => {
-              const cIdx = headers.indexOf(key);
+              const cIdx = headers.findIndex(h => h.toLowerCase() === key.toLowerCase());
               if (cIdx !== -1) {
                 let val = contents[key];
-                if (key === 'Nama_Santri' || key === 'Nama_Lengkap') val = String(val).toUpperCase();
+                if (key.toLowerCase() === 'nama_santri' || key.toLowerCase() === 'nama_lengkap') {
+                  val = String(val).toUpperCase();
+                }
                 sheet.getRange(rowNum, cIdx + 1).setValue(val);
               }
             });
@@ -920,9 +922,43 @@ function doPost(e) {
         }
       }
 
+      SpreadsheetApp.flush();
       return jsonResponse({
         status: updated ? 'success' : 'not_found',
         message: updated ? 'Data santri berhasil diperbarui.' : 'ID Pendaftaran tidak ditemukan.'
+      });
+    }
+
+    // 3B. BATCH UPDATE STATUS SANTRI (VERIFIKASI MASSAL CEPAT)
+    if (action === 'batch_update_status') {
+      const sheet = getSheetByName(SHEET_PENDAFTARAN);
+      const rows = sheet.getDataRange().getValues();
+      const headers = rows[0].map(h => String(h).trim());
+      const ids = Array.isArray(contents.ids) ? contents.ids.map(id => String(id).trim()) : [];
+      const newStatus = String(contents.status || 'Terverifikasi').trim();
+      let count = 0;
+
+      const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
+      const colStatus = headers.findIndex(h => h.toLowerCase() === 'status');
+
+      if (colId !== -1 && colStatus !== -1 && ids.length > 0) {
+        const idSet = {};
+        ids.forEach(id => { idSet[id] = true; });
+
+        for (let i = 1; i < rows.length; i++) {
+          const rowId = String(rows[i][colId]).trim();
+          if (idSet[rowId]) {
+            sheet.getRange(i + 1, colStatus + 1).setValue(newStatus);
+            count++;
+          }
+        }
+      }
+
+      SpreadsheetApp.flush();
+      return jsonResponse({
+        status: 'success',
+        updatedCount: count,
+        message: count + ' santri berhasil diperbarui statusnya.'
       });
     }
 

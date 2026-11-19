@@ -24,10 +24,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { 
   updateStatus, 
+  batchUpdateStatus,
   generateRandomQueueNumbers,
   getWaliKelasList,
   updateRegistration,
@@ -79,6 +81,7 @@ export default function AdminSantri({
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [statusProcessingId, setStatusProcessingId] = useState(null);
 
   // Modal Detail Santri
   const [selectedSantri, setSelectedSantri] = useState(null);
@@ -322,11 +325,37 @@ export default function AdminSantri({
   const countRejected = registrations.filter(r => r.Status === 'Ditolak').length;
 
   const handleQuickStatus = async (idPendaftaran, newStatus) => {
+    if (!idPendaftaran) return;
+    const cleanId = String(idPendaftaran).trim();
+    setStatusProcessingId(cleanId);
     try {
-      await updateStatus(idPendaftaran, newStatus);
+      await updateStatus(cleanId, newStatus);
+      const isAccepted = newStatus === 'Terverifikasi';
+
+      Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+        timerProgressBar: true
+      }).fire({
+        icon: isAccepted ? 'success' : 'info',
+        title: isAccepted ? 'Santri Diterima (Terverifikasi)' : 'Status Dikembalikan ke Pending'
+      });
+
+      if (selectedSantri && selectedSantri.ID_Pendaftaran === cleanId) {
+        setSelectedSantri(prev => prev ? { ...prev, Status: newStatus } : null);
+      }
+
       if (onRefresh) onRefresh();
     } catch (e) {
-      alert('Gagal memperbarui status: ' + e.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Memperbarui Status',
+        text: e.message || 'Terjadi kendala saat memperbarui status santri.'
+      });
+    } finally {
+      setStatusProcessingId(null);
     }
   };
 
@@ -363,16 +392,12 @@ export default function AdminSantri({
     setIsBulkProcessing(true);
     try {
       const ids = Array.from(selectedIds);
-      let successCount = 0;
-      for (const id of ids) {
-        await updateStatus(id, 'Terverifikasi');
-        successCount++;
-      }
+      await batchUpdateStatus(ids, 'Terverifikasi');
       setSelectedIds(new Set());
       Swal.fire({
         icon: 'success',
         title: 'Verifikasi Berhasil!',
-        text: `${successCount} santri berhasil diverifikasi serentak.`,
+        text: `${ids.length} santri berhasil diverifikasi serentak.`,
         timer: 2000,
         showConfirmButton: false
       });
@@ -389,16 +414,12 @@ export default function AdminSantri({
     setIsBulkProcessing(true);
     try {
       const ids = Array.from(selectedIds);
-      let successCount = 0;
-      for (const id of ids) {
-        await updateStatus(id, 'Pending');
-        successCount++;
-      }
+      await batchUpdateStatus(ids, 'Pending');
       setSelectedIds(new Set());
       Swal.fire({
         icon: 'success',
         title: 'Status Diperbarui!',
-        text: `${successCount} santri dikembalikan ke status Pending.`,
+        text: `${ids.length} santri dikembalikan ke status Pending.`,
         timer: 2000,
         showConfirmButton: false
       });
@@ -1340,19 +1361,43 @@ export default function AdminSantri({
                         
                         {item.Status !== 'Terverifikasi' ? (
                           <button
+                            type="button"
+                            disabled={statusProcessingId === item.ID_Pendaftaran}
                             onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Terverifikasi')}
                             title="Verifikasi / Terima Santri"
-                            className="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-[10px] transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-white font-semibold text-[10px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            Terima
+                            {statusProcessingId === item.ID_Pendaftaran ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin text-emerald-200" />
+                                <span>Memproses...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-200" />
+                                <span>Terima</span>
+                              </>
+                            )}
                           </button>
                         ) : (
                           <button
+                            type="button"
+                            disabled={statusProcessingId === item.ID_Pendaftaran}
                             onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Pending')}
                             title="Kembalikan ke status Pending"
-                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-[10px] border border-slate-200 transition-colors"
+                            className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-medium text-[10px] border border-slate-200 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            Reset
+                            {statusProcessingId === item.ID_Pendaftaran ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />
+                                <span>Memproses...</span>
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw className="w-3 h-3 text-slate-500" />
+                                <span>Reset</span>
+                              </>
+                            )}
                           </button>
                         )}
 
@@ -1553,19 +1598,51 @@ export default function AdminSantri({
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = selectedSantri;
-                  setSelectedSantri(null);
-                  handleOpenEdit(target);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs flex items-center space-x-1.5 transition-colors cursor-pointer shadow-2xs"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-emerald-200" />
-                <span>Edit Data Santri</span>
-              </button>
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center space-x-2">
+                {selectedSantri.Status !== 'Terverifikasi' ? (
+                  <button
+                    type="button"
+                    disabled={statusProcessingId === selectedSantri.ID_Pendaftaran}
+                    onClick={() => handleQuickStatus(selectedSantri.ID_Pendaftaran, 'Terverifikasi')}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-white font-semibold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {statusProcessingId === selectedSantri.ID_Pendaftaran ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-200" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                    )}
+                    <span>{statusProcessingId === selectedSantri.ID_Pendaftaran ? 'Memproses...' : 'Terima Santri'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={statusProcessingId === selectedSantri.ID_Pendaftaran}
+                    onClick={() => handleQuickStatus(selectedSantri.ID_Pendaftaran, 'Pending')}
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs flex items-center space-x-1.5 border border-slate-200 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {statusProcessingId === selectedSantri.ID_Pendaftaran ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                    ) : (
+                      <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                    )}
+                    <span>{statusProcessingId === selectedSantri.ID_Pendaftaran ? 'Memproses...' : 'Kembalikan Pending'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedSantri;
+                    setSelectedSantri(null);
+                    handleOpenEdit(target);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center space-x-1.5 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Edit Data</span>
+                </button>
+              </div>
 
               <button
                 type="button"
