@@ -44,8 +44,9 @@ import {
   getGenderFromKelas,
   MASTER_WALI_KELAS 
 } from '../../shared/data/competitions';
+import Swal from 'sweetalert2';
 
-const STORAGE_DRAFT_KEY = 'alfalah_multistep_draft_v2';
+const STORAGE_DRAFT_KEY = 'alfalah_multistep_registration_draft_v3';
 
 export default function RegistrationForm({ onSubmitSuccess }) {
   // State Master Data
@@ -151,10 +152,13 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     };
   }, []);
 
-  // 3. Muat draft tersimpan (jika ada) saat pertama kali buka
+  // 3. Muat draft tersimpan (dari localStorage / fallback sessionStorage) saat pertama kali buka
   useEffect(() => {
     try {
-      const savedDraft = sessionStorage.getItem(STORAGE_DRAFT_KEY);
+      let savedDraft = localStorage.getItem(STORAGE_DRAFT_KEY);
+      if (!savedDraft) {
+        savedDraft = sessionStorage.getItem('alfalah_multistep_draft_v2') || sessionStorage.getItem(STORAGE_DRAFT_KEY);
+      }
       if (savedDraft) {
         const d = JSON.parse(savedDraft);
         if (d.waliInput) setWaliInput(d.waliInput);
@@ -174,6 +178,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         if (d.adzanSantri) setAdzanSantri(d.adzanSantri);
         if (d.ccmRegu) setCcmRegu(d.ccmRegu);
         if (d.kreasiNadzom) setKreasiNadzom(d.kreasiNadzom);
+        if (d.activeBranchId) setActiveBranchId(d.activeBranchId);
         if (d.formStage && d.formStage !== 'identity' && d.kelasDiniyah) {
           setFormStage(d.formStage);
         }
@@ -181,7 +186,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     } catch (e) {}
   }, []);
 
-  // 4. Autosave draft ke sessionStorage setiap ada perubahan
+  // 4. Autosave draft ke localStorage setiap ada perubahan data
   useEffect(() => {
     try {
       const draftObj = {
@@ -202,14 +207,15 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         adzanSantri,
         ccmRegu,
         kreasiNadzom,
-        formStage
+        formStage,
+        activeBranchId
       };
-      sessionStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(draftObj));
+      localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(draftObj));
     } catch (e) {}
   }, [
     waliInput, selectedWaliId, tingkat, tingkatName, kelasDiniyah, jenisKelamin, nomorWA,
     mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, kaligrafiSantri,
-    mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, formStage
+    mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, formStage, activeBranchId
   ]);
 
   // Filter saran guru berdasarkan teks yang diketik
@@ -616,6 +622,220 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
   const totalFilledBranches = branchesHubData.filter(b => b.isFilled).length;
 
+  const eligibleBranches = useMemo(() => {
+    return branchesHubData.filter(b => b.isEligible);
+  }, [branchesHubData]);
+
+  const currentBranchIndex = eligibleBranches.findIndex(b => b.id === activeBranchId);
+  const currentBranchNumber = currentBranchIndex >= 0 ? currentBranchIndex + 1 : 1;
+  const totalEligibleBranches = eligibleBranches.length;
+
+  // Validator status pengisian cabang aktif saat ini
+  const currentBranchStatus = useMemo(() => {
+    switch (activeBranchId) {
+      case 'mqk': {
+        const count = mqkSantri.filter(s => s.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri terdaftar untuk cabang MQK.`
+            : 'Wajib mengisi minimal 1 nama santri delegasi MQK, atau klik "Lewati Cabang" jika kelas tidak mengirim santri.'
+        };
+      }
+      case 'pidato': {
+        const count = pidatoSantri.filter(s => s.nama.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri pidato terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri pidato beserta bahasanya, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'mc': {
+        const count = mcSantri.filter(s => s.nama.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri MC terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri pembawa acara (MC), atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'syarhil': {
+        const regu = syarhilRegu[0] || { pensyarah: '', tilawah: '', terjemah: '' };
+        const p = regu.pensyarah.trim().length > 0;
+        const t = regu.tilawah.trim().length > 0;
+        const j = regu.terjemah.trim().length > 0;
+        const filledFields = [p, t, j].filter(Boolean).length;
+        if (filledFields === 3) {
+          return {
+            isFilled: true,
+            isPartial: false,
+            count: 3,
+            message: 'Susunan Regu Syarhil Qur\'an (3 anggota) sudah lengkap.'
+          };
+        }
+        if (filledFields > 0) {
+          const missing = [];
+          if (!p) missing.push('Pensyarah');
+          if (!t) missing.push('Tilawah');
+          if (!j) missing.push('Terjemah');
+          return {
+            isFilled: false,
+            isPartial: true,
+            count: filledFields,
+            message: `Regu Syarhil belum lengkap (${filledFields} dari 3). Kurang: ${missing.join(', ')}.`
+          };
+        }
+        return {
+          isFilled: false,
+          isPartial: false,
+          count: 0,
+          message: 'Wajib mengisi 3 anggota Regu Syarhil (Pensyarah, Tilawah, Terjemah), atau klik "Lewati Cabang".'
+        };
+      }
+      case 'tilawah': {
+        const count = tilawahSantri.filter(s => s.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri tilawah terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri tilawah, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'kaligrafi': {
+        const count = kaligrafiSantri.filter(s => s.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri kaligrafi terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri kaligrafi, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'mhq': {
+        const count = mhqSantri.filter(s => s.nama.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri MHQ terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri MHQ beserta kategori juz, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'adzan': {
+        if (isPutriClass) {
+          return {
+            isFilled: true,
+            isPartial: false,
+            count: 0,
+            message: 'Cabang Adzan khusus untuk santri putra.'
+          };
+        }
+        const count = adzanSantri.filter(s => s.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri adzan terdaftar.`
+            : 'Wajib mengisi minimal 1 nama santri adzan, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      case 'ccm': {
+        const regu1 = ccmRegu[0] || { anggota1: '', anggota2: '', anggota3: '' };
+        const a1 = regu1.anggota1.trim().length > 0;
+        const a2 = regu1.anggota2.trim().length > 0;
+        const a3 = regu1.anggota3.trim().length > 0;
+        const r1Count = [a1, a2, a3].filter(Boolean).length;
+
+        const hasRegu2 = ccmRegu.length > 1;
+        let r2Count = 0;
+        if (hasRegu2) {
+          const regu2 = ccmRegu[1];
+          r2Count = [
+            regu2.anggota1.trim().length > 0,
+            regu2.anggota2.trim().length > 0,
+            regu2.anggota3.trim().length > 0
+          ].filter(Boolean).length;
+        }
+
+        if (r1Count === 0 && (!hasRegu2 || r2Count === 0)) {
+          return {
+            isFilled: false,
+            isPartial: false,
+            count: 0,
+            message: 'Wajib mengisi 3 anggota Regu CCM (Cerdas Cermat), atau klik "Lewati Cabang" jika tanpa delegasi.'
+          };
+        }
+
+        if (r1Count > 0 && r1Count < 3) {
+          return {
+            isFilled: false,
+            isPartial: true,
+            count: r1Count,
+            message: `Regu 1 CCM belum lengkap (${r1Count} dari 3 anggota). Wajib diisi 3 orang.`
+          };
+        }
+
+        if (hasRegu2 && r2Count > 0 && r2Count < 3) {
+          return {
+            isFilled: false,
+            isPartial: true,
+            count: r1Count + r2Count,
+            message: `Regu 2 CCM belum lengkap (${r2Count} dari 3 anggota). Wajib diisi 3 orang.`
+          };
+        }
+
+        const totalRegu = (r1Count === 3 ? 1 : 0) + (r2Count === 3 ? 1 : 0);
+        return {
+          isFilled: true,
+          isPartial: false,
+          count: r1Count + r2Count,
+          message: `Regu CCM (${totalRegu} regu) sudah terisi lengkap.`
+        };
+      }
+      case 'kreasi_nadzom': {
+        const hasKetua = kreasiNadzom.ketua.trim().length > 0;
+        return {
+          isFilled: hasKetua,
+          isPartial: false,
+          count: hasKetua ? 1 : 0,
+          message: hasKetua
+            ? 'Data Ketua Regu Kreasi Nadzom sudah terisi.'
+            : 'Wajib mengisi nama Ketua Regu Kreasi Nadzom, atau klik "Lewati Cabang" jika tanpa delegasi.'
+        };
+      }
+      default:
+        return { isFilled: true, isPartial: false, count: 0, message: '' };
+    }
+  }, [
+    activeBranchId, mqkSantri, pidatoSantri, mcSantri, syarhilRegu,
+    tilawahSantri, kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu,
+    kreasiNadzom, isPutriClass
+  ]);
+
+  // Peringatan sebelum reload/tutup halaman jika ada isian formulir
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (allDelegates.length > 0 || (kelasDiniyah && formStage !== 'identity')) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [allDelegates.length, kelasDiniyah, formStage]);
+
   // Navigasi Aksi
   const handleProceedToHub = (e) => {
     if (e) e.preventDefault();
@@ -644,20 +864,86 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
   const handleBackToHub = () => {
     setFormError('');
+    if (currentBranchStatus.isPartial) {
+      setFormError('Isian cabang ini belum lengkap. Harap lengkapi anggota regu atau kosongkan terlebih dahulu sebelum kembali ke dasbor.');
+      return;
+    }
     setFormStage('hub');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNextBranchInSequence = () => {
     setFormError('');
-    const eligibleBranches = branchesHubData.filter(b => b.isEligible);
-    const currentIndex = eligibleBranches.findIndex(b => b.id === activeBranchId);
-    if (currentIndex >= 0 && currentIndex < eligibleBranches.length - 1) {
-      setActiveBranchId(eligibleBranches[currentIndex + 1].id);
+    if (!currentBranchStatus.isFilled) {
+      setFormError('Harap lengkapi isian santri untuk cabang ini sebelum melanjutkan, atau klik "Lewati Cabang Ini (Tanpa Delegasi)".');
+      return;
+    }
+    if (currentBranchIndex >= 0 && currentBranchIndex < eligibleBranches.length - 1) {
+      setActiveBranchId(eligibleBranches[currentBranchIndex + 1].id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       setFormStage('hub');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSkipCurrentBranch = async () => {
+    const branchName = activeBranchObj.fullName || activeBranchObj.name;
+    const result = await Swal.fire({
+      title: 'Lewati Cabang Ini?',
+      html: `<div class="text-xs text-slate-600 space-y-2 text-left sm:text-center">` +
+            `<p>Kelas Diniyah <b>${kelasDiniyah || 'Anda'}</b> tidak akan mengirimkan delegasi pada cabang <b>${branchName}</b>.</p>` +
+            `<p class="text-slate-500">Anda dapat kembali mengisi cabang ini kapan saja melalui Dasbor Cabang sebelum formulir dikirim.</p>` +
+            `</div>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#075B45',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Lewati Cabang Ini',
+      cancelButtonText: 'Batal, Tetap Isi',
+      reverseButtons: true,
+      customClass: {
+        popup: 'rounded-3xl border border-slate-200 shadow-xl font-sans text-xs',
+        confirmButton: 'rounded-xl px-4 py-2 font-bold text-xs',
+        cancelButton: 'rounded-xl px-4 py-2 font-bold text-xs'
+      }
+    });
+
+    if (result.isConfirmed) {
+      handleClearCurrentBranch();
+      setFormError('');
+      if (currentBranchIndex >= 0 && currentBranchIndex < eligibleBranches.length - 1) {
+        setActiveBranchId(eligibleBranches[currentBranchIndex + 1].id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setFormStage('hub');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
+  const handleConfirmClearBranch = async () => {
+    const branchName = activeBranchObj.fullName || activeBranchObj.name;
+    const result = await Swal.fire({
+      title: 'Kosongkan Isian Cabang?',
+      text: `Seluruh data santri yang telah diketik pada cabang ${branchName} akan dibersihkan.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Kosongkan',
+      cancelButtonText: 'Batal',
+      reverseButtons: true,
+      customClass: {
+        popup: 'rounded-3xl border border-slate-200 shadow-xl font-sans text-xs',
+        confirmButton: 'rounded-xl px-4 py-2 font-bold text-xs',
+        cancelButton: 'rounded-xl px-4 py-2 font-bold text-xs'
+      }
+    });
+
+    if (result.isConfirmed) {
+      handleClearCurrentBranch();
+      setFormError('');
     }
   };
 
@@ -753,8 +1039,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
       const result = await saveBatchRegistrations(santriPayloadList, metadata);
 
-      // Hapus draft sesi setelah sukses
+      // Hapus draft lokal setelah sukses
+      localStorage.removeItem(STORAGE_DRAFT_KEY);
       sessionStorage.removeItem(STORAGE_DRAFT_KEY);
+      sessionStorage.removeItem('alfalah_multistep_draft_v2');
 
       if (onSubmitSuccess) {
         await onSubmitSuccess(result);
@@ -1301,8 +1589,8 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9B45B] block">
-                  Cabang #{activeBranchObj.orderNumber || ''} • {kelasDiniyah}
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D9B45B] block">
+                  Cabang {currentBranchNumber} dari {totalEligibleBranches} • {kelasDiniyah}
                 </span>
                 <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   {activeBranchObj.fullName || activeBranchObj.name}
@@ -1852,31 +2140,101 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            {/* Tombol Aksi Editor Cabang */}
-            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={handleClearCurrentBranch}
-                className="px-3.5 py-2.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
-              >
-                Kosongkan Cabang Ini
-              </button>
+            {/* Box Status Validasi & Panduan Cabang */}
+            <div className={`p-3.5 rounded-2xl border flex items-start gap-3 transition-colors ${
+              currentBranchStatus.isFilled
+                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                : currentBranchStatus.isPartial
+                ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                : 'bg-slate-50 border-slate-200 text-slate-700'
+            }`}>
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                currentBranchStatus.isFilled 
+                  ? 'bg-emerald-600 text-white' 
+                  : currentBranchStatus.isPartial
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-slate-300 text-slate-700'
+              }`}>
+                {currentBranchStatus.isFilled ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  <Info className="w-3.5 h-3.5 stroke-[2.5]" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold">
+                    {currentBranchStatus.isFilled 
+                      ? 'Data Delegasi Terisi' 
+                      : currentBranchStatus.isPartial 
+                      ? 'Perhatian: Isian Belum Lengkap' 
+                      : 'Status Cabang: Belum Terisi'}
+                  </span>
+                  {currentBranchStatus.isFilled && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-[#075B45]">
+                      Siap Lanjut
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] leading-relaxed mt-0.5 opacity-90">
+                  {currentBranchStatus.message}
+                </p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-2">
+            {/* Tombol Aksi Navigasi Editor Cabang */}
+            <div className="pt-3 border-t border-slate-200 space-y-2.5">
+              {/* Baris Tombol Utama */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleNextBranchInSequence}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+                  disabled={!currentBranchStatus.isFilled}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs ${
+                    currentBranchStatus.isFilled
+                      ? 'bg-[#075B45] hover:bg-[#054736] text-white cursor-pointer active:scale-[0.99]'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75'
+                  }`}
                 >
-                  Lanjut ke Cabang Berikutnya
+                  <span>Lanjut ke Cabang Berikutnya</span>
+                  <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
                 </button>
+
                 <button
                   type="button"
                   onClick={handleBackToHub}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  disabled={currentBranchStatus.isPartial}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border ${
+                    currentBranchStatus.isPartial
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75'
+                      : 'bg-white hover:bg-emerald-50/60 border-[#075B45]/40 text-[#075B45] cursor-pointer'
+                  }`}
                 >
-                  Simpan & Selesai
+                  <span>Simpan & Kembali ke Dasbor</span>
                 </button>
+              </div>
+
+              {/* Baris Opsi Lewati atau Bersihkan */}
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleSkipCurrentBranch}
+                  className="text-slate-500 hover:text-slate-800 font-semibold px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer text-[11px]"
+                >
+                  <span>Lewati Cabang Ini (Tanpa Delegasi)</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+
+                {currentBranchStatus.count > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmClearBranch}
+                    className="text-rose-600 hover:text-rose-700 font-semibold px-2 py-1.5 rounded-xl hover:bg-rose-50 transition-colors flex items-center gap-1 cursor-pointer text-[11px]"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Kosongkan Isian</span>
+                  </button>
+                )}
               </div>
             </div>
 
