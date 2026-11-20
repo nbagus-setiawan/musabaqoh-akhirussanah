@@ -2212,75 +2212,84 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
                 <Send className="w-5 h-5 text-[#D9B45B]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  Tahap 3: Pratinjau & Konfirmasi Pengiriman Kolektif
+                  Pratinjau & Konfirmasi Pendaftaran
                 </h1>
-                <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
-                  Periksa seluruh data delegasi santri sebelum disimpan permanen ke database panitia
+                <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-tight mt-0.5 truncate">
+                  Periksa seluruh data delegasi sebelum dikirim ke database panitia
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6 space-y-5">
+          <div className="p-3.5 sm:p-6 space-y-4">
             
             {/* Rangkuman Metadata Kelas */}
-            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="space-y-0.5 text-xs">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Kelas Diniyah Terdaftar:</span>
-                <p className="font-black text-slate-900 text-sm">{kelasDiniyah}</p>
-                <p className="text-slate-600">
-                  Wali Kelas: <strong>{waliInput}</strong> • Kontak: {nomorWA}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="text-[11px] font-black text-emerald-900 bg-white border border-emerald-200 px-3 py-1 rounded-full inline-block shadow-2xs">
-                  {allDelegates.length} Total Santri Delegasi
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Kelas Diniyah Terdaftar</span>
+                  <p className="font-black text-slate-900 text-sm sm:text-base">{kelasDiniyah}</p>
+                </div>
+                <span className="text-[11px] font-black text-[#075B45] bg-white border border-emerald-200 px-3 py-1 rounded-xl shadow-2xs shrink-0">
+                  {allDelegates.length} Santri Delegasi
                 </span>
+              </div>
+              
+              <div className="pt-2 border-t border-emerald-200/60 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-600">
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-slate-400 text-[11px]">Wali Kelas:</span>
+                  <strong className="text-slate-800 truncate">{waliInput}</strong>
+                </div>
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-slate-400 text-[11px]">Kontak WhatsApp:</span>
+                  <strong className="text-slate-800">{nomorWA}</strong>
+                </div>
               </div>
             </div>
 
             {/* Daftar Rincian Delegasi per Cabang Lomba */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs sm:text-[13px] font-black text-slate-900">
-                  Rincian Santri Terdaftar ({totalFilledBranches} Cabang Lomba):
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                  Rincian Delegasi ({totalFilledBranches} Cabang)
                 </h3>
                 <button
                   type="button"
                   onClick={() => setFormStage('hub')}
-                  className="text-xs font-bold text-[#075B45] hover:underline cursor-pointer"
+                  className="text-[11px] sm:text-xs font-bold text-[#075B45] hover:text-[#054736] bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/80 px-2.5 py-1 rounded-xl shrink-0 flex items-center space-x-1 transition-all cursor-pointer"
                 >
-                  Tambah / Ubah Cabang
+                  <Edit3 className="w-3 h-3" />
+                  <span>Ubah Cabang</span>
                 </button>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {branchesHubData.filter(b => b.isFilled).map((branch) => (
-                  <div key={branch.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="w-5 h-5 rounded-md bg-[#075B45] text-white text-[10px] font-bold flex items-center justify-center">
+                  <div key={branch.id} className="p-3 sm:p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-5 h-5 rounded-lg bg-emerald-100 text-[#075B45] text-[10.5px] font-black flex items-center justify-center shrink-0">
                           {branch.orderNumber}
                         </span>
-                        <strong className="text-xs text-slate-900">{branch.name}</strong>
+                        <strong className="text-xs font-bold text-slate-900 truncate">{branch.name}</strong>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleOpenBranchEdit(branch.id)}
-                        className="text-[11px] font-bold text-[#075B45] hover:underline cursor-pointer flex items-center space-x-1"
+                        className="text-[11px] font-bold text-[#075B45] hover:text-[#054736] bg-slate-50 hover:bg-emerald-50 px-2 py-0.5 rounded-lg border border-slate-200/80 transition-colors shrink-0 flex items-center space-x-1 cursor-pointer"
                       >
                         <Edit3 className="w-3 h-3" />
-                        <span>Ubah</span>
+                        <span>Edit</span>
                       </button>
                     </div>
 
                     <div className="space-y-1 pl-7">
                       {branch.names.map((n, i) => (
                         <div key={i} className="text-xs text-slate-700 flex items-center space-x-1.5">
-                          <span className="text-slate-400">•</span>
-                          <span className="font-bold text-slate-800">{n}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#075B45] shrink-0"></span>
+                          <span className="font-semibold text-slate-800">{n}</span>
                         </div>
                       ))}
                     </div>
@@ -2297,23 +2306,13 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </p>
             </div>
 
-            {/* Tombol Aksi Final: Kembali ke Hub vs Kirim Kolektif */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={() => setFormStage('hub')}
-                disabled={isSubmitting}
-                className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 transition-colors cursor-pointer min-h-[44px]"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali ke Dasbor Cabang</span>
-              </button>
-
+            {/* Tombol Aksi Final: Kirim Kolektif & Kembali ke Dasbor */}
+            <div className="pt-3 border-t border-slate-200 space-y-2">
               <button
                 type="button"
                 onClick={handleSubmitAll}
                 disabled={isSubmitting || allDelegates.length === 0 || ruleViolations.length > 0}
-                className={`px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] ${
+                className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] ${
                   allDelegates.length > 0 && ruleViolations.length === 0
                     ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-98'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
@@ -2327,9 +2326,19 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 ) : (
                   <>
                     <Send className="w-4 h-4 text-[#D9B45B]" />
-                    <span>Kirim Semua Pendaftaran Sekaligus ({allDelegates.length} Santri)</span>
+                    <span>Kirim Pendaftaran Kolektif ({allDelegates.length} Santri)</span>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormStage('hub')}
+                disabled={isSubmitting}
+                className="w-full py-2.5 px-4 rounded-xl text-slate-600 hover:text-slate-900 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-slate-200 hover:bg-slate-50"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali ke Dasbor Cabang</span>
               </button>
             </div>
 
