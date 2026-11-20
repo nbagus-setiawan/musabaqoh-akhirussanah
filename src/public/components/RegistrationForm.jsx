@@ -15,7 +15,6 @@ import {
   Info, 
   RotateCcw,
   Sparkles,
-  Phone,
   Layers,
   Award,
   ShieldCheck,
@@ -44,6 +43,7 @@ import {
   getGenderFromKelas,
   MASTER_WALI_KELAS 
 } from '../../shared/data/competitions';
+import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 import Swal from 'sweetalert2';
 
 const STORAGE_DRAFT_KEY = 'alfalah_multistep_registration_draft_v3';
@@ -1322,8 +1322,8 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 Nomor WhatsApp Wali Kelas <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Phone className="w-4 h-4 text-[#075B45]" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <WhatsAppIcon variant="brand" className="w-4 h-4 shrink-0" />
                 </div>
                 <input
                   type="tel"
@@ -2243,6 +2243,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   <strong className="text-slate-800 truncate">{waliInput}</strong>
                 </div>
                 <div className="flex items-center space-x-1.5 truncate">
+                  <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
                   <span className="text-slate-400 text-[11px]">Nomor WhatsApp:</span>
                   <strong className="text-[#075B45] font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">{nomorWA}</strong>
                 </div>

@@ -11,6 +11,7 @@ import {
   Clock,
   ShieldCheck
 } from 'lucide-react';
+import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 
 export default function SuccessTicket({ 
   registration, 
@@ -185,6 +186,7 @@ export default function SuccessTicket({
             </p>
             {registration.Nomor_WA && (
               <div className="pt-0.5 flex items-center space-x-1.5 text-[10.5px]">
+                <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
                 <span className="text-slate-400 text-[10px]">Nomor WhatsApp:</span>
                 <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
                   {registration.Nomor_WA}

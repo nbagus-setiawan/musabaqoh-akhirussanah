@@ -15,6 +15,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import SuccessTicket from '../public/components/SuccessTicket';
+import WhatsAppIcon from '../shared/components/WhatsAppIcon';
 
 // Helper load base64 image dari URL untuk KOP PDF resmi
 const getBase64Image = async (url) => {
@@ -481,6 +482,7 @@ export default function BuktiPendaftaranPage() {
               {/* Baris Khusus Nomor WhatsApp di Bawah (Tidak Bersandingan) */}
               {meta.nomorWA && (
                 <div className="pt-2 border-t border-slate-200/70 flex items-center space-x-2 text-[11px] text-slate-600">
+                  <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
                   <span className="text-slate-400 font-medium">Nomor WhatsApp:</span>
                   <span className="font-mono font-bold text-[#075B45] bg-white px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
                     {meta.nomorWA}

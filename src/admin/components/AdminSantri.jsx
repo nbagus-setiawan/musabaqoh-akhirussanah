@@ -7,7 +7,6 @@ import {
   Users, 
   Dices, 
   Search, 
-  MessageSquare, 
   Eye, 
   X,
   RotateCcw,
@@ -38,6 +37,7 @@ import {
   isSantriPutri
 } from '../../shared/services/api';
 import { CABANG_LOMBA_LIST } from '../../shared/data/competitions';
+import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 
 // Helper load base64 image dari URL untuk KOP PDF
 const getBase64Image = async (url) => {
@@ -1367,7 +1367,7 @@ export default function AdminSantri({
                         onClick={() => handleSendWA(item)}
                         className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center space-x-1 mt-0.5 cursor-pointer"
                       >
-                        <MessageSquare className="w-2.5 h-2.5" />
+                        <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
                         <span>Chat WA</span>
                       </button>
                     </td>

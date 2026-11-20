@@ -15,7 +15,6 @@ import {
   ChevronLeft, 
   UserPlus, 
   TrendingUp, 
-  MessageSquare, 
   Building2, 
   AlertCircle, 
   Check, 
@@ -38,6 +37,7 @@ import {
   getWaliKelasList
 } from '../../shared/services/api';
 import { MASTER_WALI_KELAS } from '../../shared/data/competitions';
+import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 
 export default function AdminDashboard({ 
   registrations = [], 
@@ -558,10 +558,10 @@ export default function AdminDashboard({
                 <div className="pt-2 border-t border-slate-200/70 flex items-center space-x-2">
                   <button
                     onClick={() => handleSendReminderWA(item)}
-                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10.5px] font-bold transition-all shadow-2xs flex items-center justify-center space-x-1 cursor-pointer"
+                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10.5px] font-bold transition-all shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer"
                     title={`Kirim WhatsApp Pengingat ke ${item.nama}`}
                   >
-                    <MessageSquare className="w-3 h-3 text-white" />
+                    <WhatsAppIcon variant="white" className="w-3.5 h-3.5 text-white shrink-0" />
                     <span>Kirim WA</span>
                   </button>
 

@@ -7,8 +7,6 @@ import {
   Trash2, 
   X, 
   RefreshCw,
-  Phone,
-  MessageSquare,
   GraduationCap,
   BookOpen,
   Award,
@@ -23,6 +21,7 @@ import {
   Filter,
   Eye
 } from 'lucide-react';
+import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 import { 
   getWaliKelasList, 
   fetchWaliKelas,
@@ -583,7 +582,7 @@ export default function AdminGuru({
                                   className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-mono flex items-center space-x-1 mt-0.5 cursor-pointer"
                                   title="Kirim pesan WhatsApp"
                                 >
-                                  <Phone className="w-2.5 h-2.5" />
+                                  <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
                                   <span>{guru.kontak}</span>
                                 </button>
                               ) : (
@@ -648,9 +647,9 @@ export default function AdminGuru({
                               <button
                                 onClick={() => handleSendWA(guru)}
                                 title="Chat WhatsApp"
-                                className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
                               >
-                                <MessageSquare className="w-3.5 h-3.5" />
+                                <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
                               </button>
                             )}
 
@@ -750,10 +749,10 @@ export default function AdminGuru({
                         {guru.kontak ? (
                           <button
                             onClick={() => handleSendWA(guru)}
-                            className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium flex items-center space-x-1 cursor-pointer"
+                            className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium flex items-center space-x-1.5 cursor-pointer"
                             title="Chat WhatsApp"
                           >
-                            <MessageSquare className="w-3 h-3" />
+                            <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
                             <span>Hubungi WA</span>
                           </button>
                         ) : (
@@ -995,8 +994,8 @@ export default function AdminGuru({
                   Nomor WhatsApp (Opsional):
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-700">
-                    <Phone className="w-4 h-4" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <WhatsAppIcon variant="brand" className="w-4 h-4 shrink-0" />
                   </div>
                   <input
                     type="text"
