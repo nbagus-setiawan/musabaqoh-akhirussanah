@@ -16,7 +16,12 @@ import {
   ListOrdered,
   Layers,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ShieldCheck,
+  Save,
+  Download,
+  Clock,
+  Printer
 } from 'lucide-react';
 import { CABANG_LOMBA_LIST, SUB_KELAS_BY_TINGKAT } from '../../shared/data/competitions';
 
@@ -36,7 +41,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     if (onGoToStatus) {
       onGoToStatus();
     } else {
-      navigate('/status');
+      navigate('/cek-status');
     }
   };
 
@@ -45,13 +50,13 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     {
       num: '1',
       title: 'Kewajiban Pengiriman Delegasi',
-      text: 'Setiap kelas wajib mengirimkan delegasi di setiap mata perlombaan yang dibuka oleh panitia.',
+      text: 'Setiap Kelas Diniyah wajib mengirimkan delegasi di setiap mata perlombaan yang dibuka oleh panitia.',
       badge: 'Wajib'
     },
     {
       num: '2',
       title: 'Batas Cabang per Santri',
-      text: '1 Santri maksimal boleh mengikuti 2 cabang perlombaan (di luar cabang CCM dan Kreasi Nadzom).',
+      text: '1 Santri maksimal boleh mengikuti 2 cabang perlombaan (di luar cabang beregu CCM dan Kreasi Nadzom).',
       badge: 'Maks. 2 Lomba'
     },
     {
@@ -81,49 +86,35 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     }
   ];
 
-  // 7 Langkah Tata Cara Pendaftaran Sistem Digital Terbaru
-  const registrationSteps = [
+  // 4 Tahap Alur Pendaftaran Kolektif Terpadu Terbaru
+  const registrationStages = [
     {
-      step: '1',
-      title: 'Buka Formulir Pendaftaran',
-      desc: 'Akses menu "Daftar Santri" pada navigasi atas atau klik tombol "Daftar Peserta Sekarang" di halaman utama portal.',
-      tip: 'Bisa diakses langsung lewat HP maupun komputer.'
+      stage: '1',
+      title: 'Tahap 1: Verifikasi Kelas Diniyah & Wali Kelas',
+      desc: 'Masukkan nama Ustadz / Ustadzah Wali Kelas (terhubung ke basis data guru resmi), nomor WhatsApp aktif, pilih jenjang tingkat (Ula / Wustho), dan tentukan Kelas Diniyah yang didaftarkan. Sistem akan memverifikasi identitas kelas dan kuota otomatis.',
+      tip: 'Draft tersimpan otomatis di browser secara real-time agar data tidak hilang saat ter-refresh.',
+      badge: 'Verifikasi Awal'
     },
     {
-      step: '2',
-      title: 'Pilih Nama Wali Kelas Terdaftar',
-      desc: 'Ketik nama Ustadz / Ustadzah Wali Kelas pada kolom Langkah 1. Pilih nama dari saran yang muncul. Jenjang tingkat (Ula, Wustho) dan Kelas Diniyah otomatis terhubung dari database guru.',
-      tip: 'Nama Wali Kelas wajib sudah didaftarkan panitia terlebih dahulu.'
+      stage: '2',
+      title: 'Tahap 2: Pengisian Delegasi Cabang Lomba (10 Cabang)',
+      desc: 'Wali kelas diarahkan mengisi delegasi santri untuk setiap mata perlombaan secara berurutan. Masukkan nama lengkap santri, pilihan juz (khusus MHQ), atau nama anggota regu. Jika kelas tidak memiliki peserta pada cabang tertentu, cukup klik "Lewati Cabang Ini" untuk melanjutkan.',
+      tip: 'Tombol lanjut terkunci otomatis bila kolom belum diisi lengkap guna mencegah klik tidak sengaja.',
+      badge: 'Input Delegasi'
     },
     {
-      step: '3',
-      title: 'Pilih Cabang Perlombaan',
-      desc: 'Pilih salah satu dari 10 cabang perlombaan resmi yang tersedia untuk tingkatan kelas tersebut. Khusus cabang MHQ, pilih kategori hafalan juz yang diikuti (5, 10, 15, 20, 25, atau 30 Juz).',
-      tip: 'Pilihan mata lomba disaring otomatis sesuai jenjang kelas.'
+      stage: '3',
+      title: 'Tahap 3: Tinjauan Rincian & Pengiriman Kolektif',
+      desc: 'Periksa rangkuman seluruh santri delegasi yang telah diisi. Wali kelas dapat menggunakan tombol "Ubah Cabang" untuk memperbaiki data jika terdapat kekeliruan. Setelah data dipastikan benar, klik "Simpan & Kirim Semua Pendaftaran".',
+      tip: 'Seluruh delegasi santri dari kelas bersangkutan tersimpan sekaligus dalam satu kali kirim.',
+      badge: 'Konfirmasi Data'
     },
     {
-      step: '4',
-      title: 'Isi Identitas Delegasi Santri & Kontak',
-      desc: 'Ketik Nama Lengkap Santri (otomatis diformat huruf besar/kapital), pilih Jenis Kelamin (Putra atau Putri), dan masukkan Nomor WhatsApp resmi Wali Kelas untuk sarana koordinasi panitia.',
-      tip: 'Nomor WhatsApp yang dimasukkan adalah nomor kontak Wali Kelas.'
-    },
-    {
-      step: '5',
-      title: 'Pemeriksaan Otomatis & Penyorotan Kolom',
-      desc: 'Sistem secara cerdas memeriksa seluruh kelengkapan formulir. Apabila terdapat data yang belum terisi atau nama guru belum terdaftar, kolom terkait akan otomatis tersorot merah dengan pesan petunjuk jelas.',
-      tip: 'Layar akan scroll dan fokus otomatis ke kolom yang bermasalah.'
-    },
-    {
-      step: '6',
-      title: 'Pratinjau & Konfirmasi Pengiriman',
-      desc: 'Klik tombol "Lanjut ke Konfirmasi Data" untuk melihat rangkuman delegasi. Setelah memastikan seluruh data santri, kelas, dan cabang lomba sudah benar, klik tombol "Kirim Pendaftaran Sekarang".',
-      tip: 'Data langsung tersimpan aman ke database spreadsheet panitia.'
-    },
-    {
-      step: '7',
-      title: 'Simpan Bukti & Daftarkan Delegasi Lainnya',
-      desc: 'Simpan kartu bukti pendaftaran digital yang diterbitkan. Untuk mendaftarkan delegasi santri berikutnya dari kelas yang sama, klik tombol "Daftarkan Peserta Lain" — Nama Wali Kelas, Kelas Diniyah, dan Nomor WhatsApp otomatis tetap tersimpan tanpa perlu diketik ulang.',
-      tip: 'Nama Wali, Kelas Diniyah, dan No. WA tetap tersimpan untuk delegasi berikutnya.'
+      stage: '4',
+      title: 'Tahap 4: Unduh Rekap PDF Resmi & Kartu Santri',
+      desc: 'Sistem langsung menerbitkan Bukti Pendaftaran Resmi. Wali kelas dapat langsung mengunduh berkas PDF resmi ber-KOP resmi dan bertanda tangan panitia (format sama persis dengan arsip panitia) serta melihat kartu tanda peserta ber-QR Code.',
+      tip: 'Dokumen PDF resmi dapat langsung dicetak atau disimpan di HP/komputer sebagai bukti validasi.',
+      badge: 'Unduh Bukti PDF'
     }
   ];
 
@@ -131,24 +122,33 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
   const competitionList = CABANG_LOMBA_LIST || [];
 
   return (
-    <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-3 sm:py-7 space-y-4 sm:space-y-6">
+    <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-3 sm:py-7 space-y-4 sm:space-y-6 select-none font-sans">
       
       {/* ================= HEADER RESMI ================= */}
-      <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
         
-        {/* Header Resmi Khas Al-Falah Putak */}
-        <div className="bg-[#075B45] text-white px-4 sm:px-6 py-4 sm:py-5 border-b border-[#054736]">
+        {/* Header Khas Al-Falah Putak */}
+        <div 
+          className="text-white px-4 sm:px-6 py-4 sm:py-5 border-b-2 border-[#D9B45B]"
+          style={{
+            backgroundColor: '#054736',
+            background: 'linear-gradient(135deg, #054736 0%, #075B45 60%, #033427 100%)'
+          }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
                 <FileText className="w-5 h-5 text-[#D9B45B]" />
               </div>
-              <div>
-                <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight text-white">
-                  Petunjuk & Tata Cara Pendaftaran Delegasi
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9B45B] block truncate">
+                  YPPS AL-FALAH PUTAK
+                </span>
+                <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white uppercase truncate">
+                  Petunjuk & Syarat Pendaftaran Delegasi
                 </h1>
-                <p className="text-xs sm:text-sm text-emerald-100/90 leading-tight mt-0.5">
-                  Musabaqah Akhirussanah 1447 H / 2026 M • YPPS Al-Falah Putak
+                <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-tight mt-0.5 truncate">
+                  Musabaqah Akhirussanah 1447 H / 2026 M • Sistem Kolektif Kelas Diniyah
                 </p>
               </div>
             </div>
@@ -161,19 +161,19 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         {/* Pengantar & Tombol Aksi Cepat */}
         <div className="p-4 sm:p-5 bg-emerald-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed max-w-xl">
-            Panduan lengkap ketentuan delegasi santri antar-kelas, batas kuota 3 delegasi per Kelas Diniyah putra/putri terpisah, serta sistem poin penentuan Juara Umum Kelas.
+            Panduan lengkap ketentuan delegasi santri antar-kelas, batas kuota 3 delegasi per Kelas Diniyah putra/putri terpisah, alur pendaftaran kolektif multi-tahap, dan sistem poin penentuan Juara Umum Kelas.
           </p>
           <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
             <button
               onClick={handleGoToForm}
-              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
             >
               <span>Buka Formulir</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#D9B45B]" />
             </button>
             <button
               onClick={handleGoToStatus}
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+              className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
             >
               <Search className="w-3.5 h-3.5 text-[#075B45]" />
               <span>Cek Status</span>
@@ -182,7 +182,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </div>
 
-      {/* ================= BAGIAN A: KETENTUAN UMUM (6 ATURAN WAJIB) ================= */}
+      {/* ================= BAGIAN A: KETENTUAN UMUM & SYARAT MUTLAK ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
@@ -191,7 +191,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
-                Ketentuan Umum & Tata Tertib Perlombaan
+                Ketentuan Umum & Syarat Perlombaan
               </h2>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
                 6 ketentuan mutlak yang wajib dipatuhi oleh seluruh santri dan wali kelas
@@ -246,7 +246,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </section>
 
-      {/* ================= BAGIAN B: TATA CARA PENDAFTARAN (7 LANGKAH) ================= */}
+      {/* ================= BAGIAN B: TATA CARA PENDAFTARAN KOLEKTIF ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
@@ -255,42 +255,45 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
-                Tata Cara Pendaftaran Delegasi (7 Langkah)
+                Alur Pendaftaran Kolektif Kelas Diniyah (4 Tahap Praktis)
               </h2>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
-                Alur pengisian formulir online secara praktis dari awal hingga mendapatkan bukti pendaftaran
+                Panduan pengisian formulir online multi-step terpadu per Kelas Diniyah
               </p>
             </div>
           </div>
           <span className="text-[10px] sm:text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-            Alur Resmi
+            Sistem Terbaru
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
-          {registrationSteps.map((st, idx) => (
+          {registrationStages.map((st) => (
             <div 
-              key={st.step}
-              className={`p-3 rounded-xl border border-slate-200/80 bg-slate-50/70 flex flex-col justify-between space-y-2 hover:border-emerald-300 transition-all ${
-                idx === 6 ? 'md:col-span-2 bg-emerald-50/50 border-emerald-300' : ''
-              }`}
+              key={st.stage}
+              className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/70 flex flex-col justify-between space-y-2 hover:border-emerald-300 transition-all"
             >
               <div className="space-y-1.5">
-                <div className="flex items-center space-x-2">
-                  <div className="w-5.5 h-5.5 rounded-md bg-[#075B45] text-[#D9B45B] font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                    {st.step}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-md bg-[#075B45] text-[#D9B45B] font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      {st.stage}
+                    </div>
+                    <h3 className="text-xs sm:text-[12.5px] font-bold text-slate-900 leading-snug">
+                      {st.title}
+                    </h3>
                   </div>
-                  <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-snug">
-                    Langkah {st.step}: {st.title}
-                  </h3>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-white text-emerald-800 border border-emerald-200 shrink-0">
+                    {st.badge}
+                  </span>
                 </div>
-                <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed pl-7.5">
+                <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed pl-8">
                   {st.desc}
                 </p>
               </div>
 
               {/* Tip Tambahan */}
-              <div className="pl-7.5 pt-1 border-t border-slate-200/50 flex items-center space-x-1.5 text-[10.5px] text-slate-500">
+              <div className="pl-8 pt-1.5 border-t border-slate-200/50 flex items-center space-x-1.5 text-[10.5px] text-slate-500">
                 <Sparkles className="w-3 h-3 text-[#D9B45B] shrink-0" />
                 <span className="italic">{st.tip}</span>
               </div>
@@ -299,12 +302,51 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </section>
 
-      {/* ================= BAGIAN C: 10 CABANG PERLOMBAAN & KELAS DINIYAH ================= */}
+      {/* ================= BAGIAN C: FITUR KEAMANAN DATA (ANTI-HILANG) ================= */}
+      <section className="bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-2xs space-y-3">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#075B45] text-[#D9B45B] flex items-center justify-center shrink-0 shadow-2xs">
+            <Save className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs sm:text-sm font-black text-emerald-950">
+              Fitur Perlindungan Data & Penyimpanan Otomatis (Real-Time Auto-Save)
+            </h3>
+            <p className="text-[10.5px] sm:text-[11px] text-emerald-800">
+              Menjaga seluruh data santri yang sedang diisi tetap aman dan tidak terhapus
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700">
+          <div className="p-3 bg-white/90 rounded-xl border border-emerald-200 shadow-2xs flex items-start space-x-2.5">
+            <ShieldCheck className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-slate-900 block text-xs">Penyimpanan Draft Otomatis</strong>
+              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                Setiap nama santri, wali kelas, dan cabang yang diketik otomatis tersimpan di penyimpanan lokal browser. Jika halaman tidak sengaja ter-refresh atau tertutup, data tidak akan hilang.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 bg-white/90 rounded-xl border border-emerald-200 shadow-2xs flex items-start space-x-2.5">
+            <Clock className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-slate-900 block text-xs">Proteksi Validasi Bertahap</strong>
+              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                Tombol navigasi antar-cabang lomba terkunci otomatis jika input belum diisi lengkap sehingga tidak ada cabang yang terlewati karena salah klik.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= BAGIAN D: 10 CABANG PERLOMBAAN & KELAS DINIYAH ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
             <div className="w-7 h-7 rounded-lg bg-[#075B45] text-[#D9B45B] flex items-center justify-center font-bold text-xs shadow-2xs">
-              C
+              D
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -316,7 +358,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
           </div>
           <span className="text-[10px] sm:text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/20 shrink-0">
-            10 Mata Lomba
+            10 Cabang
           </span>
         </div>
 
@@ -348,6 +390,11 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                       5, 10, 15, 20, 25, 30 Juz
                     </span>
                   )}
+                  {c.genderExclusive === 'L' && (
+                    <span className="text-[9.5px] font-semibold bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded border border-blue-200">
+                      Khusus Santri Putra
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -359,7 +406,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           <button
             type="button"
             onClick={() => setShowKelasDetail(!showKelasDetail)}
-            className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors"
+            className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs flex items-center justify-between cursor-pointer transition-colors"
           >
             <div className="flex items-center space-x-1.5">
               <Building2 className="w-4 h-4 text-[#075B45]" />
@@ -375,7 +422,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 <div className="flex items-center justify-between pb-1 border-b border-emerald-200/70">
                   <span className="font-extrabold text-emerald-950">Tingkat Ula</span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
-                    16 Kelas (Pa/Pi)
+                    16 Kelas Diniyah (Pa/Pi)
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-800">Sifir & Jurumiyah</p>
@@ -391,7 +438,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 <div className="flex items-center justify-between pb-1 border-b border-blue-200/70">
                   <span className="font-extrabold text-blue-950">Tingkat Wustho</span>
                   <span className="text-[10px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200">
-                    8 Kelas (Pa/Pi)
+                    8 Kelas Diniyah (Pa/Pi)
                   </span>
                 </div>
                 <p className="text-[11px] text-blue-800">Imrithi & Alfiyah</p>
@@ -421,7 +468,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           )}
         </div>
 
-        {/* Box Skema Bobot Poin Juara Umum Kelas (Skema A) */}
+        {/* Box Skema Bobot Poin Juara Umum Kelas (Skema 5 - 3 - 1) */}
         <div className="mt-3 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-amber-50/90 via-emerald-50/70 to-amber-50/90 border border-amber-300/80 shadow-2xs space-y-2.5">
           <div className="flex items-center space-x-2">
             <div className="w-7 h-7 rounded-lg bg-[#D9B45B] text-slate-950 flex items-center justify-center font-bold shadow-2xs">
@@ -429,10 +476,10 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                Sistem Poin Penentuan Juara Umum Kelas (Skema A)
+                Sistem Poin Penentuan Juara Umum Kelas (Skema 5 - 3 - 1)
               </h3>
               <p className="text-[10.5px] text-slate-600">
-                Poin medali disumbangkan langsung untuk kelas santri yang bersangkutan
+                Poin medali disumbangkan langsung untuk akumulasi Kelas Diniyah yang bersangkutan
               </p>
             </div>
           </div>
@@ -459,21 +506,21 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           </div>
 
           <p className="text-[10.5px] sm:text-[11px] text-slate-700 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-amber-200">
-            <span className="font-bold text-[#075B45] mr-1.5">[Catatan]</span><strong>Ketentuan Juara Umum:</strong> Kelas dengan total akumulasi poin terbanyak dinobatkan sebagai <strong>Juara Umum Kelas</strong>. Apabila terdapat poin yang sama (seri), penentuan pemenang dihitung berdasarkan perolehan Juara 1 terbanyak.
+            <span className="font-bold text-[#075B45] mr-1.5">[Catatan]</span><strong>Ketentuan Juara Umum:</strong> Kelas Diniyah dengan akumulasi poin terbanyak dinobatkan sebagai <strong>Juara Umum Kelas</strong>. Apabila terdapat perolehan poin yang sama (seri), penentuan pemenang dihitung berdasarkan perolehan Juara 1 terbanyak.
           </p>
         </div>
       </section>
 
-      {/* ================= BAGIAN D: HAL YANG PERLU DIPERHATIKAN ================= */}
+      {/* ================= BAGIAN E: HAL PENTING YANG PERLU DIPERHATIKAN ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
             <div className="w-7 h-7 rounded-lg bg-[#075B45] text-[#D9B45B] flex items-center justify-center font-bold text-xs shadow-2xs">
-              D
+              E
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center space-x-1.5">
-                <span>Hal-Hal Penting yang Perlu Diperhatikan</span>
+                <span>Hal Penting yang Perlu Diperhatikan</span>
               </h2>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
                 Panduan praktis agar delegasi santri terhindar dari kendala administrasi
@@ -486,28 +533,28 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Nama Santri Sesuai Dokumen:</strong> Pastikan nama lengkap santri sesuai dengan nama resmi di pesantren. Sistem akan otomatis menyimpannya dalam huruf kapital.
+              <strong>Nama Santri Sesuai Dokumen:</strong> Pastikan nama santri sesuai nama resmi di pesantren. Sistem secara cerdas akan menyimpannya dalam huruf kapital rapi.
             </p>
           </div>
 
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Nomor WhatsApp Wali Kelas:</strong> Gunakan nomor WhatsApp wali kelas yang aktif. Panitia akan mengirimkan konfirmasi dan notifikasi jadwal panggil melalui kontak ini.
+              <strong>Nomor WhatsApp Aktif:</strong> Nomor WhatsApp wali kelas digunakan sebagai jalur koordinasi resmi panitia untuk pengumuman jadwal dan giliran tampil.
             </p>
           </div>
 
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Patuhi Kuota Tiap Kelas:</strong> Maksimal 3 delegasi per cabang perlombaan untuk setiap kelas. 1 santri maksimal mengikuti 2 cabang lomba (selain CCM & Kreasi Nadzom).
+              <strong>Unduh Berkas PDF Resmi:</strong> Setelah pengiriman berhasil, unduh lembar Bukti Pendaftaran PDF ber-KOP resmi untuk disimpan atau dicetak sebagai arsip kelas.
             </p>
           </div>
 
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Cek Status Secara Berkala:</strong> Setelah pendaftaran dikirimkan, gunakan menu "Cek Status" untuk melihat nomor urut undian 3 digit unik dan verifikasi panitia.
+              <strong>Cek Status & Nomor Undian:</strong> Pantau menu "Cek Status" untuk melihat verifikasi panitia dan nomor urut undian 3 digit unik setiap peserta.
             </p>
           </div>
         </div>
