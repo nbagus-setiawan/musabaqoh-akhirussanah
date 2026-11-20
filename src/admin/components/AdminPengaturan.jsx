@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { 
   Settings,
   Database, 
   Link2, 
   CheckCircle2, 
   AlertCircle, 
-  AlertTriangle,
   RefreshCw, 
   Copy, 
   Check, 
@@ -13,18 +13,17 @@ import {
   Key, 
   Eye, 
   EyeOff, 
-  Terminal, 
   ShieldCheck, 
   FileSpreadsheet, 
   Download, 
-  HardDrive, 
-  Sparkles, 
-  HelpCircle, 
   ExternalLink,
   Layers,
-  Activity,
-  Cpu,
   Save,
+  Sliders,
+  Calendar,
+  ToggleLeft,
+  ToggleRight,
+  Sparkles,
   Info
 } from 'lucide-react';
 import { 
@@ -34,48 +33,120 @@ import {
   setAdminPin,
   addActivityLog,
   fetchRegistrations,
-  getActivityLogs
+  getActivityLogs,
+  fetchPengaturan,
+  savePengaturan,
+  getLocalPengaturan,
+  DEFAULT_PENGATURAN,
+  testGasConnection
 } from '../../shared/services/api';
 import rawScriptCode from '../../../google-apps-script/Code.gs?raw';
 
 export default function AdminPengaturan({ onRefresh }) {
-  // Navigation Tabs inside Settings
-  const [activeTab, setActiveTab] = useState('sheets'); // 'sheets' | 'script' | 'security' | 'maintenance'
+  // Navigation Tabs: Default adalah 'musabaqah' (Sheet Pengaturan)
+  const [activeTab, setActiveTab] = useState('musabaqah'); // 'musabaqah' | 'sheets' | 'security' | 'maintenance'
 
-  // Google Apps Script URL State
+  // =========================================================
+  // 1. STATE PENGATURAN MUSABAQAH DARI SHEET "Pengaturan"
+  // =========================================================
+  const [settingsForm, setSettingsForm] = useState(() => getLocalPengaturan());
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  useEffect(() => {
+    const loadSettingsFromCloud = async () => {
+      setIsLoadingSettings(true);
+      try {
+        const cloudSettings = await fetchPengaturan();
+        setSettingsForm(cloudSettings);
+      } catch (e) {
+        console.warn('Gagal load pengaturan cloud:', e);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    loadSettingsFromCloud();
+  }, []);
+
+  const handleSettingsChange = (key, value) => {
+    setSettingsForm(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleSaveSettings = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      await savePengaturan(settingsForm);
+      Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      }).fire({
+        icon: 'success',
+        title: 'Pengaturan Sheet Berhasil Disimpan!'
+      });
+      if (onRefresh) onRefresh(false);
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.message || 'Terjadi kesalahan saat menyimpan pengaturan.'
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleReloadSettings = async () => {
+    setIsLoadingSettings(true);
+    try {
+      const data = await fetchPengaturan();
+      setSettingsForm(data);
+      Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+        timerProgressBar: true
+      }).fire({
+        icon: 'info',
+        title: 'Pengaturan Disinkronkan dari Google Sheets'
+      });
+    } catch (e) {
+      Swal.fire('Gagal!', 'Tidak dapat memuat pengaturan dari sheet: ' + e.message, 'error');
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  };
+
+  // =========================================================
+  // 2. STATE KONEKSI GOOGLE SHEETS
+  // =========================================================
   const [gasUrl, setGasUrl] = useState(() => getStoredGasUrl());
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-
-  // PIN Admin State
-  const [currentPin, setCurrentPin] = useState(() => getAdminPin());
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [pinMessage, setPinMessage] = useState(null);
-
-  // Backup & Maintenance State
-  const [isExporting, setIsExporting] = useState(false);
-  const [backupSuccess, setBackupSuccess] = useState(false);
-  const [totalLogsCount, setTotalLogsCount] = useState(0);
-
-  useEffect(() => {
-    try {
-      const logs = getActivityLogs() || [];
-      setTotalLogsCount(logs.length);
-    } catch (e) {
-      setTotalLogsCount(0);
-    }
-  }, []);
+  const [selectedSheetTab, setSelectedSheetTab] = useState('Pengaturan');
 
   const handleSaveGasUrl = () => {
     setStoredGasUrl(gasUrl.trim());
-    setSaveSuccess(true);
-    addActivityLog('Pengaturan Sheets', `URL Web App Google Apps Script diperbarui`, 'system');
-    setTimeout(() => setSaveSuccess(false), 2500);
-    if (onRefresh) onRefresh();
+    addActivityLog('Pengaturan Sheets', 'URL Web App Google Apps Script diperbarui', 'system');
+    Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true
+    }).fire({
+      icon: 'success',
+      title: 'URL Google Apps Script Disimpan'
+    });
+    if (onRefresh) onRefresh(false);
   };
 
   const handleTestConnection = async () => {
@@ -91,57 +162,49 @@ export default function AdminPengaturan({ onRefresh }) {
     setTestResult(null);
 
     try {
-      // 1. Coba ping multi-sheet
-      let response = await fetch(gasUrl.trim() + '?action=ping', { method: 'GET' });
-      let data = null;
-      if (response.ok) {
-        data = await response.json();
-      } else {
-        response = await fetch(gasUrl.trim() + '?action=get_all', { method: 'GET' });
-        if (response.ok) data = await response.json();
-      }
-
-      if (data && data.status === 'success') {
-        const santriCount = data.totalSantri !== undefined ? data.totalSantri : (Array.isArray(data.data) ? data.data.length : 0);
-        const guruCount = data.totalGuru !== undefined ? data.totalGuru : '-';
-        const kelasCount = data.totalKelas !== undefined ? data.totalKelas : '-';
-        const ssName = data.spreadsheetName ? `"${data.spreadsheetName}"` : 'Google Spreadsheet Panitia';
-
+      const res = await testGasConnection(gasUrl.trim());
+      if (res.success) {
         setTestResult({
           success: true,
-          message: `Alhamdulillah! Terhubung ke ${ssName}. Seluruh 6 lembar kerja resmi aktif & tersinkronisasi: Admin, Pendaftaran, Tingkat_dan_Kelas, Ustadz, Juara_Lomba, dan Pengaturan.`
+          message: `Alhamdulillah! Terhubung ke ${res.spreadsheetName ? `"${res.spreadsheetName}"` : 'Google Spreadsheet Panitia'}. Seluruh 6 lembar kerja resmi aktif & tersinkronisasi: Admin, Pendaftaran, Tingkat_dan_Kelas, Ustadz, Juara_Lomba, dan Pengaturan.`
         });
-        addActivityLog('Tes Koneksi Sheets', `Koneksi 6 sheet sukses tersambung ke ${ssName}`, 'system');
+        addActivityLog('Tes Koneksi Sheets', 'Koneksi 6 sheet sukses tersambung', 'system');
       } else {
         setTestResult({
           success: false,
-          message: `Koneksi tersambung, namun respons script belum sesuai: ${data?.message || 'Pastikan kode Apps Script terbaru sudah dideploy.'}`
+          message: res.message || 'Respon dari Google Apps Script belum valid.'
         });
       }
     } catch (err) {
       setTestResult({
         success: false,
-        message: 'Koneksi gagal atau terblokir CORS: ' + err.message + '. Pastikan URL deployment Web App berakhiran "/exec" dan opsi Who has access diset ke "Anyone".'
+        message: 'Koneksi gagal atau terblokir CORS: ' + err.message + '. Pastikan opsi Who has access diset ke "Anyone".'
       });
     } finally {
       setIsTesting(false);
     }
   };
 
+  // =========================================================
+  // 3. STATE KEAMANAN PIN ADMIN
+  // =========================================================
+  const [currentPin, setCurrentPin] = useState(() => getAdminPin());
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleUpdatePin = (e) => {
     e.preventDefault();
-    setPinMessage(null);
-
     const trimmedNew = newPin.trim();
     const trimmedConfirm = confirmPin.trim();
 
     if (!trimmedNew || trimmedNew.length < 4) {
-      setPinMessage({ success: false, text: 'PIN baru minimal harus 4 karakter / angka.' });
+      Swal.fire('Perhatian', 'PIN baru minimal harus 4 karakter / angka.', 'warning');
       return;
     }
 
     if (trimmedNew !== trimmedConfirm) {
-      setPinMessage({ success: false, text: 'Konfirmasi PIN tidak cocok dengan PIN baru.' });
+      Swal.fire('Perhatian', 'Konfirmasi PIN tidak cocok dengan PIN baru.', 'warning');
       return;
     }
 
@@ -149,15 +212,35 @@ export default function AdminPengaturan({ onRefresh }) {
     setCurrentPin(trimmedNew);
     setNewPin('');
     setConfirmPin('');
-    setPinMessage({ success: true, text: 'Alhamdulillah! PIN Akses Admin berhasil diperbarui.' });
+    Swal.fire({
+      icon: 'success',
+      title: 'PIN Berhasil Diperbarui',
+      text: 'PIN Akses Admin berhasil diperbarui.',
+      timer: 2000,
+      showConfirmButton: false
+    });
     addActivityLog('Keamanan Admin', 'PIN Akses Admin berhasil diubah oleh panitia', 'security');
-    setTimeout(() => setPinMessage(null), 3500);
   };
+
+  // =========================================================
+  // 4. BACKUP & PEMELIHARAAN DATA
+  // =========================================================
+  const [isExporting, setIsExporting] = useState(false);
+  const [totalLogsCount, setTotalLogsCount] = useState(0);
+
+  useEffect(() => {
+    try {
+      const logs = getActivityLogs() || [];
+      setTotalLogsCount(logs.length);
+    } catch (e) {
+      setTotalLogsCount(0);
+    }
+  }, []);
 
   const handleDownloadBackup = async () => {
     try {
       setIsExporting(true);
-      const data = await fetchRegistrations();
+      const data = await fetchRegistrations(false);
       const jsonStr = JSON.stringify(data, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -167,40 +250,39 @@ export default function AdminPengaturan({ onRefresh }) {
       a.download = `backup_pendaftaran_santri_${nowStr}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      setBackupSuccess(true);
-      setTimeout(() => setBackupSuccess(false), 2500);
+      Swal.fire({
+        icon: 'success',
+        title: 'File Backup Siap',
+        text: `Berhasil mengunduh berkas cadangan offline (${data.length} santri).`,
+        timer: 2000,
+        showConfirmButton: false
+      });
       addActivityLog('Backup Data', `Panitia mengunduh file cadangan offline JSON (${data.length} santri)`, 'backup');
     } catch (e) {
-      alert('Gagal mengekspor data cadangan: ' + e.message);
+      Swal.fire('Gagal!', 'Gagal mengekspor data cadangan: ' + e.message, 'error');
     } finally {
       setIsExporting(false);
     }
   };
 
-  const scriptCode = rawScriptCode;
-
   const copyScript = () => {
-    navigator.clipboard.writeText(scriptCode);
+    navigator.clipboard.writeText(rawScriptCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const [selectedSheetTab, setSelectedSheetTab] = useState('Pendaftaran');
-
+  // 6 Lembar Kerja Resmi di Google Spreadsheet
   const sheetsDefinition = [
     {
-      id: 'Admin',
-      title: 'Sheet 1: "Admin"',
-      tag: 'Otentikasi & Akun Panitia',
-      totalCols: 6,
-      desc: 'Menyimpan kredensial login panitia, PIN otentikasi, peran hak akses, dan status keaktifan panitia.',
+      id: 'Pengaturan',
+      title: 'Sheet 6: "Pengaturan"',
+      tag: 'Konfigurasi Sistem',
+      totalCols: 3,
+      desc: 'Menyimpan konfigurasi utama kegiatan musabaqah, status pendaftaran (Buka/Tutup), tahun ajaran, dan kuota delegasi.',
       columns: [
-        { name: 'ID_Admin', desc: 'ID Unik Admin (ADM-001)' },
-        { name: 'Username', desc: 'Username Login Panitia' },
-        { name: 'PIN_Password', desc: 'PIN Password Akses' },
-        { name: 'Nama_Panitia', desc: 'Nama Lengkap Panitia' },
-        { name: 'Role', desc: 'Super Admin / Panitia' },
-        { name: 'Status_Aktif', desc: 'Aktif / Nonaktif' }
+        { name: 'Kunci_Pengaturan', desc: 'Nama Kunci Konfigurasi (NAMA_KEGIATAN, TAHUN_AJARAN, dll)' },
+        { name: 'Nilai_Pengaturan', desc: 'Isi Nilai Konfigurasi' },
+        { name: 'Keterangan', desc: 'Deskripsi Kegunaan Pengaturan' }
       ]
     },
     {
@@ -219,7 +301,7 @@ export default function AdminPengaturan({ onRefresh }) {
         { name: 'Jenis_Kelamin', desc: 'L (Putra) / P (Putri)' },
         { name: 'Tingkat', desc: 'Jenjang Tingkat Santri' },
         { name: 'Kelas_Diniyah', desc: 'Kelas Diniyah Santri' },
-        { name: 'Cabang_Lomba', desc: '10 Cabang Musabaqah' },
+        { name: 'Cabang_Lomba', desc: 'Cabang Musabaqah' },
         { name: 'Detail_Cabang', desc: 'Detail Bahasa / Regu' },
         { name: 'Status', desc: 'Pending / Terverifikasi / Ditolak' },
         { name: 'Catatan', desc: 'Catatan Khusus Delegasi' }
@@ -269,15 +351,18 @@ export default function AdminPengaturan({ onRefresh }) {
       ]
     },
     {
-      id: 'Pengaturan',
-      title: 'Sheet 6: "Pengaturan"',
-      tag: 'Konfigurasi Sistem',
-      totalCols: 3,
-      desc: 'Menyimpan konfigurasi umum perlombaan, status pendaftaran, dan nomor undian awal.',
+      id: 'Admin',
+      title: 'Sheet 1: "Admin"',
+      tag: 'Otentikasi & Akun Panitia',
+      totalCols: 6,
+      desc: 'Menyimpan kredensial login panitia, PIN otentikasi, peran hak akses, dan status keaktifan panitia.',
       columns: [
-        { name: 'Kunci_Pengaturan', desc: 'Nama Kunci Konfigurasi' },
-        { name: 'Nilai_Pengaturan', desc: 'Nilai Pengaturan' },
-        { name: 'Keterangan', desc: 'Deskripsi Kegunaan' }
+        { name: 'ID_Admin', desc: 'ID Unik Admin (ADM-001)' },
+        { name: 'Username', desc: 'Username Login Panitia' },
+        { name: 'PIN_Password', desc: 'PIN Password Akses' },
+        { name: 'Nama_Panitia', desc: 'Nama Lengkap Panitia' },
+        { name: 'Role', desc: 'Super Admin / Panitia' },
+        { name: 'Status_Aktif', desc: 'Aktif / Nonaktif' }
       ]
     }
   ];
@@ -285,654 +370,623 @@ export default function AdminPengaturan({ onRefresh }) {
   const activeSheetDef = sheetsDefinition.find(s => s.id === selectedSheetTab) || sheetsDefinition[0];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto bg-[#F4F7FC]">
       
-      {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        {/* Subtle accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800" />
-
+      {/* =========================================================
+          1. HEADER SAMBUTAN PENGATURAN
+          ========================================================= */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-800 text-white flex items-center justify-center shadow-sm shrink-0">
-            <Settings className="w-6 h-6 text-emerald-200" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/70 shrink-0">
+            <Settings className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <span>Pengaturan Sistem & Database</span>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1.5 border ${
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Pengaturan Musabaqah & Integrasi Sheet
+              </h1>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold border ${
                 gasUrl 
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
                   : 'bg-amber-50 text-amber-800 border-amber-200'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${gasUrl ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'}`}></span>
-                <span>{gasUrl ? 'Tersambung Google Sheets' : 'Koneksi Belum Terpasang'}</span>
+                {gasUrl ? 'Sinkron Sheet: Pengaturan' : 'Mode Offline Lokal'}
               </span>
-            </h2>
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola sinkronisasi Google Sheets, salin kode Apps Script, konfigurasi PIN panitia, dan pemeliharaan data.
+              Kelola nilai konfigurasi kegiatan yang sinkron langsung dengan lembar kerja <strong>Pengaturan</strong> di Google Sheets.
             </p>
           </div>
         </div>
 
-        {/* Quick Help Button */}
         <div className="flex items-center space-x-2 shrink-0">
-          <a
-            href="https://script.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3.5 py-2 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+          <button
+            onClick={handleReloadSettings}
+            disabled={isLoadingSettings}
+            className="px-3.5 py-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs"
+            title="Muat ulang pengaturan dari Google Sheets"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            <span>Buka Google Script</span>
-          </a>
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isLoadingSettings ? 'animate-spin' : ''}`} />
+            <span>Muat dari Sheet</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. STATISTIC / HEALTH METRIC CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* =========================================================
+          2. TAB NAVIGATION BAR (MODERN PASTEL SQUIRCLE)
+          ========================================================= */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
         
-        {/* Status Database */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Database Integrasi
-            </span>
-            <span className="text-base font-black text-slate-900 mt-1 block">
-              {gasUrl ? 'Google Sheets' : 'Local Cache'}
-            </span>
-            <span className={`text-[11px] font-medium mt-0.5 block ${gasUrl ? 'text-emerald-700' : 'text-slate-500'}`}>
-              {gasUrl ? 'Sinkron Cloud Aktif' : 'Penyimpanan Offline'}
-            </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center border border-emerald-100/80">
-            <FileSpreadsheet className="w-5 h-5 text-emerald-800" />
-          </div>
-        </div>
+        {/* TAB 1: PENGATURAN MUSABAQAH (SHEET) */}
+        <button
+          onClick={() => setActiveTab('musabaqah')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
+            activeTab === 'musabaqah'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>Pengaturan Musabaqah (Sheet)</span>
+        </button>
 
-        {/* Status Webhook */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Webhook Endpoint
-            </span>
-            <span className="text-base font-black text-slate-900 mt-1 block">
-              {gasUrl ? 'Terpasang' : 'Kosong'}
-            </span>
-            <span className="text-[11px] font-medium text-slate-500 mt-0.5 block truncate max-w-[130px]">
-              {gasUrl ? gasUrl.replace('https://script.google.com/macros/s/', '').slice(0, 16) + '...' : 'Belum diisi'}
-            </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center border border-teal-100/80">
-            <Link2 className="w-5 h-5 text-teal-800" />
-          </div>
-        </div>
+        {/* TAB 2: KONEKSI GOOGLE SHEETS */}
+        <button
+          onClick={() => setActiveTab('sheets')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
+            activeTab === 'sheets'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          <span>Koneksi Google Sheets (6 Sheet)</span>
+        </button>
 
-        {/* Keamanan PIN */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Keamanan Akses
-            </span>
-            <span className="text-base font-black text-slate-900 mt-1 block">
-              PIN Terproteksi
-            </span>
-            <span className="text-[11px] font-medium text-emerald-700 mt-0.5 block">
-              Otentikasi Aktif
-            </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-800 flex items-center justify-center border border-sky-100/80">
-            <ShieldCheck className="w-5 h-5 text-sky-800" />
-          </div>
-        </div>
+        {/* TAB 3: KEAMANAN PIN ADMIN */}
+        <button
+          onClick={() => setActiveTab('security')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
+            activeTab === 'security'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+          }`}
+        >
+          <Lock className="w-4 h-4" />
+          <span>Keamanan PIN Admin</span>
+        </button>
 
-        {/* Log Aktivitas */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/70 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-              Log Riwayat Sistem
-            </span>
-            <span className="text-base font-black text-slate-900 mt-1 block">
-              {totalLogsCount} Aktivitas
-            </span>
-            <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
-              Audit trail panitia
-            </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center border border-amber-100/80">
-            <Activity className="w-5 h-5 text-amber-800" />
-          </div>
-        </div>
+        {/* TAB 4: BACKUP & PEMELIHARAAN */}
+        <button
+          onClick={() => setActiveTab('maintenance')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
+            activeTab === 'maintenance'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Backup & Audit Trail</span>
+        </button>
 
       </div>
 
-      {/* 3. MAIN SETTINGS CONTAINER */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-        
-        {/* Navigation Tabs Bar */}
-        <div className="border-b border-slate-100 px-4 sm:px-6 pt-3 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-          <div className="flex items-center space-x-1.5 overflow-x-auto pb-3 w-full sm:w-auto scrollbar-none">
+      {/* =========================================================
+          TAB 1: PENGATURAN MUSABAQAH LANGSUNG DARI SHEET "Pengaturan"
+          ========================================================= */}
+      {activeTab === 'musabaqah' && (
+        <div className="space-y-6">
+          
+          {/* Form Pengaturan Musabaqah */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">
             
-            <button
-              onClick={() => setActiveTab('sheets')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'sheets'
-                  ? 'bg-emerald-800 text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Integrasi Google Sheets</span>
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Parameter Lembar Kerja "Pengaturan"
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Setiap perubahan di form ini akan otomatis tersimpan ke tab <strong>Pengaturan</strong> di Google Sheets Anda.
+                </p>
+              </div>
 
-            <button
-              onClick={() => setActiveTab('script')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'script'
-                  ? 'bg-emerald-800 text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Terminal className="w-4 h-4" />
-              <span>Panduan & Kode Script</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'security'
-                  ? 'bg-emerald-800 text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Lock className="w-4 h-4" />
-              <span>Keamanan PIN Admin</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('maintenance')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'maintenance'
-                  ? 'bg-emerald-800 text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <HardDrive className="w-4 h-4" />
-              <span>Backup & Pemeliharaan</span>
-            </button>
-
-          </div>
-        </div>
-
-        {/* 4A. TAB 1: INTEGRASI GOOGLE SHEETS */}
-        {activeTab === 'sheets' && (
-          <div className="p-5 sm:p-7 space-y-6">
-            
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span>Konfigurasi Web App Deployment Google Apps Script</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Hubungkan formulir pendaftaran langsung ke lembar kerja Google Sheets panitia untuk penyimpanan data terpusat dan generator nomor urut.
-              </p>
+              <div className="flex items-center space-x-2">
+                <span className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center space-x-1.5 ${
+                  settingsForm.STATUS_PENDAFTARAN === 'Buka'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${settingsForm.STATUS_PENDAFTARAN === 'Buka' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  <span>Pendaftaran: {settingsForm.STATUS_PENDAFTARAN || 'Buka'}</span>
+                </span>
+              </div>
             </div>
 
-            {/* Input URL Box */}
-            <div className="p-5 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Link2 className="w-4 h-4 text-emerald-800" />
-                <span>Web App URL (Deployment Exec URL):</span>
-              </label>
-
-              <div className="relative">
+            <form onSubmit={handleSaveSettings} className="space-y-5">
+              
+              {/* Field 1: Nama Kegiatan (NAMA_KEGIATAN) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span>Nama Resmi Kegiatan Musabaqah</span>
+                  <span className="text-[10.5px] font-mono text-slate-400 font-normal">Kunci Sheet: NAMA_KEGIATAN</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  value={gasUrl}
-                  onChange={(e) => setGasUrl(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-emerald-800 focus:bg-white bg-white shadow-2xs transition-all"
+                  value={settingsForm.NAMA_KEGIATAN || ''}
+                  onChange={(e) => handleSettingsChange('NAMA_KEGIATAN', e.target.value)}
+                  placeholder="Contoh: Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-semibold outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900"
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/70 text-amber-900 text-[11px] leading-relaxed flex items-start space-x-2">
-                <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Penting untuk Panitia:</strong> Pastikan pada saat <em>New Deployment</em> di Google Apps Script, opsi <strong>Who has access (Siapa yang memiliki akses)</strong> dipilih ke <strong>Anyone (Siapa saja)</strong> agar formulir dapat mengirimkan pendaftaran santri tanpa login Google.
+              {/* Grid 2 Kolom: Tahun Ajaran & Status Pendaftaran */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Field 2: Tahun Ajaran (TAHUN_AJARAN) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Tahun Ajaran / Hijriyah</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 font-normal">TAHUN_AJARAN</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsForm.TAHUN_AJARAN || ''}
+                    onChange={(e) => handleSettingsChange('TAHUN_AJARAN', e.target.value)}
+                    placeholder="Contoh: 1447 H / 2026 M"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-semibold outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900"
+                  />
                 </div>
-              </div>
-            </div>
 
-            {/* 3 Sheets Architecture Preview in Tab 1 */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center space-x-2 text-emerald-900 font-bold text-xs">
-                  <Layers className="w-4 h-4 text-emerald-700" />
-                  <span>Arsitektur 3 Lembar Kerja (Sheets) Resmi di Google Sheets</span>
+                {/* Field 3: Status Pendaftaran (STATUS_PENDAFTARAN) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Status Portal Pendaftaran</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 font-normal">STATUS_PENDAFTARAN</span>
+                  </label>
+                  <select
+                    value={settingsForm.STATUS_PENDAFTARAN || 'Buka'}
+                    onChange={(e) => handleSettingsChange('STATUS_PENDAFTARAN', e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-bold outline-none focus:border-blue-600 focus:bg-white bg-white transition-all text-slate-900 cursor-pointer"
+                  >
+                    <option value="Buka">Buka (Formulir Menerima Pendaftaran Delegasi)</option>
+                    <option value="Tutup">Tutup (Formulir Dinonaktifkan / Masa Pendaftaran Selesai)</option>
+                  </select>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200 w-fit">
-                  Multi-Sheet Terintegrasi Otomatis
+
+              </div>
+
+              {/* Grid 3 Kolom: Tanggal Pelaksanaan, Kuota Cabang, Target Kelas */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                
+                {/* Field 4: Tanggal Pelaksanaan (TANGGAL_PELAKSANAAN) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Rentang Pelaksanaan</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 font-normal">TANGGAL_PELAKSANAAN</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsForm.TANGGAL_PELAKSANAAN || ''}
+                    onChange={(e) => handleSettingsChange('TANGGAL_PELAKSANAAN', e.target.value)}
+                    placeholder="Contoh: 2026-11-20 s/d 2026-11-25"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-semibold outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900"
+                  />
+                </div>
+
+                {/* Field 5: Kuota Per Cabang Lomba (KUOTA_PER_CABANG) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Kuota / Cabang Lomba</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 font-normal">KUOTA_PER_CABANG</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={settingsForm.KUOTA_PER_CABANG || '3'}
+                    onChange={(e) => handleSettingsChange('KUOTA_PER_CABANG', e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-bold font-mono outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900"
+                  />
+                </div>
+
+                {/* Field 6: Target Kuota Minimal Per Kelas Diniyah */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Target Kuota / Kelas</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 font-normal">TARGET_KUOTA_KELAS</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={settingsForm.TARGET_KUOTA_KELAS || '10'}
+                    onChange={(e) => handleSettingsChange('TARGET_KUOTA_KELAS', e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-bold font-mono outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900"
+                  />
+                </div>
+
+              </div>
+
+              {/* Tombol Simpan Pengaturan */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">
+                  Data otomatis disinkronkan ke sheet <strong>Pengaturan</strong>.
                 </span>
+
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs transition-all flex items-center space-x-2 shadow-xs cursor-pointer disabled:opacity-60"
+                >
+                  {isSavingSettings ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Menyimpan ke Sheet...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 text-white" />
+                      <span>Simpan Pengaturan Sheet</span>
+                    </>
+                  )}
+                </button>
               </div>
 
-              <p className="text-[11px] text-emerald-950/80 leading-relaxed">
-                Backend Google Apps Script mengelola <strong>3 lembar kerja (tab)</strong> sekaligus dalam 1 file Spreadsheet Panitia Al-Falah Putak:
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                {sheetsDefinition.map((s) => (
-                  <div key={s.id} className="p-3.5 rounded-xl bg-white border border-emerald-200/70 shadow-2xs space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-900">{s.id}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        {s.totalCols} Kolom
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                      {s.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-1 flex items-start space-x-2 text-[11px] text-emerald-900 leading-relaxed">
-                <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Bagaimana jika lembar kerja di spreadsheet belum lengkap?</strong><br />
-                  Buka Google Spreadsheet Anda, lalu klik menu <strong>"Menu Musabaqah Al-Falah" &gt; "1. Buat / Siapkan Seluruh Lembar Kerja (6 Sheet)"</strong> atau jalankan fungsi <code>inisialisasiEnamLembarKerja</code> di Apps Script. Seluruh 6 sheet resmi akan dibuat dan dirapikan seketika.
-                </div>
-              </div>
-            </div>
-
-            {/* Status Feedback Alerts */}
-            {saveSuccess && (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center space-x-2 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>Pengaturan URL Google Apps Script berhasil disimpan dan tersinkronisasi!</span>
-              </div>
-            )}
-
-            {testResult && (
-              <div className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start space-x-2.5 animate-in fade-in ${
-                testResult.success 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-                  : 'bg-rose-50 border-rose-200 text-rose-900'
-              }`}>
-                {testResult.success ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <strong className="block font-bold">{testResult.success ? 'Koneksi Berhasil!' : 'Koneksi Bermasalah!'}</strong>
-                  <span>{testResult.message}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                onClick={handleSaveGasUrl}
-                className="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-2 cursor-pointer"
-              >
-                <Save className="w-4 h-4 text-emerald-300" />
-                <span>Simpan Pengaturan URL</span>
-              </button>
-
-              <button
-                onClick={handleTestConnection}
-                disabled={isTesting}
-                className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-200/80 shadow-2xs flex items-center space-x-2 transition-colors cursor-pointer"
-              >
-                <RefreshCw className={`w-4 h-4 text-slate-600 ${isTesting ? 'animate-spin text-emerald-800' : ''}`} />
-                <span>{isTesting ? 'Sedang Menguji Koneksi...' : 'Uji Koneksi Spreadsheet Sekarang'}</span>
-              </button>
-            </div>
+            </form>
 
           </div>
-        )}
 
-        {/* 4B. TAB 2: PANDUAN & KODE SCRIPT */}
-        {activeTab === 'script' && (
-          <div className="p-5 sm:p-7 space-y-6">
-            
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900">
-                Panduan Praktis Deployment & Kode Google Apps Script
-              </h3>
-              <p className="text-xs text-slate-500">
-                Ikuti 3 langkah mudah berikut untuk menghubungkan Google Spreadsheet panitia secara otomatis.
+          {/* Tabel Live Data Sheet "Pengaturan" */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Tabel Live Lembar Kerja: Sheet "Pengaturan" (3 Kolom)
+                </h3>
+              </div>
+              <span className="text-[11px] font-mono text-slate-400">
+                Kolom A: Kunci | Kolom B: Nilai | Kolom C: Keterangan
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F8FAFC] text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">Baris</th>
+                    <th className="py-3 px-4 w-60">Kunci_Pengaturan (A)</th>
+                    <th className="py-3 px-4">Nilai_Pengaturan (B)</th>
+                    <th className="py-3 px-4">Keterangan (C)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">2</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">NAMA_KEGIATAN</td>
+                    <td className="py-3 px-4 font-semibold text-blue-700">{settingsForm.NAMA_KEGIATAN || DEFAULT_PENGATURAN.NAMA_KEGIATAN}</td>
+                    <td className="py-3 px-4 text-slate-500">Nama resmi agenda musabaqah</td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">3</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">TAHUN_AJARAN</td>
+                    <td className="py-3 px-4 font-semibold text-blue-700">{settingsForm.TAHUN_AJARAN || DEFAULT_PENGATURAN.TAHUN_AJARAN}</td>
+                    <td className="py-3 px-4 text-slate-500">Tahun ajaran pelaksanaan perlombaan</td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">4</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">STATUS_PENDAFTARAN</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10.5px] ${
+                        settingsForm.STATUS_PENDAFTARAN === 'Buka'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-rose-50 text-rose-800 border border-rose-200'
+                      }`}>
+                        {settingsForm.STATUS_PENDAFTARAN || 'Buka'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-500">Status pendaftaran (Buka / Tutup)</td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">5</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">TANGGAL_PELAKSANAAN</td>
+                    <td className="py-3 px-4 font-semibold text-blue-700">{settingsForm.TANGGAL_PELAKSANAAN || DEFAULT_PENGATURAN.TANGGAL_PELAKSANAAN}</td>
+                    <td className="py-3 px-4 text-slate-500">Rentang tanggal pelaksanaan lomba</td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">6</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">KUOTA_PER_CABANG</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-800">{settingsForm.KUOTA_PER_CABANG || DEFAULT_PENGATURAN.KUOTA_PER_CABANG}</td>
+                    <td className="py-3 px-4 text-slate-500">Batas maksimal delegasi per cabang lomba per kelas</td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 text-center font-mono text-slate-400">7</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">TARGET_KUOTA_KELAS</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-800">{settingsForm.TARGET_KUOTA_KELAS || DEFAULT_PENGATURAN.TARGET_KUOTA_KELAS}</td>
+                    <td className="py-3 px-4 text-slate-500">Target kuota delegasi lengkap per Kelas Diniyah</td>
+                  </tr>
+
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* =========================================================
+          TAB 2: KONEKSI GOOGLE SHEETS (WEB APP URL & 6 LEMBAR KERJA)
+          ========================================================= */}
+      {activeTab === 'sheets' && (
+        <div className="space-y-6">
+          
+          {/* Card URL Web App */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-5">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                URL Web App Google Apps Script
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Masukkan URL Web App hasil deployment dari Google Apps Script untuk menghubungkan seluruh 6 lembar kerja.
               </p>
             </div>
 
-            {/* 4 Step Practical Guide Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 space-y-2">
-                <span className="w-7 h-7 rounded-xl bg-emerald-800 text-white font-black text-xs flex items-center justify-center shadow-2xs">
-                  1
-                </span>
-                <h4 className="font-bold text-slate-900 text-xs">Buat Spreadsheet Baru</h4>
-                <p className="text-slate-500 text-[11px] leading-relaxed">
-                  Buka Google Drive panitia, buat Spreadsheet baru beri nama <strong>"Musabaqah Akhirussanah 1447 H"</strong>.
-                </p>
+            <div className="space-y-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={gasUrl}
+                  onChange={(e) => setGasUrl(e.target.value)}
+                  placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200/90 text-xs font-mono font-semibold outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all text-slate-900 placeholder:text-slate-400"
+                />
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 space-y-2">
-                <span className="w-7 h-7 rounded-xl bg-emerald-800 text-white font-black text-xs flex items-center justify-center shadow-2xs">
-                  2
-                </span>
-                <h4 className="font-bold text-slate-900 text-xs">Tempelkan Kode Script</h4>
-                <p className="text-slate-500 text-[11px] leading-relaxed">
-                  Buka menu <strong>Extensions &gt; Apps Script</strong>. Hapus isi bawaan, lalu salin dan tempelkan seluruh kode di bawah.
-                </p>
-              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleSaveGasUrl}
+                  className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer active:scale-95"
+                >
+                  <Save className="w-3.5 h-3.5 text-white" />
+                  <span>Simpan URL Web App</span>
+                </button>
 
-              <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-300 text-emerald-950 space-y-2 shadow-2xs">
-                <span className="w-7 h-7 rounded-xl bg-emerald-700 text-white font-black text-xs flex items-center justify-center shadow-2xs">
-                  3
-                </span>
-                <h4 className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
-                  <span>MUNCULKAN 6 SHEET</span>
-                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-800 text-white uppercase">Penting</span>
-                </h4>
-                <p className="text-emerald-900 text-[11px] leading-relaxed">
-                  Di dropdown fungsi atas editor, pilih <strong>"inisialisasiEnamLembarKerja"</strong> lalu klik <strong>Run (Jalankan)</strong>. Seketika 6 sheet resmi otomatis dibuat dan dirapikan!
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 space-y-2">
-                <span className="w-7 h-7 rounded-xl bg-emerald-800 text-white font-black text-xs flex items-center justify-center shadow-2xs">
-                  4
-                </span>
-                <h4 className="font-bold text-slate-900 text-xs">Deploy Sebagai Web App</h4>
-                <p className="text-slate-500 text-[11px] leading-relaxed">
-                  Klik <strong>Deploy &gt; New deployment &gt; Web app</strong>. Pilih Who has access: <strong>Anyone</strong>, lalu salin Web App URL ke tab pertama.
-                </p>
-              </div>
-            </div>
-
-            {/* Code Box Container */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-md">
-              <div className="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-mono font-bold text-slate-200">
-                    Code.gs (Google Apps Script Backend Multi-Sheet Resmi)
-                  </span>
-                </div>
+                <button
+                  onClick={handleTestConnection}
+                  disabled={isTesting}
+                  className="px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all shadow-2xs flex items-center space-x-1.5 cursor-pointer active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isTesting ? 'animate-spin' : ''}`} />
+                  <span>{isTesting ? 'Menguji Koneksi...' : 'Tes Koneksi 6 Sheet'}</span>
+                </button>
 
                 <button
                   onClick={copyScript}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all shadow-2xs flex items-center space-x-1.5 cursor-pointer ml-auto"
                 >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedCode ? 'Tersalin ke Clipboard!' : 'Salin Seluruh Kode Script'}</span>
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>{copiedCode ? 'Tersalin!' : 'Salin Kode Script (Code.gs)'}</span>
                 </button>
               </div>
 
-              <div className="p-4 max-h-80 overflow-y-auto font-mono text-[11px] text-slate-300 leading-relaxed scrollbar-thin">
-                <pre>{scriptCode}</pre>
-              </div>
-            </div>
-
-            {/* 3 Sheets Header Specification with Tabs */}
-            <div className="space-y-3 pt-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-bold text-slate-900 block">
-                    Struktur Kolom Header di 3 Lembar Kerja Google Sheets:
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    Pilih tab di samping untuk memeriksa nama kolom resmi tiap sheet:
-                  </span>
-                </div>
-
-                {/* Sheet Selector Pills */}
-                <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
-                  {sheetsDefinition.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedSheetTab(s.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        selectedSheetTab === s.id
-                          ? 'bg-white text-emerald-900 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {s.id}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Active Sheet Detail Card */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-200/70">
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                      <span>{activeSheetDef.title}</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
-                        {activeSheetDef.tag}
-                      </span>
-                    </h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {activeSheetDef.desc}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700 bg-white px-3 py-1 rounded-xl border border-slate-200/70 shadow-2xs shrink-0 self-start sm:self-auto">
-                    Total: {activeSheetDef.totalCols} Kolom
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {activeSheetDef.columns.map((col, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-white border border-slate-200/70 text-xs flex flex-col shadow-2xs">
-                      <span className="font-mono font-bold text-emerald-900 text-[11px]">
-                        {idx + 1}. {col.name}
-                      </span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">
-                        {col.desc}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* 4C. TAB 3: KEAMANAN AKSES & PIN ADMIN */}
-        {activeTab === 'security' && (
-          <div className="p-5 sm:p-7 space-y-6">
-            
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-800" />
-                <span>Pengaturan Keamanan Akses Portal Panitia</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Ubah PIN otentikasi login admin secara berkala untuk menjaga keamanan data santri dan keabsahan pengundian nomor urut.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between max-w-lg">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Status PIN Saat Ini
-                </span>
-                <span className="text-sm font-mono font-bold text-slate-800 mt-0.5 block">
-                  {showPassword ? currentPin : '••••••••'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center space-x-1 cursor-pointer"
-              >
-                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                <span>{showPassword ? 'Sembunyikan' : 'Perlihatkan'}</span>
-              </button>
-            </div>
-
-            {/* Form Ganti PIN */}
-            <form onSubmit={handleUpdatePin} className="max-w-lg space-y-4 pt-2">
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-                  PIN Baru Panitia <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Minimal 4 karakter / angka"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-semibold outline-none focus:border-emerald-800 focus:bg-white bg-slate-50/50"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-                  Konfirmasi PIN Baru <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <ShieldCheck className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Ulangi PIN baru"
-                    value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-semibold outline-none focus:border-emerald-800 focus:bg-white bg-slate-50/50"
-                    required
-                  />
-                </div>
-              </div>
-
-              {pinMessage && (
-                <div className={`p-3.5 rounded-2xl text-xs font-medium flex items-center space-x-2 ${
-                  pinMessage.success 
-                    ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' 
-                    : 'bg-rose-50 text-rose-900 border border-rose-200'
+              {testResult && (
+                <div className={`p-4 rounded-2xl border text-xs leading-relaxed ${
+                  testResult.success
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border-rose-200'
                 }`}>
-                  {pinMessage.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  )}
-                  <span>{pinMessage.text}</span>
+                  <div className="flex items-start space-x-2">
+                    {testResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    )}
+                    <span>{testResult.message}</span>
+                  </div>
                 </div>
               )}
-
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-              >
-                Perbarui PIN Akses Admin
-              </button>
-            </form>
-
-            <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 text-xs text-slate-500 space-y-1 max-w-lg">
-              <span className="font-bold text-slate-800 block">Saran Keamanan Panitia:</span>
-              <p className="text-[11px] leading-relaxed">
-                Gunakan PIN yang mudah diingat oleh dewan panitia inti namun sulit ditebak oleh peserta. Bawaan sistem awal adalah <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-slate-800 font-bold">admin123</code>.
-              </p>
             </div>
-
           </div>
-        )}
 
-        {/* 4D. TAB 4: PEMELIHARAAN & BACKUP DATA */}
-        {activeTab === 'maintenance' && (
-          <div className="p-5 sm:p-7 space-y-6">
-            
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <HardDrive className="w-4 h-4 text-emerald-800" />
-                <span>Cadangan Offline & Pemeliharaan Sistem</span>
+          {/* Struktur 6 Lembar Kerja Resmi */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+            <div className="pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">
+                Struktur 6 Lembar Kerja Resmi di Google Spreadsheet
               </h3>
-              <p className="text-xs text-slate-500">
-                Amankan seluruh data pendaftaran santri secara berkala dalam format cadangan lokal (JSON).
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pastikan nama sheet dan kolom di spreadsheet Anda sesuai dengan spesifikasi resmi sistem:
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
-              {/* Backup Card */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-3.5">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center border border-emerald-100">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-xs">Unduh Backup Data Santri (JSON)</h4>
-                    <p className="text-[11px] text-slate-400">Simpan salinan data pendaftaran ke komputer panitia</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  File JSON berisi seluruh riwayat pendaftaran santri, nomor urut yang sudah diundi, dan status verifikasi terkini.
-                </p>
-
-                {backupSuccess && (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>File cadangan offline berhasil diunduh!</span>
-                  </div>
-                )}
-
+            {/* Pills Sheet Selector */}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
+              {sheetsDefinition.map(s => (
                 <button
-                  onClick={handleDownloadBackup}
-                  disabled={isExporting}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-2 cursor-pointer"
+                  key={s.id}
+                  onClick={() => setSelectedSheetTab(s.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    selectedSheetTab === s.id
+                      ? 'bg-blue-600 text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
                 >
-                  <Download className="w-4 h-4 text-emerald-300" />
-                  <span>{isExporting ? 'Mengekspor Data...' : 'Unduh Cadangan Offline Sekarang'}</span>
+                  {s.title}
+                </button>
+              ))}
+            </div>
+
+            {/* Active Sheet Detail Card */}
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                    {activeSheetDef.title}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {activeSheetDef.desc}
+                  </p>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                  {activeSheetDef.totalCols} Kolom
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-1">
+                {activeSheetDef.columns.map((col, idx) => (
+                  <div key={col.name} className="p-2.5 bg-white rounded-xl border border-slate-200/70 text-xs">
+                    <span className="font-mono font-bold text-slate-900 block truncate">
+                      {idx + 1}. {col.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
+                      {col.desc}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* =========================================================
+          TAB 3: KEAMANAN PIN ADMIN
+          ========================================================= */}
+      {activeTab === 'security' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-5 max-w-xl">
+          <div className="pb-3 border-b border-slate-100">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              Ubah PIN Akses Admin Panitia
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              PIN ini digunakan untuk masuk ke panel administrasi panitia.
+            </p>
+          </div>
+
+          <form onSubmit={handleUpdatePin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                PIN Admin Saat Ini
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  disabled
+                  value={currentPin}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-mono font-bold bg-slate-100 text-slate-600 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-
-              {/* Info Lingkungan & Versi */}
-              <div className="p-5 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3">
-                <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs border-b border-slate-200/70 pb-2">
-                  <Cpu className="w-4 h-4 text-emerald-800" />
-                  <span>Informasi Rilis & Lingkungan Sistem</span>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Nama Acara:</span>
-                    <span className="font-semibold text-slate-800">Musabaqah Akhirussanah</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Tahun Hijriyah / M:</span>
-                    <span className="font-semibold text-slate-800">1447 H / 2026 M</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Pondok Pesantren:</span>
-                    <span className="font-semibold text-slate-800">Al-Falah Putak Gelumbang</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Versi Portal:</span>
-                    <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      v1.0.0 (Production)
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Nomor Urut Standar:</span>
-                    <span className="font-mono font-bold text-slate-800">
-                      Mulai dari 050
-                    </span>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-          </div>
-        )}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                PIN Baru (Minimal 4 Angka/Karakter)
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value)}
+                placeholder="Masukkan PIN baru..."
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-mono font-bold bg-slate-50/70 focus:bg-white focus:border-blue-600 outline-none transition-all text-slate-900"
+              />
+            </div>
 
-      </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Konfirmasi PIN Baru
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value)}
+                placeholder="Ulangi PIN baru..."
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-mono font-bold bg-slate-50/70 focus:bg-white focus:border-blue-600 outline-none transition-all text-slate-900"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-xs flex items-center space-x-1.5 cursor-pointer active:scale-95"
+              >
+                <Key className="w-3.5 h-3.5 text-white" />
+                <span>Simpan PIN Baru</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* =========================================================
+          TAB 4: BACKUP & PEMELIHARAAN DATA
+          ========================================================= */}
+      {activeTab === 'maintenance' && (
+        <div className="space-y-6">
+          
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                Cadangan Data Offline (JSON)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Unduh seluruh data pendaftaran santri ke dalam file JSON lokal untuk antisipasi darurat atau arsip offline panitia.
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleDownloadBackup}
+                disabled={isExporting}
+                className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs flex items-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-60"
+              >
+                <Download className="w-4 h-4 text-white" />
+                <span>{isExporting ? 'Mengekspor Data...' : 'Unduh Cadangan JSON'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Log Aktivitas Audit Trail */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                  Riwayat Audit Trail Sistem ({totalLogsCount} Entri)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Catatan aktivitas pembaruan data, verifikasi santri, dan sinkronisasi.
+                </p>
+              </div>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-2 divide-y divide-slate-100 pr-1">
+              {(getActivityLogs() || []).slice(0, 15).map(log => (
+                <div key={log.id} className="pt-2 flex items-start justify-between gap-3 text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 block">{log.action}</span>
+                    <span className="text-slate-500 text-[11px] block">{log.detail}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono shrink-0">{log.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

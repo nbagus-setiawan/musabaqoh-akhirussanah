@@ -918,3 +918,78 @@ export const testGasConnection = async (testUrl) => {
     return { success: false, message: `Gagal terhubung: ${err.message}` };
   }
 };
+
+// =========================================================================
+// 6. INTEGRASI PENGATURAN MUSABAQAH LANGSUNG DARI SHEET "Pengaturan"
+// =========================================================================
+
+const PENGATURAN_STORAGE_KEY = 'alfalah_pengaturan';
+
+export const DEFAULT_PENGATURAN = {
+  NAMA_KEGIATAN: 'Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak',
+  TAHUN_AJARAN: '1447 H / 2026 M',
+  STATUS_PENDAFTARAN: 'Buka',
+  TANGGAL_PELAKSANAAN: '2026-11-20 s/d 2026-11-25',
+  KUOTA_PER_CABANG: '3',
+  TARGET_KUOTA_KELAS: '10'
+};
+
+export const getLocalPengaturan = () => {
+  try {
+    const raw = localStorage.getItem(PENGATURAN_STORAGE_KEY);
+    return raw ? { ...DEFAULT_PENGATURAN, ...JSON.parse(raw) } : { ...DEFAULT_PENGATURAN };
+  } catch (e) {
+    return { ...DEFAULT_PENGATURAN };
+  }
+};
+
+export const fetchPengaturan = async () => {
+  const local = getLocalPengaturan();
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return local;
+
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_pengaturan` : `${gasUrl}?action=get_pengaturan`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.status === 'success' && result.data && typeof result.data === 'object') {
+        const merged = { ...local, ...result.data };
+        localStorage.setItem(PENGATURAN_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal fetch pengaturan dari Google Sheets:', err);
+  }
+
+  return local;
+};
+
+export const savePengaturan = async (settings) => {
+  const merged = { ...getLocalPengaturan(), ...settings };
+  localStorage.setItem(PENGATURAN_STORAGE_KEY, JSON.stringify(merged));
+  notifyDataChanged('pengaturan', merged);
+
+  addActivityLog(
+    'Update Pengaturan Sistem',
+    'Pengaturan musabaqah diperbarui (Status: ' + (merged.STATUS_PENDAFTARAN || 'Buka') + ')',
+    'system'
+  );
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'save_pengaturan',
+        settings: merged
+      })
+    }).catch(e => {
+      console.warn('Simpan pengaturan ke GAS gagal:', e);
+    });
+  }
+
+  return merged;
+};
