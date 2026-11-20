@@ -1298,35 +1298,41 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
             {/* Kartu Konfirmasi Kelas Diniyah (Muncul Seketika Saat Guru Dipilih) */}
             {kelasDiniyah ? (
-              <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3 animate-fadeIn">
-                <div className="flex items-center justify-between pb-2 border-b border-emerald-200/70">
+              <div className="p-3.5 sm:p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-3 animate-fadeIn shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-emerald-200/60">
                   <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#075B45]" />
+                    <div className="w-5 h-5 rounded-lg bg-[#075B45] text-white flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </div>
                     <span className="text-xs font-bold text-[#075B45]">
                       Kelas Diniyah Terverifikasi Otomatis
                     </span>
                   </div>
-                  <span className={`text-[10.5px] font-black px-2.5 py-0.5 rounded-full border ${
+                  <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                     isPutriClass 
-                      ? 'bg-rose-100 text-rose-800 border-rose-200' 
-                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                      ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                      : 'bg-emerald-100 text-[#075B45] border-emerald-200'
                   }`}>
                     {isPutriClass ? 'Kelas Santri Putri' : 'Kelas Santri Putra'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60">
-                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Kelas Diniyah</span>
-                    <strong className="text-slate-900 text-xs sm:text-sm font-black">{kelasDiniyah}</strong>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Kelas Diniyah</span>
+                    <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{kelasDiniyah}</strong>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60">
-                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Jenjang Tingkat</span>
-                    <strong className="text-slate-900 text-xs sm:text-sm font-black">{tingkatName || tingkat}</strong>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Jenjang Tingkat</span>
+                    <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{tingkatName || tingkat}</strong>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200/60 col-span-2 sm:col-span-1">
-                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Status Kuota</span>
-                    <strong className="text-[#075B45] text-xs sm:text-sm font-black">Maks. 3 per Lomba</strong>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Wali Kelas</span>
+                    <strong className="text-slate-900 text-xs sm:text-sm font-bold block mt-0.5 truncate">{waliInput}</strong>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Ketentuan Kuota</span>
+                    <strong className="text-[#075B45] text-xs sm:text-sm font-black block mt-0.5 truncate">Maks. 3 / Cabang</strong>
                   </div>
                 </div>
               </div>
@@ -1365,11 +1371,11 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={!kelasDiniyah || !nomorWA.trim()}
-                className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer ${
-                  kelasDiniyah && nomorWA.trim()
-                    ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-98'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                disabled={!kelasDiniyah || !nomorWA.trim() || nomorWA.replace(/\D/g, '').length < 9}
+                className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-xs transition-all ${
+                  kelasDiniyah && nomorWA.replace(/\D/g, '').length >= 9
+                    ? 'bg-[#075B45] hover:bg-[#054736] text-white cursor-pointer active:scale-98'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75'
                 }`}
               >
                 <span>Lanjut ke Pemilihan Cabang Lomba</span>
