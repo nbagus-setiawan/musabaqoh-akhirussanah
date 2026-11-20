@@ -462,23 +462,31 @@ export default function BuktiPendaftaranPage() {
             </div>
 
             {/* Identitas Kelas Diniyah */}
-            <div className="p-3 sm:p-4 bg-slate-50/90 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 text-xs">
-              <div>
-                <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kelas Diniyah</span>
-                <span className="font-black text-[#075B45] text-xs sm:text-sm block truncate">{meta.kelasDiniyah || '-'}</span>
+            <div className="p-3 sm:p-4 bg-slate-50/90 border-b border-slate-200 space-y-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
+                <div>
+                  <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kelas Diniyah</span>
+                  <span className="font-black text-[#075B45] text-xs sm:text-sm block truncate">{meta.kelasDiniyah || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jenjang</span>
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm block truncate">{formatTingkat(meta.tingkat)}</span>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Wali Kelas</span>
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm block truncate">{meta.waliKelas || '-'}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Wali Kelas</span>
-                <span className="font-bold text-slate-900 block truncate">{meta.waliKelas || '-'}</span>
-              </div>
-              <div>
-                <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jenjang</span>
-                <span className="font-bold text-slate-800 block truncate">{formatTingkat(meta.tingkat)}</span>
-              </div>
-              <div>
-                <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kontak WA</span>
-                <span className="font-bold text-slate-800 block truncate">{meta.nomorWA || '-'}</span>
-              </div>
+
+              {/* Baris Khusus Nomor WhatsApp di Bawah (Tidak Bersandingan) */}
+              {meta.nomorWA && (
+                <div className="pt-2 border-t border-slate-200/70 flex items-center space-x-2 text-[11px] text-slate-600">
+                  <span className="text-slate-400 font-medium">Nomor WhatsApp:</span>
+                  <span className="font-mono font-bold text-[#075B45] bg-white px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+                    {meta.nomorWA}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Tabel Delegasi Santri */}

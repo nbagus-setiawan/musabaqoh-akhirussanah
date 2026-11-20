@@ -175,20 +175,21 @@ export default function SuccessTicket({
           </div>
 
           {/* Wali Kelas Pendaftar */}
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
-            <div className="min-w-0">
-              <span className="text-[8.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
-                <UserCheck className="w-3 h-3 text-emerald-800" />
-                <span>Wali Kelas Pendaftar</span>
-              </span>
-              <p className="text-xs font-bold text-slate-800 truncate mt-0.5">
-                {registration.Wali_Kelas || '-'}
-              </p>
-            </div>
+          <div className="space-y-1 pb-2 border-b border-slate-100">
+            <span className="text-[8.5px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+              <UserCheck className="w-3 h-3 text-emerald-800" />
+              <span>Wali Kelas Pendaftar</span>
+            </span>
+            <p className="text-xs font-bold text-slate-800 truncate mt-0.5">
+              {registration.Wali_Kelas || '-'}
+            </p>
             {registration.Nomor_WA && (
-              <span className="text-[9.5px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 shrink-0 font-medium">
-                {registration.Nomor_WA}
-              </span>
+              <div className="pt-0.5 flex items-center space-x-1.5 text-[10.5px]">
+                <span className="text-slate-400 text-[10px]">Nomor WhatsApp:</span>
+                <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                  {registration.Nomor_WA}
+                </span>
+              </div>
             )}
           </div>
 

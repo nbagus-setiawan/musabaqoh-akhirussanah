@@ -2237,14 +2237,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 </span>
               </div>
               
-              <div className="pt-2 border-t border-emerald-200/60 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-600">
+              <div className="pt-2 border-t border-emerald-200/60 space-y-1.5 text-xs text-slate-600">
                 <div className="flex items-center space-x-1.5 truncate">
                   <span className="text-slate-400 text-[11px]">Wali Kelas:</span>
                   <strong className="text-slate-800 truncate">{waliInput}</strong>
                 </div>
                 <div className="flex items-center space-x-1.5 truncate">
-                  <span className="text-slate-400 text-[11px]">Kontak WhatsApp:</span>
-                  <strong className="text-slate-800">{nomorWA}</strong>
+                  <span className="text-slate-400 text-[11px]">Nomor WhatsApp:</span>
+                  <strong className="text-[#075B45] font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">{nomorWA}</strong>
                 </div>
               </div>
             </div>
