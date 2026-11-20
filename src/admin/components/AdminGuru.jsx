@@ -164,8 +164,18 @@ export default function AdminGuru({
     }
     const cleanPhone = guru.kontak.replace(/^0/, '62').replace(/\D/g, '');
     const pesan = encodeURIComponent(
-      `Assalamu'alaikum Wr. Wb. Yth. ${guru.nama} (Wali Kelas ${guru.kelas}).\n\n` +
-      `Panitia Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak menyampaikan konfirmasi data santri binaan panjenengan.`
+      `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+      `Kepada Yth. *${guru.nama}*\n` +
+      `Wali Kelas Diniyah: *${guru.kelas || '-'}*\n` +
+      `Pondok Pesantren Al-Falah Putak\n\n` +
+      `Semoga Ustadz/Ustadzah senantiasa dalam limpahan rahmat dan kesehatan dari Allah SWT.\n\n` +
+      `Panitia Pelaksana Musabaqah Akhirussanah 1447 H menyampaikan informasi terkait pendaftaran delegasi santri lomba. Mohon kiranya dapat mengakses portal resmi pendaftaran berikut untuk melengkapi data delegasi kelas binaan panjenengan:\n` +
+      `https://musabaqoh-akhirussanah.vercel.app/\n\n` +
+      `Atas perhatian dan kerja sama Ustadz/Ustadzah, kami haturkan terima kasih.\n` +
+      `Jazakumullah Khairan Katsiran.\n\n` +
+      `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+      `*Panitia Musabaqah Akhirussanah 1447 H*\n` +
+      `YPPS Al-Falah Putak`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${pesan}`, '_blank');
   };

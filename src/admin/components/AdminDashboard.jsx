@@ -205,14 +205,24 @@ export default function AdminDashboard({
   const handleSendReminderWA = (item) => {
     const cleanPhone = (item.kontak || '').replace(/^0/, '62').replace(/\D/g, '');
     const statusDesc = item.totalCount === 0 
-      ? 'belum ada delegasi santri yang didaftarkan' 
-      : `baru terdaftar ${item.totalCount} santri (kuota target: minimal 10 delegasi per kelas)`;
+      ? 'Belum ada santri yang didaftarkan (0/10 Kuota)' 
+      : `Baru terdaftar ${item.totalCount}/10 santri`;
     const msg = encodeURIComponent(
-      `Assalamu'alaikum Wr. Wb. Yth. ${item.nama}.\n\n` +
-      `Mengingatkan terkait pendaftaran delegasi santri Musabaqah Akhirussanah 1447 H untuk kelas binaan: *${item.kelas}*.\n` +
-      `Status pendaftaran saat ini: *${statusDesc}*.\n\n` +
-      `Sesuai ketentuan lomba, setiap Kelas Diniyah wajib mengirimkan delegasi. Mohon kiranya dapat segera melengkapi pendaftaran santri melalui sistem formulir musabaqah.\n\n` +
-      `Jazakumullah Khairan Katsiran.`
+      `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+      `Kepada Yth. *${item.nama}*\n` +
+      `Wali Kelas Diniyah: *${item.kelas}*\n` +
+      `Pondok Pesantren Al-Falah Putak\n\n` +
+      `Semoga Ustadz/Ustadzah senantiasa dalam limpahan rahmat dan kesehatan dari Allah SWT.\n\n` +
+      `Kami dari Panitia Pelaksana menyampaikan pengingat resmi terkait pendaftaran delegasi santri dalam rangka *Musabaqah Akhirussanah 1447 H*.\n\n` +
+      `Status Kuota Kelas Saat Ini: *${statusDesc}*.\n\n` +
+      `Mohon kiranya Ustadz/Ustadzah dapat segera melengkapi data delegasi santri secara mandiri melalui portal resmi pendaftaran berikut:\n` +
+      `https://musabaqoh-akhirussanah.vercel.app/\n\n` +
+      `Besar harapan kami agar pendaftaran dapat diselesaikan tepat waktu demi kelancaran pengundian nomor urut dan persiapan jadwal lomba.\n\n` +
+      `Atas perhatian, dedikasi, dan kerja sama Ustadz/Ustadzah, kami haturkan terima kasih yang sebesar-besarnya.\n` +
+      `Jazakumullah Khairan Katsiran.\n\n` +
+      `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+      `*Panitia Musabaqah Akhirussanah 1447 H*\n` +
+      `YPPS Al-Falah Putak`
     );
     if (cleanPhone) {
       window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
