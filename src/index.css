@@ -10,6 +10,11 @@
   --alfalah-accent: #D9B45B;
 }
 
+html, body {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0;
+}
+
 /* Fallback & Custom Utility Classes untuk memastikan warna selalu keluar */
 .bg-alfalah {
   background-color: #075B45 !important;

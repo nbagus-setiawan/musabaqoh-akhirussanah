@@ -887,63 +887,15 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     }
   };
 
-  const handleSkipCurrentBranch = async () => {
-    const branchName = activeBranchObj.fullName || activeBranchObj.name;
-    const result = await Swal.fire({
-      title: 'Lewati Cabang Ini?',
-      html: `<div class="text-xs text-slate-600 space-y-2 text-left sm:text-center">` +
-            `<p>Kelas Diniyah <b>${kelasDiniyah || 'Anda'}</b> tidak akan mengirimkan delegasi pada cabang <b>${branchName}</b>.</p>` +
-            `<p class="text-slate-500">Anda dapat kembali mengisi cabang ini kapan saja melalui Dasbor Cabang sebelum formulir dikirim.</p>` +
-            `</div>`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#075B45',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Ya, Lewati Cabang Ini',
-      cancelButtonText: 'Batal, Tetap Isi',
-      reverseButtons: true,
-      customClass: {
-        popup: 'rounded-3xl border border-slate-200 shadow-xl font-sans text-xs',
-        confirmButton: 'rounded-xl px-4 py-2 font-bold text-xs',
-        cancelButton: 'rounded-xl px-4 py-2 font-bold text-xs'
-      }
-    });
-
-    if (result.isConfirmed) {
-      handleClearCurrentBranch();
-      setFormError('');
-      if (currentBranchIndex >= 0 && currentBranchIndex < eligibleBranches.length - 1) {
-        setActiveBranchId(eligibleBranches[currentBranchIndex + 1].id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        setFormStage('hub');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-  };
-
-  const handleConfirmClearBranch = async () => {
-    const branchName = activeBranchObj.fullName || activeBranchObj.name;
-    const result = await Swal.fire({
-      title: 'Kosongkan Isian Cabang?',
-      text: `Seluruh data santri yang telah diketik pada cabang ${branchName} akan dibersihkan.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Ya, Kosongkan',
-      cancelButtonText: 'Batal',
-      reverseButtons: true,
-      customClass: {
-        popup: 'rounded-3xl border border-slate-200 shadow-xl font-sans text-xs',
-        confirmButton: 'rounded-xl px-4 py-2 font-bold text-xs',
-        cancelButton: 'rounded-xl px-4 py-2 font-bold text-xs'
-      }
-    });
-
-    if (result.isConfirmed) {
-      handleClearCurrentBranch();
-      setFormError('');
+  const handleSkipCurrentBranch = () => {
+    handleClearCurrentBranch();
+    setFormError('');
+    if (currentBranchIndex >= 0 && currentBranchIndex < eligibleBranches.length - 1) {
+      setActiveBranchId(eligibleBranches[currentBranchIndex + 1].id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setFormStage('hub');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -1077,10 +1029,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     <div className="max-w-3xl mx-auto px-3 sm:px-6 py-3 sm:py-6 select-none font-sans space-y-4">
       
       {/* ========================================================= */}
-      {/* STEP INDICATOR HEADER (LEGA, BERSIH, MODERN)              */}
+      {/* STEP INDICATOR HEADER (MODERN SEGMENTED PILL BAR)         */}
       {/* ========================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-3 sm:p-4 overflow-hidden">
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="grid grid-cols-3 gap-1">
           
           {/* Step 1 */}
           <button
@@ -1089,22 +1041,27 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               setFormError('');
               setFormStage('identity');
             }}
-            className={`flex items-center space-x-2 text-xs font-bold transition-colors cursor-pointer ${
-              formStage === 'identity' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+            className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              formStage === 'identity'
+                ? 'bg-white text-[#075B45] shadow-xs font-bold'
+                : kelasDiniyah
+                ? 'text-[#075B45] hover:bg-white/60 font-semibold'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
-            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-              formStage === 'identity' 
-                ? 'bg-[#075B45] text-white shadow-2xs' 
-                : (kelasDiniyah ? 'bg-emerald-100 text-[#075B45]' : 'bg-slate-100 text-slate-500')
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
+              formStage === 'identity'
+                ? 'bg-[#075B45] text-white'
+                : kelasDiniyah
+                ? 'bg-emerald-100 text-[#075B45]'
+                : 'bg-slate-200 text-slate-500'
             }`}>
-              {kelasDiniyah ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
+              {kelasDiniyah ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
             </div>
-            <span className="hidden sm:inline">1. Identitas Kelas</span>
-            <span className="sm:hidden">1. Kelas</span>
+            <span className="text-xs truncate">
+              <span className="hidden sm:inline">Identitas </span>Kelas
+            </span>
           </button>
-
-          <div className="flex-1 h-0.5 bg-slate-200 mx-1 max-w-[40px] sm:max-w-[70px]"></div>
 
           {/* Step 2 */}
           <button
@@ -1116,24 +1073,31 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               }
             }}
             disabled={!kelasDiniyah}
-            className={`flex items-center space-x-2 text-xs font-bold transition-colors ${
-              !kelasDiniyah ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'
+            className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+              !kelasDiniyah
+                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                : 'cursor-pointer'
             } ${
-              formStage === 'hub' || formStage === 'edit_branch' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+              formStage === 'hub' || formStage === 'edit_branch'
+                ? 'bg-white text-[#075B45] shadow-xs font-bold'
+                : allDelegates.length > 0
+                ? 'text-[#075B45] hover:bg-white/60 font-semibold'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
-            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
               formStage === 'hub' || formStage === 'edit_branch'
-                ? 'bg-[#075B45] text-white shadow-2xs' 
-                : (allDelegates.length > 0 ? 'bg-emerald-100 text-[#075B45]' : 'bg-slate-100 text-slate-500')
+                ? 'bg-[#075B45] text-white'
+                : allDelegates.length > 0
+                ? 'bg-emerald-100 text-[#075B45]'
+                : 'bg-slate-200 text-slate-500'
             }`}>
-              {allDelegates.length > 0 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
+              {allDelegates.length > 0 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
             </div>
-            <span className="hidden sm:inline">2. Pilih Cabang Lomba</span>
-            <span className="sm:hidden">2. Cabang ({totalFilledBranches})</span>
+            <span className="text-xs truncate">
+              Cabang {totalFilledBranches > 0 && <span className="text-[10px] font-black px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#075B45]">({totalFilledBranches})</span>}
+            </span>
           </button>
-
-          <div className="flex-1 h-0.5 bg-slate-200 mx-1 max-w-[40px] sm:max-w-[70px]"></div>
 
           {/* Step 3 */}
           <button
@@ -1145,19 +1109,26 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               }
             }}
             disabled={allDelegates.length === 0}
-            className={`flex items-center space-x-2 text-xs font-bold transition-colors ${
-              allDelegates.length === 0 ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'
+            className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+              allDelegates.length === 0
+                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                : 'cursor-pointer'
             } ${
-              formStage === 'review' ? 'text-[#075B45]' : 'text-slate-500 hover:text-slate-800'
+              formStage === 'review'
+                ? 'bg-white text-[#075B45] shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-600 font-medium'
             }`}
           >
-            <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-              formStage === 'review' ? 'bg-[#075B45] text-white shadow-2xs' : 'bg-slate-100 text-slate-500'
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
+              formStage === 'review'
+                ? 'bg-[#075B45] text-white'
+                : 'bg-slate-200 text-slate-500'
             }`}>
               3
             </div>
-            <span className="hidden sm:inline">3. Pratinjau & Kirim</span>
-            <span className="sm:hidden">3. Kirim</span>
+            <span className="text-xs truncate">
+              <span className="hidden sm:inline">Pratinjau & </span>Kirim
+            </span>
           </button>
 
         </div>
@@ -1584,46 +1555,40 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeIn space-y-0">
           
           {/* Header Editor Cabang */}
-          <div className="bg-[#075B45] text-white p-4 sm:p-5 border-b border-[#054736] flex items-center justify-between gap-2">
-            <div className="flex items-center space-x-3">
+          <div className="bg-[#075B45] text-white p-3.5 sm:p-5 border-b border-[#054736] flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5 min-w-0 flex-1">
               <button
                 type="button"
                 onClick={handleBackToHub}
-                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all shrink-0 cursor-pointer"
                 title="Kembali ke Dasbor Cabang"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <div>
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D9B45B] block">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D9B45B] block truncate">
                   Cabang {currentBranchNumber} dari {totalEligibleBranches} • {kelasDiniyah}
                 </span>
-                <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
                   {activeBranchObj.fullName || activeBranchObj.name}
                 </h2>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleBackToHub}
-              className="text-xs font-bold text-emerald-100 hover:text-white bg-white/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
-            >
-              Dasbor Cabang
-            </button>
+            {/* Indikator Langkah Ringkas di Kanan */}
+            <div className="shrink-0 bg-white/10 px-2.5 py-1 rounded-xl text-[11px] font-bold text-emerald-100 border border-white/10">
+              {currentBranchNumber} / {totalEligibleBranches}
+            </div>
           </div>
 
-          <div className="p-4 sm:p-6 space-y-5">
+          <div className="p-3.5 sm:p-5 space-y-4">
             
-            {/* Box Petunjuk Cabang & Kuota */}
-            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-700">
+            {/* Box Petunjuk Cabang Ringkas */}
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex items-start space-x-2 text-xs text-slate-700">
               <Info className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="font-bold text-slate-900">Ketentuan Cabang Ini:</p>
-                <p className="leading-relaxed text-slate-600">
-                  {activeBranchObj.description} Maksimal pengiriman adalah 3 santri atau regu resmi.
-                </p>
-              </div>
+              <p className="leading-relaxed text-slate-600 font-medium">
+                {activeBranchObj.description}
+              </p>
             </div>
 
             {/* FORM INPUT SESUAI TIPE CABANG */}
@@ -2146,101 +2111,88 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            {/* Box Status Validasi & Panduan Cabang */}
-            <div className={`p-3.5 rounded-2xl border flex items-start gap-3 transition-colors ${
+            {/* Box Status Validasi Ringkas */}
+            <div className={`p-3 rounded-2xl border flex items-center justify-between gap-2.5 transition-colors ${
               currentBranchStatus.isFilled
                 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
                 : currentBranchStatus.isPartial
                 ? 'bg-amber-50/80 border-amber-200 text-amber-950'
                 : 'bg-slate-50 border-slate-200 text-slate-700'
             }`}>
-              <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                currentBranchStatus.isFilled 
-                  ? 'bg-emerald-600 text-white' 
-                  : currentBranchStatus.isPartial
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-slate-300 text-slate-700'
-              }`}>
-                {currentBranchStatus.isFilled ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                ) : (
-                  <Info className="w-3.5 h-3.5 stroke-[2.5]" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold">
-                    {currentBranchStatus.isFilled 
-                      ? 'Data Delegasi Terisi' 
-                      : currentBranchStatus.isPartial 
-                      ? 'Perhatian: Isian Belum Lengkap' 
-                      : 'Status Cabang: Belum Terisi'}
-                  </span>
-                  {currentBranchStatus.isFilled && (
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-[#075B45]">
-                      Siap Lanjut
-                    </span>
+              <div className="flex items-center space-x-2 min-w-0">
+                <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
+                  currentBranchStatus.isFilled 
+                    ? 'bg-emerald-600 text-white' 
+                    : currentBranchStatus.isPartial
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-slate-300 text-slate-700'
+                }`}>
+                  {currentBranchStatus.isFilled ? (
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  ) : (
+                    <Info className="w-3.5 h-3.5 stroke-[2.5]" />
                   )}
                 </div>
-                <p className="text-[11px] leading-relaxed mt-0.5 opacity-90">
-                  {currentBranchStatus.message}
-                </p>
+                <div className="min-w-0">
+                  <span className="text-xs font-bold block truncate">
+                    {currentBranchStatus.isFilled 
+                      ? `${currentBranchStatus.count} Delegasi Terisi (Lengkap)` 
+                      : currentBranchStatus.isPartial 
+                      ? 'Perhatian: Anggota Belum Lengkap' 
+                      : 'Belum Ada Isian Delegasi'}
+                  </span>
+                  <p className="text-[10.5px] text-slate-500 truncate">
+                    {currentBranchStatus.message}
+                  </p>
+                </div>
               </div>
+
+              {currentBranchStatus.count > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearCurrentBranch}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-800 shrink-0 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                >
+                  Kosongkan
+                </button>
+              )}
             </div>
 
             {/* Tombol Aksi Navigasi Editor Cabang */}
-            <div className="pt-3 border-t border-slate-200 space-y-2.5">
-              {/* Baris Tombol Utama */}
+            <div className="pt-2 border-t border-slate-200 space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleNextBranchInSequence}
-                  disabled={!currentBranchStatus.isFilled}
-                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs ${
-                    currentBranchStatus.isFilled
-                      ? 'bg-[#075B45] hover:bg-[#054736] text-white cursor-pointer active:scale-[0.99]'
-                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75'
-                  }`}
-                >
-                  <span>Lanjut ke Cabang Berikutnya</span>
-                  <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
-                </button>
+                {currentBranchStatus.isFilled ? (
+                  <button
+                    type="button"
+                    onClick={handleNextBranchInSequence}
+                    className="w-full py-3 px-4 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Lanjut ke Cabang Berikutnya</span>
+                    <ArrowRight className="w-4 h-4 text-[#D9B45B]" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSkipCurrentBranch}
+                    className="w-full py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all cursor-pointer"
+                  >
+                    <span>Lewati Cabang Ini (Tanpa Delegasi)</span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={handleBackToHub}
                   disabled={currentBranchStatus.isPartial}
-                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border ${
+                  className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center space-x-1.5 border ${
                     currentBranchStatus.isPartial
-                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75'
-                      : 'bg-white hover:bg-emerald-50/60 border-[#075B45]/40 text-[#075B45] cursor-pointer'
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                      : 'bg-white hover:bg-emerald-50/50 text-[#075B45] border-emerald-200/80 cursor-pointer'
                   }`}
                 >
                   <span>Simpan & Kembali ke Dasbor</span>
                 </button>
-              </div>
-
-              {/* Baris Opsi Lewati atau Bersihkan */}
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleSkipCurrentBranch}
-                  className="text-slate-500 hover:text-slate-800 font-semibold px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer text-[11px]"
-                >
-                  <span>Lewati Cabang Ini (Tanpa Delegasi)</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-
-                {currentBranchStatus.count > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleConfirmClearBranch}
-                    className="text-rose-600 hover:text-rose-700 font-semibold px-2 py-1.5 rounded-xl hover:bg-rose-50 transition-colors flex items-center gap-1 cursor-pointer text-[11px]"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Kosongkan Isian</span>
-                  </button>
-                )}
               </div>
             </div>
 
