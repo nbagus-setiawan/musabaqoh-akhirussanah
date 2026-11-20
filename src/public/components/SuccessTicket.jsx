@@ -12,7 +12,14 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-export default function SuccessTicket({ registration, onRegisterAnother, onBackHome }) {
+export default function SuccessTicket({ 
+  registration, 
+  onRegisterAnother, 
+  onBackHome,
+  showActions = true,
+  showNotification = true,
+  className = ""
+}) {
   if (!registration) return null;
 
   const isPutra = (registration.Jenis_Kelamin || '').toLowerCase().startsWith('l') || 
@@ -23,28 +30,29 @@ export default function SuccessTicket({ registration, onRegisterAnother, onBackH
   const isVerified = registration.Status === 'Terverifikasi';
 
   return (
-    <div className="max-w-md mx-auto px-3 py-2 sm:py-4 animate-in fade-in duration-200">
+    <div className={className || "max-w-md mx-auto px-3 py-2 sm:py-4 animate-in fade-in duration-200"}>
       
       {/* 1. NOTIFIKASI SUKSES RINGKAS & BERSIH */}
-      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200/90 rounded-xl px-3.5 py-2 mb-2.5 shadow-2xs no-print">
-        <div className="flex items-center space-x-2 min-w-0">
-          <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-          <div className="min-w-0">
-            <h3 className="text-xs font-bold text-slate-900 leading-tight truncate">
-              Pendaftaran Berhasil Dikirimkan
-            </h3>
-            <p className="text-[10px] text-slate-500 truncate">Data tersimpan di sistem panitia</p>
+      {showNotification && (
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200/90 rounded-xl px-3.5 py-2 mb-2.5 shadow-2xs no-print">
+          <div className="flex items-center space-x-2 min-w-0">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <div className="min-w-0">
+              <h3 className="text-xs font-bold text-slate-900 leading-tight truncate">
+                Pendaftaran Berhasil Dikirimkan
+              </h3>
+              <p className="text-[10px] text-slate-500 truncate">Data tersimpan di sistem panitia</p>
+            </div>
           </div>
+          <span className="text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 text-emerald-800 shrink-0 ml-2">
+            {registration.ID_Pendaftaran}
+          </span>
         </div>
-        <span className="text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 text-emerald-800 shrink-0 ml-2">
-          {registration.ID_Pendaftaran}
-        </span>
-      </div>
+      )}
 
       {/* 2. KARTU TANDA PESERTA DIGITAL (ELEGANT & COMPACT) */}
       <div 
-        id="printable-ticket"
-        className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print:shadow-none print:border-slate-800"
+        className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print:shadow-none print:border-slate-800 print-avoid-break"
       >
         {/* Kop Resmi Al-Falah Putak - Solid Emerald Gradient */}
         <div 
@@ -240,33 +248,35 @@ export default function SuccessTicket({ registration, onRegisterAnother, onBackH
       </div>
 
       {/* 3. TOMBOL AKSI BESAR & NYAMAN DIKLIK (MOBILE-FRIENDLY) */}
-      <div className="mt-3.5 space-y-2.5 no-print">
-        
-        {/* Tombol Utama: Daftarkan Santri Lain (Besar, Nyaman, Jelas) */}
-        <button
-          type="button"
-          onClick={onRegisterAnother}
-          className="w-full py-3.5 px-4 rounded-xl bg-[#075B45] hover:bg-[#054736] active:bg-[#042A1D] text-white font-bold text-sm shadow-md flex items-center justify-center space-x-2.5 cursor-pointer active:scale-[0.99] transition-all min-h-[48px]"
-        >
-          <UserPlus className="w-5 h-5 text-[#D9B45B] shrink-0" />
-          <span>Daftarkan Delegasi Santri Lain</span>
-        </button>
+      {showActions && (
+        <div className="mt-3.5 space-y-2.5 no-print">
+          
+          {/* Tombol Utama: Daftarkan Santri Lain (Besar, Nyaman, Jelas) */}
+          <button
+            type="button"
+            onClick={onRegisterAnother}
+            className="w-full py-3.5 px-4 rounded-xl bg-[#075B45] hover:bg-[#054736] active:bg-[#042A1D] text-white font-bold text-sm shadow-md flex items-center justify-center space-x-2.5 cursor-pointer active:scale-[0.99] transition-all min-h-[48px]"
+          >
+            <UserPlus className="w-5 h-5 text-[#D9B45B] shrink-0" />
+            <span>Daftarkan Delegasi Santri Lain</span>
+          </button>
 
-        <p className="text-[10px] text-center text-slate-400 font-medium">
-          Nama wali kelas & nomor WhatsApp tetap tersimpan otomatis.
-        </p>
+          <p className="text-[10px] text-center text-slate-400 font-medium">
+            Nama wali kelas & nomor WhatsApp tetap tersimpan otomatis.
+          </p>
 
-        {/* Tombol Sekunder: Kembali ke Formulir */}
-        <button
-          type="button"
-          onClick={onBackHome}
-          className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-300 shadow-2xs flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99] transition-all min-h-[44px]"
-        >
-          <ArrowLeft className="w-4 h-4 text-slate-500 shrink-0" />
-          <span>Kembali ke Formulir Utama</span>
-        </button>
+          {/* Tombol Sekunder: Kembali ke Formulir */}
+          <button
+            type="button"
+            onClick={onBackHome}
+            className="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm border border-slate-300 shadow-2xs flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99] transition-all min-h-[44px]"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>Kembali ke Formulir Utama</span>
+          </button>
 
-      </div>
+        </div>
+      )}
 
     </div>
   );
