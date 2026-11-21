@@ -86,8 +86,8 @@ export default function PublicNavbar() {
             </div>
           </Link>
 
-          {/* Navigasi Desktop Multi-Halaman: Ukuran Proporsional & Rapi */}
-          <nav className="hidden lg:flex items-center space-x-1.5">
+          {/* Navigasi Multi-Halaman: Rapi di Tablet (md:) & Desktop (lg:) */}
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isItemActive(item);
@@ -95,7 +95,7 @@ export default function PublicNavbar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center space-x-2 ${
+                  className={`px-3 py-2 lg:px-4 rounded-xl text-xs lg:text-sm font-bold transition-all flex items-center space-x-1.5 lg:space-x-2 ${
                     active
                       ? 'bg-[#075B45] text-white shadow-xs'
                       : 'text-slate-700 hover:text-[#075B45] hover:bg-[#EAF4F0]'
@@ -108,19 +108,8 @@ export default function PublicNavbar() {
             })}
           </nav>
 
-          {/* Tombol Aksi Cek Status / Petunjuk di Desktop */}
-          <div className="hidden sm:flex items-center">
-            <Link
-              to="/cek-status"
-              className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#075B45] font-bold text-xs sm:text-sm border border-emerald-200/90 transition-all flex items-center space-x-2 active:scale-95 shadow-2xs"
-            >
-              <Search className="w-4 h-4" />
-              <span>Cek Status Santri</span>
-            </Link>
-          </div>
-
-          {/* Tombol Hamburger Mobile - Ergonomis Pas di Jempol (42x42px) */}
-          <div className="flex lg:hidden items-center">
+          {/* Tombol Hamburger Mobile - Khusus Layar Ponsel (< 768px) */}
+          <div className="flex md:hidden items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-100/90 hover:bg-[#EAF4F0] active:bg-[#d8ece2] text-[#075B45] border border-slate-200/90 flex items-center justify-center shadow-2xs active:scale-95 transition-all cursor-pointer"
@@ -135,7 +124,7 @@ export default function PublicNavbar() {
 
       {/* Drawer Menu Mobile Bersih, Nyaman di Jempol */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-3.5 pt-2.5 pb-4 space-y-1.5 shadow-xl animate-fadeIn">
+        <div className="md:hidden border-t border-slate-200 bg-white px-3.5 pt-2.5 pb-4 space-y-1.5 shadow-xl animate-fadeIn">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isItemActive(item);

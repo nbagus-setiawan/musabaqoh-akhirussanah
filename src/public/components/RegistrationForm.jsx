@@ -1073,16 +1073,16 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               }
             }}
             disabled={!kelasDiniyah}
-            className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               !kelasDiniyah
-                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                ? 'cursor-not-allowed text-slate-500 font-semibold'
                 : 'cursor-pointer'
             } ${
               formStage === 'hub' || formStage === 'edit_branch'
                 ? 'bg-white text-[#075B45] shadow-xs font-bold'
                 : allDelegates.length > 0
                 ? 'text-[#075B45] hover:bg-white/60 font-semibold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                : 'text-slate-600 hover:text-slate-800 font-semibold'
             }`}
           >
             <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
@@ -1090,7 +1090,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 ? 'bg-[#075B45] text-white'
                 : allDelegates.length > 0
                 ? 'bg-emerald-100 text-[#075B45]'
-                : 'bg-slate-200 text-slate-500'
+                : 'bg-slate-200/90 text-slate-700'
             }`}>
               {allDelegates.length > 0 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
             </div>
@@ -1109,20 +1109,20 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               }
             }}
             disabled={allDelegates.length === 0}
-            className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               allDelegates.length === 0
-                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                ? 'cursor-not-allowed text-slate-500 font-semibold'
                 : 'cursor-pointer'
             } ${
               formStage === 'review'
                 ? 'bg-white text-[#075B45] shadow-xs font-bold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                : 'text-slate-600 hover:text-slate-800 font-semibold'
             }`}
           >
             <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
               formStage === 'review'
                 ? 'bg-[#075B45] text-white'
-                : 'bg-slate-200 text-slate-500'
+                : 'bg-slate-200/90 text-slate-700'
             }`}>
               3
             </div>
