@@ -21,9 +21,10 @@ import {
   Save,
   Download,
   Clock,
-  Printer
+  Printer,
+  ExternalLink
 } from 'lucide-react';
-import { CABANG_LOMBA_LIST, SUB_KELAS_BY_TINGKAT } from '../../shared/data/competitions';
+import { CABANG_LOMBA_LIST, SUB_KELAS_BY_TINGKAT, DAFTAR_TATA_TERTIB_RESMI } from '../../shared/data/competitions';
 
 export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
   const navigate = useNavigate();
@@ -381,7 +382,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                 <p className="text-[10.5px] text-slate-600 line-clamp-2">
                   {c.description}
                 </p>
-                <div className="pt-1 flex flex-wrap gap-1">
+                <div className="pt-1 flex flex-wrap items-center gap-1">
                   <span className="text-[9.5px] font-semibold bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200/60">
                     Jenjang: Ula, Wustho
                   </span>
@@ -394,6 +395,19 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
                     <span className="text-[9.5px] font-semibold bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded border border-blue-200">
                       Khusus Santri Putra
                     </span>
+                  )}
+                  {c.tatibUrl && (
+                    <a
+                      href={c.tatibUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-[9.5px] font-bold text-[#075B45] hover:text-[#054736] bg-emerald-100/70 hover:bg-emerald-200/70 px-2 py-0.5 rounded border border-emerald-300/80 transition-colors cursor-pointer"
+                      title={`Buka Tata Tertib ${c.name} (Langsung Tampil Tanpa Unduh)`}
+                    >
+                      <FileText className="w-2.5 h-2.5 text-[#075B45]" />
+                      <span>Tatib PDF</span>
+                      <ExternalLink className="w-2 h-2 text-emerald-700" />
+                    </a>
                   )}
                 </div>
               </div>
@@ -511,12 +525,77 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </section>
 
-      {/* ================= BAGIAN E: HAL PENTING YANG PERLU DIPERHATIKAN ================= */}
-      <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
+      {/* ================= BAGIAN E: BERKAS DOKUMEN TATA TERTIB RESMI (BUKA LANGSUNG TANPA UNDUH) ================= */}
+      <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
             <div className="w-7 h-7 rounded-lg bg-[#075B45] text-[#D9B45B] flex items-center justify-center font-bold text-xs shadow-2xs">
               E
+            </div>
+            <div>
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                Dokumen Tata Tertib Resmi Setiap Cabang Lomba (Akses Langsung)
+              </h2>
+              <p className="text-[10.5px] sm:text-[11px] text-slate-500">
+                Klik tombol untuk langsung membaca isi tata tertib resmi di peramban tanpa perlu mengunduh berkas
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] sm:text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#075B45] border border-emerald-200 shrink-0">
+            9 Dokumen PDF
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {DAFTAR_TATA_TERTIB_RESMI.map((tatib, idx) => (
+            <div 
+              key={tatib.id}
+              className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all flex flex-col justify-between space-y-2"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[9.5px] font-extrabold text-[#075B45] bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                    #{idx + 1}
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                    {tatib.kategori}
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                  {tatib.judul}
+                </h4>
+                <p className="text-[10.5px] text-slate-600 leading-relaxed">
+                  {tatib.deskripsi}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                <span className="text-[9.5px] font-mono text-slate-400 truncate">
+                  /{tatib.fileName}
+                </span>
+                <a
+                  href={tatib.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-[#075B45] hover:bg-[#054736] text-white font-bold text-[10.5px] inline-flex items-center space-x-1 shrink-0 transition-colors shadow-2xs"
+                  title={`Buka ${tatib.judul} di peramban`}
+                >
+                  <FileText className="w-3 h-3 text-[#D9B45B]" />
+                  <span>Buka PDF</span>
+                  <ExternalLink className="w-2.5 h-2.5 text-emerald-200" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= BAGIAN F: HAL PENTING YANG PERLU DIPERHATIKAN ================= */}
+      <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-[#075B45] text-[#D9B45B] flex items-center justify-center font-bold text-xs shadow-2xs">
+              F
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center space-x-1.5">

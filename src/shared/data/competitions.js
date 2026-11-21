@@ -91,7 +91,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba membaca, memahami, dan menerangkan kitab kuning (Maksimal 3 Santri).',
     type: 'individual',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-mqk-2026.pdf'
   },
   {
     id: 'pidato',
@@ -100,7 +101,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba orasi dakwah Islamiyah (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
     type: 'language',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-khitobah-2026.pdf'
   },
   {
     id: 'mc',
@@ -109,7 +111,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba pembawa acara formal & non-formal Islami (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
     type: 'language',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-mc-2026.pdf'
   },
   {
     id: 'syarhil',
@@ -118,7 +121,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba beregu pensyarah, tilawah, dan penterjemah Al-Qur\'an (Tersedia tombol Tambah Regu).',
     type: 'regu',
-    membersPerRegu: 3
+    membersPerRegu: 3,
+    tatibUrl: '/tatib-syarhil-quran-2026.pdf'
   },
   {
     id: 'tilawah',
@@ -127,7 +131,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba seni membaca Al-Qur\'an dengan lagu dan tajwid (Maksimal 3 Santri).',
     type: 'individual',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-tilawah-2026.pdf'
   },
   {
     id: 'kaligrafi',
@@ -136,7 +141,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba seni penulisan mushaf dan hiasan dekorasi kaligrafi (Maksimal 3 Santri).',
     type: 'individual',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-kaligrafi-2026.pdf'
   },
   {
     id: 'mhq',
@@ -166,7 +172,8 @@ export const CABANG_LOMBA_LIST = [
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba cerdas cermat keagamaan & wawasan kepesantrenan beregu (Tersedia tombol Tambah Regu).',
     type: 'regu',
-    membersPerRegu: 3
+    membersPerRegu: 3,
+    tatibUrl: '/tatib-cerdas-cermat-2026.pdf'
   },
   {
     id: 'kreasi_nadzom',
@@ -174,7 +181,8 @@ export const CABANG_LOMBA_LIST = [
     fullName: 'Kreasi Nadzom',
     tingkatAllowed: ['ula', 'wustho'],
     description: 'Lomba aransemen & kreasi nadzom pesantren beregu (Format Ketua Tim & Jumlah Anggota).',
-    type: 'kreasi_nadzom'
+    type: 'kreasi_nadzom',
+    tatibUrl: '/tatib-kreasi-nadhom-2026.pdf'
   }
 ];
 
@@ -204,4 +212,80 @@ export const MASTER_WALI_KELAS = [
   { id: "ust-22", nama: "UST. AGUS MANSYUR AL-HAMID", tingkat: "wustho", kelas: "Alfiyah Awwal Putri", kontak: "" },
   { id: "ust-23", nama: "UST. IMAM QURTHUBI,S.Pd", tingkat: "wustho", kelas: "Alfiyah Tsani Putra", kontak: "" },
   { id: "ust-24", nama: "UST. IMAM QUSYAIRI", tingkat: "wustho", kelas: "Alfiyah Tsani Putri", kontak: "" }
+];
+
+// Daftar Berkas Tata Tertib Resmi Musabaqah Akhirussanah 1447 H / 2026 M (Akses Langsung Tanpa Unduh)
+export const DAFTAR_TATA_TERTIB_RESMI = [
+  {
+    id: 'tatib-mqk',
+    judul: 'Tata Tertib MQK (Musabaqoh Qiro\'atil Kutub) 2026',
+    kategori: 'Individu • Ula & Wustho',
+    deskripsi: 'Ketentuan materi fan fiqih (Safinah, Sulam Munajat, Taqrib, Fathul Qorib, Fathul Mu\'in), durasi 8 menit, dan teknis maqro\'.',
+    url: '/tatib-mqk-2026.pdf',
+    fileName: 'tatib-mqk-2026.pdf'
+  },
+  {
+    id: 'tatib-mhn',
+    judul: 'Tata Tertib Hifdzil Nadhom 2026',
+    kategori: 'Individu • Ula & Wustho',
+    deskripsi: 'Ketentuan materi nadhom (Aqidatul Awam, Tasrif Tsulasi Mujarrod, Matan Jurumiyyah, Imrithi, Alfiyyah Ibnu Malik), dan durasi 8 menit.',
+    url: '/tatib-hifdil-nadhom-2026.pdf',
+    fileName: 'tatib-hifdil-nadhom-2026.pdf'
+  },
+  {
+    id: 'tatib-ccm',
+    judul: 'Tata Tertib Cerdas Cermat Musabaqoh (CCM) 2026',
+    kategori: 'Regu (3 Santri) • Sistem Gugur',
+    deskripsi: 'Ketentuan babak penyisihan (10 soal wajib, 30 detik) dan babak rebutan (10 soal, benar +100, salah -50 poin).',
+    url: '/tatib-cerdas-cermat-2026.pdf',
+    fileName: 'tatib-cerdas-cermat-2026.pdf'
+  },
+  {
+    id: 'tatib-kaligrafi',
+    judul: 'Tata Tertib Lomba Khot / Kaligrafi 2026',
+    kategori: 'Individu • Maks. 3 Delegasi/Kelas',
+    deskripsi: 'Khot naskah bebas (Naskhi, Diwani, Tsuluts, Riq\'ah, Diwani Jali, Farisi, Kufi) dengan durasi pengerjaan maksimal 5 jam.',
+    url: '/tatib-kaligrafi-2026.pdf',
+    fileName: 'tatib-kaligrafi-2026.pdf'
+  },
+  {
+    id: 'tatib-khitobah',
+    judul: 'Tata Tertib Pidato / Khitobah 3 Bahasa 2026',
+    kategori: 'Individu • Indonesia, Arab, Inggris',
+    deskripsi: 'Ketentuan materi pidato dakwah Islamiyah bebas, durasi maksimal 10 menit dengan isyarat lampu penanda waktu.',
+    url: '/tatib-khitobah-2026.pdf',
+    fileName: 'tatib-khitobah-2026.pdf'
+  },
+  {
+    id: 'tatib-kreasi-nadhom',
+    judul: 'Tata Tertib Kreasi Nadhom Beregu 2026',
+    kategori: 'Beregu (1 Tim per Kelas Diniyah)',
+    deskripsi: 'Aransemen bernuansa islami materi Alala, Aqidatul Awam, Imrithi, atau Alfiyyah dengan kriteria vokal, penampilan, dan adab.',
+    url: '/tatib-kreasi-nadhom-2026.pdf',
+    fileName: 'tatib-kreasi-nadhom-2026.pdf'
+  },
+  {
+    id: 'tatib-mc',
+    judul: 'Tata Tertib MC (Pembawa Acara 3 Bahasa) 2026',
+    kategori: 'Individu/Kelompok • Durasi 7 Menit',
+    deskripsi: 'Membawakan susunan acara formal & non-formal keagamaan dengan durasi maksimal 7 menit.',
+    url: '/tatib-mc-2026.pdf',
+    fileName: 'tatib-mc-2026.pdf'
+  },
+  {
+    id: 'tatib-syarhil-quran',
+    judul: 'Tata Tertib Syarhil Qur\'an (MSQ) 2026',
+    kategori: 'Beregu (Pensyarah, Tilawah, Terjemah)',
+    deskripsi: 'Ketentuan penyampaian pensyarahan Al-Qur\'an beregu dengan durasi maksimal 10 menit.',
+    url: '/tatib-syarhil-quran-2026.pdf',
+    fileName: 'tatib-syarhil-quran-2026.pdf'
+  },
+  {
+    id: 'tatib-tilawah',
+    judul: 'Tata Tertib Tilawah Al-Qur\'an 2026',
+    kategori: 'Individu • Bin-Nadzor',
+    deskripsi: 'Seni tilawatil Qur\'an maqro bebas dengan durasi maksimal 7 menit bertempat di panggung utama musabaqah.',
+    url: '/tatib-tilawah-2026.pdf',
+    fileName: 'tatib-tilawah-2026.pdf'
+  }
 ];
