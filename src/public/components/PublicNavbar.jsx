@@ -35,7 +35,13 @@ export default function PublicNavbar() {
       
       {/* Top Bar Kelembagaan Resmi - Running Text Lengkap & Elegan */}
       <div className="bg-[#04382B] text-white text-xs sm:text-[13px] font-semibold py-2 px-2 border-b border-[#03291F] overflow-hidden select-none">
-        <div className="max-w-7xl mx-auto overflow-hidden whitespace-nowrap relative flex items-center">
+        <div 
+          className="max-w-7xl mx-auto overflow-hidden whitespace-nowrap relative flex items-center"
+          style={{
+            maskImage: 'linear-gradient(to right, transparent, black 3%, black 97%, transparent)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent, black 3%, black 97%, transparent)'
+          }}
+        >
           <div className="animate-marquee font-semibold tracking-wide text-emerald-100 flex items-center shrink-0">
             <div className="flex items-center space-x-2.5 pr-12">
               <span className="font-bold text-white text-xs sm:text-[13px]">Yayasan Pondok Pesantren Salafiyah Al-Falah Putak</span>

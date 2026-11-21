@@ -1026,7 +1026,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   const activeBranchObj = CABANG_LOMBA_LIST.find(c => c.id === activeBranchId) || CABANG_LOMBA_LIST[0];
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-3 sm:py-6 select-none font-sans space-y-4">
+    <div className="max-w-3xl mx-auto px-3.5 sm:px-6 pt-2 sm:pt-4 pb-20 sm:pb-28 select-none font-sans space-y-4">
       
       {/* ========================================================= */}
       {/* STEP INDICATOR HEADER (MODERN SEGMENTED PILL BAR)         */}
@@ -1046,7 +1046,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 ? 'bg-white text-[#075B45] shadow-xs font-bold'
                 : kelasDiniyah
                 ? 'text-[#075B45] hover:bg-white/60 font-semibold'
-                : 'text-slate-400 hover:text-slate-600 font-medium'
+                : 'text-slate-600 hover:text-slate-800 font-semibold'
             }`}
           >
             <div className={`w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
@@ -1054,12 +1054,12 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 ? 'bg-[#075B45] text-white'
                 : kelasDiniyah
                 ? 'bg-emerald-100 text-[#075B45]'
-                : 'bg-slate-200 text-slate-500'
+                : 'bg-slate-200/90 text-slate-700'
             }`}>
               {kelasDiniyah ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
             </div>
-            <span className="text-xs truncate">
-              <span className="hidden sm:inline">Identitas </span>Kelas
+            <span className="text-xs font-bold truncate">
+              Identitas
             </span>
           </button>
 
@@ -1075,7 +1075,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             disabled={!kelasDiniyah}
             className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               !kelasDiniyah
-                ? 'cursor-not-allowed text-slate-500 font-semibold'
+                ? 'cursor-not-allowed text-slate-400 font-semibold'
                 : 'cursor-pointer'
             } ${
               formStage === 'hub' || formStage === 'edit_branch'
@@ -1094,7 +1094,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             }`}>
               {allDelegates.length > 0 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
             </div>
-            <span className="text-xs truncate">
+            <span className="text-xs font-bold truncate">
               Cabang {totalFilledBranches > 0 && <span className="text-[10px] font-black px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#075B45]">({totalFilledBranches})</span>}
             </span>
           </button>
@@ -1111,7 +1111,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             disabled={allDelegates.length === 0}
             className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               allDelegates.length === 0
-                ? 'cursor-not-allowed text-slate-500 font-semibold'
+                ? 'cursor-not-allowed text-slate-400 font-semibold'
                 : 'cursor-pointer'
             } ${
               formStage === 'review'
@@ -1126,8 +1126,8 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             }`}>
               3
             </div>
-            <span className="text-xs truncate">
-              <span className="hidden sm:inline">Pratinjau & </span>Kirim
+            <span className="text-xs font-bold truncate">
+              Kirim
             </span>
           </button>
 
@@ -1174,11 +1174,11 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
                 <UserCheck className="w-5 h-5 text-[#D9B45B]" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Tahap 1: Identitas Wali Kelas & Kelas Diniyah
                 </h1>
-                <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
+                <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed mt-0.5">
                   Pilih nama Ustadz / Ustadzah pengampu kelas untuk memastikan delegasi terhubung resmi
                 </p>
               </div>
@@ -1189,13 +1189,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             
             {/* Input Pencarian Nama Wali Kelas */}
             <div className="space-y-1.5" ref={waliDropdownRef}>
-              <div className="flex items-center justify-between">
-                <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
-                  Nama Ustadz / Ustadzah Wali Kelas <span className="text-rose-500">*</span>
+              <div className="flex flex-wrap items-center justify-between gap-1.5 pb-0.5">
+                <label className="text-xs sm:text-[13px] font-bold text-slate-800 inline-flex items-center gap-1">
+                  <span>Nama Ustadz / Ustadzah</span>
+                  <span className="whitespace-nowrap">Wali Kelas <span className="text-rose-500 font-bold">*</span></span>
                 </label>
                 {suggestedWali.length > 0 && (
-                  <span className="text-[10.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                    {query.length > 0 ? `${suggestedWali.length} guru ditemukan` : `${suggestedWali.length} asatidz terdaftar`}
+                  <span className="text-[10px] sm:text-[10.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                    {query.length > 0 ? `${suggestedWali.length} guru` : `${suggestedWali.length} asatidz terdaftar`}
                   </span>
                 )}
               </div>
@@ -1207,7 +1208,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <input
                   ref={waliInputRef}
                   type="text"
-                  placeholder="Ketik nama Ustadz / Ustadzah (contoh: Danil, Tri, Sofiana)..."
+                  placeholder="Cari atau ketik nama Wali Kelas..."
                   value={waliInput}
                   onChange={(e) => {
                     setWaliInput(e.target.value);
@@ -1318,8 +1319,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
             {/* Input Nomor WhatsApp Wali Kelas */}
             <div className="space-y-1.5">
-              <label className="text-xs sm:text-[13px] font-bold text-slate-800 block">
-                Nomor WhatsApp Wali Kelas <span className="text-rose-500">*</span>
+              <label className="text-xs sm:text-[13px] font-bold text-slate-800 inline-flex items-center gap-1">
+                <span>Nomor WhatsApp</span>
+                <span className="whitespace-nowrap">Wali Kelas <span className="text-rose-500 font-bold">*</span></span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -1327,7 +1329,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 </div>
                 <input
                   type="tel"
-                  placeholder="Contoh: 082298090464 atau 628..."
+                  placeholder="Contoh: 081234567890"
                   value={nomorWA}
                   onChange={(e) => setNomorWA(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs placeholder:text-slate-400 min-h-[46px]"
