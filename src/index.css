@@ -10,9 +10,16 @@
   --alfalah-accent: #D9B45B;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 html, body {
   font-variant-ligatures: none;
   font-feature-settings: "liga" 0, "clig" 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Fallback & Custom Utility Classes untuk memastikan warna selalu keluar */

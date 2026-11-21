@@ -542,7 +542,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
           </div>
           <span className="text-[10px] sm:text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#075B45] border border-emerald-200 shrink-0">
-            9 Dokumen PDF
+            {DAFTAR_TATA_TERTIB_RESMI.length} Dokumen PDF
           </span>
         </div>
 

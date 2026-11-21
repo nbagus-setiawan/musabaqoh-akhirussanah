@@ -91,11 +91,21 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
   // Daftar seluruh kombinasi cabang lomba & tingkat yang dibuka
   const daftarKompetisi = useMemo(() => {
     const list = [];
+    const juaraMap = {};
+    if (Array.isArray(juaraData)) {
+      juaraData.forEach(item => {
+        const key = item.key || `${item.cabangLomba}__${item.tingkat}`;
+        juaraMap[key] = item;
+      });
+    } else if (juaraData && typeof juaraData === 'object') {
+      Object.assign(juaraMap, juaraData);
+    }
+
     (CABANG_LOMBA_LIST || []).forEach(c => {
       (c.tingkatAllowed || ['ula', 'wustho', 'ulya']).forEach(tId => {
         if (tId === 'mhq_juz') return;
         const key = `${c.name}__${tId}`;
-        const existing = juaraData[key];
+        const existing = juaraMap[key];
         list.push({
           key,
           cabangName: c.name,
@@ -109,9 +119,77 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
     return list;
   }, [juaraData]);
 
-  // Hitung Klasemen Juara Umum Real-Time
+  // Hitung Klasemen Juara Umum Real-Time (Aman dari TypeError)
   const rawKlasemen = useMemo(() => {
-    return calculateKlasemenJuara(filterTingkat);
+    const sub = getSubKelasByTingkat() || {};
+    const classesList = [];
+
+    // Ambil kelas Ula
+    if (filterTingkat === 'ALL' || filterTingkat === 'ula') {
+      (sub.ula || []).forEach(kName => {
+        classesList.push({
+          namaKelas: kName,
+          tingkat: 'ula',
+          gender: getGenderFromKelas(kName)
+        });
+      });
+    }
+    // Ambil kelas Wustho
+    if (filterTingkat === 'ALL' || filterTingkat === 'wustho') {
+      (sub.wustho || []).forEach(kName => {
+        classesList.push({
+          namaKelas: kName,
+          tingkat: 'wustho',
+          gender: getGenderFromKelas(kName)
+        });
+      });
+    }
+
+    // Inisialisasi map perolehan poin per kelas
+    const pointsMap = {};
+    classesList.forEach(c => {
+      pointsMap[c.namaKelas] = {
+        ...c,
+        totalPoin: 0,
+        juara1Count: 0,
+        juara2Count: 0,
+        juara3Count: 0
+      };
+    });
+
+    const processJuaraEntry = (entry) => {
+      if (!entry) return;
+      if (entry.juara1?.kelas && pointsMap[entry.juara1.kelas]) {
+        pointsMap[entry.juara1.kelas].totalPoin += 5;
+        pointsMap[entry.juara1.kelas].juara1Count += 1;
+      }
+      if (entry.juara2?.kelas && pointsMap[entry.juara2.kelas]) {
+        pointsMap[entry.juara2.kelas].totalPoin += 3;
+        pointsMap[entry.juara2.kelas].juara2Count += 1;
+      }
+      if (entry.juara3?.kelas && pointsMap[entry.juara3.kelas]) {
+        pointsMap[entry.juara3.kelas].totalPoin += 1;
+        pointsMap[entry.juara3.kelas].juara3Count += 1;
+      }
+    };
+
+    if (Array.isArray(juaraData)) {
+      juaraData.forEach(processJuaraEntry);
+    } else if (juaraData && typeof juaraData === 'object') {
+      Object.values(juaraData).forEach(processJuaraEntry);
+    }
+
+    const sorted = Object.values(pointsMap).sort((a, b) => {
+      if (b.totalPoin !== a.totalPoin) return b.totalPoin - a.totalPoin;
+      if (b.juara1Count !== a.juara1Count) return b.juara1Count - a.juara1Count;
+      if (b.juara2Count !== a.juara2Count) return b.juara2Count - a.juara2Count;
+      return a.namaKelas.localeCompare(b.namaKelas);
+    });
+
+    return sorted.map((item, idx) => ({
+      ...item,
+      peringkat: idx + 1
+    }));
   }, [juaraData, filterTingkat]);
 
   // Filter Klasemen berdasarkan Gender dan Pencarian

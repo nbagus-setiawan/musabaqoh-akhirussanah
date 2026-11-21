@@ -844,13 +844,15 @@ export const deleteJuara = async (idJuara) => {
 
 export const calculateKlasemenJuara = (juaraList = []) => {
   const totalPoinByKelas = {};
-  juaraList.forEach(item => {
-    const k = item.kelasDiniyah || item.Kelas_Diniyah || '';
-    const p = parseInt(item.poin, 10) || 0;
-    if (k) {
-      totalPoinByKelas[k] = (totalPoinByKelas[k] || 0) + p;
-    }
-  });
+  if (Array.isArray(juaraList)) {
+    juaraList.forEach(item => {
+      const k = item?.kelasDiniyah || item?.Kelas_Diniyah || '';
+      const p = parseInt(item?.poin, 10) || 0;
+      if (k) {
+        totalPoinByKelas[k] = (totalPoinByKelas[k] || 0) + p;
+      }
+    });
+  }
   return totalPoinByKelas;
 };
 

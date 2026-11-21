@@ -153,7 +153,8 @@ export const CABANG_LOMBA_LIST = [
     juzCategories: PILIHAN_JUZ_MHQ,
     description: 'Lomba hafalan Al-Qur\'an pilihan 5, 10, 15, 20, 25, dan 30 Juz (Maksimal 3 Santri).',
     type: 'mhq',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-mhq-2026.pdf'
   },
   {
     id: 'adzan',
@@ -163,7 +164,8 @@ export const CABANG_LOMBA_LIST = [
     genderExclusive: 'L',
     description: 'Lomba lantunan adzan subuh dan umum (Khusus santri putra - Maksimal 3 Santri).',
     type: 'individual',
-    maxSantri: 3
+    maxSantri: 3,
+    tatibUrl: '/tatib-adzan-2026.pdf'
   },
   {
     id: 'ccm',
@@ -287,5 +289,21 @@ export const DAFTAR_TATA_TERTIB_RESMI = [
     deskripsi: 'Seni tilawatil Qur\'an maqro bebas dengan durasi maksimal 7 menit bertempat di panggung utama musabaqah.',
     url: '/tatib-tilawah-2026.pdf',
     fileName: 'tatib-tilawah-2026.pdf'
+  },
+  {
+    id: 'tatib-adzan',
+    judul: 'Tata Tertib Lomba Adzan 2026',
+    kategori: 'Individu • Khusus Putra (Maks. 3 Santri)',
+    deskripsi: 'Ketentuan materi lafadz adzan lengkap dengan lagu bebas, bertempat di panggung utama musabaqah dengan durasi maksimal 5 menit.',
+    url: '/tatib-adzan-2026.pdf',
+    fileName: 'tatib-adzan-2026.pdf'
+  },
+  {
+    id: 'tatib-mhq',
+    judul: 'Tata Tertib MHQ (Musabaqoh Hifdzil Qur\'an) 2026',
+    kategori: 'Individu • 6 Kategori Juz',
+    deskripsi: 'Ketentuan 6 kategori hafalan (5, 10, 15, 20, 25, dan 30 Juz) dengan kriteria penilaian tahfidz, fashohah, dan adab.',
+    url: '/tatib-mhq-2026.pdf',
+    fileName: 'tatib-mhq-2026.pdf'
   }
 ];

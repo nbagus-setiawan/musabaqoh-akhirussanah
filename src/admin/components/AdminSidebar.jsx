@@ -122,7 +122,7 @@ export default function AdminSidebar({
         SIDEBAR PANITIA - Kaya Konten, Elegan, Berwibawa & Tidak Polosan
         Terkunci secara fixed di viewport (top-0, bottom-0, left-0, w-64)
       */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen flex flex-col shrink-0 no-print transition-transform duration-300 ease-in-out select-none bg-white border-r border-slate-200/90 shadow-sm text-slate-800 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen h-[100dvh] max-h-[100dvh] flex flex-col shrink-0 no-print transition-transform duration-300 ease-in-out select-none bg-white border-r border-slate-200/90 shadow-sm text-slate-800 ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         
