@@ -12,8 +12,10 @@ export const getBase64Image = async (url) => {
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
       } catch (e) {
         resolve(null);
       }
@@ -23,7 +25,9 @@ export const getBase64Image = async (url) => {
 };
 
 /**
- * Standard KOP Resmi YPPS Pondok Pesantren Salafiyah Al-Falah Putak
+ * Standard KOP Resmi Panitia Musabaqoh Akhirussanah Pondok Pesantren Salafiyah Al-Falah Putak
+ * Banner resmi dengan kaligrafi Arab (مسابقة أخير السنة), logo kubah musabaqoh, logo pesantren,
+ * identitas panitia, alamat sekretariat, dan ornamen hijau pembatas.
  * Digunakan secara 100% IDENTIK pada:
  * 1. Unduh PDF Data Santri (AdminSantri.jsx)
  * 2. Unduh Bukti Pendaftaran Delegasi (BuktiPendaftaranPage.jsx)
@@ -36,51 +40,26 @@ export const getBase64Image = async (url) => {
 export const drawOfficialKop = async (doc, leftMargin = 14.5, rightMargin = 14.5) => {
   const pageWidth = 210;
   const rightEdge = pageWidth - rightMargin; // 195.5 mm
+  const kopWidth = rightEdge - leftMargin; // 181.0 mm
+  const kopHeight = kopWidth * (427 / 2249); // ~34.36 mm
+  const topY = 8.5; // Jarak tepi atas kertas 8.5 mm
 
-  // 1. Logo Resmi Pesantren Al-Falah Putak (Ukuran & Posisi pas di samping teks KOP)
-  const logoBase64 = await getBase64Image('/logo.png');
-  if (logoBase64) {
+  // Banner Resmi Musabaqoh Akhirussanah 1447 H / 2026 M
+  const kopBase64 = await getBase64Image('/kop-resmi.jpg');
+  if (kopBase64) {
     try {
-      doc.addImage(logoBase64, 'PNG', 15.0, 10.5, 26, 23.8);
+      doc.addImage(kopBase64, 'JPEG', leftMargin, topY, kopWidth, kopHeight);
     } catch (e) {
-      console.warn('Gagal render logo di PDF:', e);
+      console.warn('Gagal render KOP banner di PDF:', e);
     }
   }
-
-  // 2. Teks KOP Surat Resmi (Titik tengah X = 115 mm)
-  const kopCenterX = 115;
-
-  // Line 1: Yayasan (Bold, 11.5 pt)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11.5);
-  doc.setTextColor(0, 0, 0);
-  doc.text('YAYASAN PONDOK PESANTREN SALAFIYAH AL-FALAH PUTAK', kopCenterX, 15.5, { align: 'center' });
-
-  // Line 2: Panitia Musabaqoh (Bold, 14 pt)
-  doc.setFontSize(14);
-  doc.text('PANITIA MUSABAQOH AKHIRUSSANAH', kopCenterX, 22.0, { align: 'center' });
-
-  // Line 3: Alamat (Normal, 10 pt)
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text('Dusun II Ds. Putak Kec. Gelumbang Kab. Muara Enim Sumatera Selatan Kode Pos 31171', kopCenterX, 27.5, { align: 'center' });
-
-  // Line 4: Kontak (Normal, 9.5 pt)
-  doc.setFontSize(9.5);
-  doc.text('Telp. : 082118702717 | E-mail : ponpesalfalahputak@gmail.com', kopCenterX, 32.5, { align: 'center' });
-
-  // 3. Garis Ganda Pembatas KOP (Tebal atas 0.8 mm, tipis bawah 0.25 mm)
-  doc.setLineWidth(0.8);
-  doc.setDrawColor(0, 0, 0);
-  doc.line(leftMargin, 36.8, rightEdge, 36.8);
-
-  doc.setLineWidth(0.25);
-  doc.line(leftMargin, 38.0, rightEdge, 38.0);
 
   return {
     leftMargin,
     rightMargin,
     rightEdge,
-    kopBottomY: 38.0
+    kopWidth,
+    kopHeight,
+    kopBottomY: topY + kopHeight // ~42.86 mm
   };
 };

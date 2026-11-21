@@ -698,7 +698,7 @@ export default function AdminSantri({
       // 4. Judul Dokumen & Keterangan Tingkat & Cabang (Center x = 105 mm)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text('DAFTAR PESERTA MUSABAQOH AKHIRUSSANAH 1447 H / 2026 M', 105, 45.5, { align: 'center' });
+      doc.text('DAFTAR PESERTA MUSABAQOH AKHIRUSSANAH 1447 H / 2026 M', 105, 48.5, { align: 'center' });
 
       // Format nama tingkat: tanpa pengulangan kata 'Tingkat' (satu penulisan saja)
       const namaTingkatLabel = (!selectedTingkat || selectedTingkat === 'ALL')
@@ -715,7 +715,7 @@ export default function AdminSantri({
       if (doc.getTextWidth(subtitleText) > 170) {
         doc.setFontSize(8.5);
       }
-      doc.text(subtitleText, 105, 51.5, { align: 'center' });
+      doc.text(subtitleText, 105, 54.0, { align: 'center' });
 
       // 5. Tabel Peserta (Garis tabel sedikit diperjelas / lebih tegas)
       const tableRows = targetSantri.map((item, idx) => [
@@ -726,7 +726,7 @@ export default function AdminSantri({
       ]);
 
       autoTable(doc, {
-        startY: 56.5,
+        startY: 59.0,
         margin: { left: leftMargin, right: rightMargin },
         head: [['NO.', 'NO URUT', 'KELAS', 'NAMA SANTRI']],
         body: tableRows,

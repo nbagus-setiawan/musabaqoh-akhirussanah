@@ -143,10 +143,10 @@ export default function BuktiPendaftaranPage() {
       // 4. Judul Dokumen & Keterangan Kelas
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11.5);
-      doc.text('BUKTI PENDAFTARAN DELEGASI KELAS DINIYAH', 105, 45.5, { align: 'center' });
+      doc.text('BUKTI PENDAFTARAN DELEGASI KELAS DINIYAH', 105, 48.5, { align: 'center' });
 
       doc.setFontSize(9.5);
-      doc.text('MUSABAQAH AKHIRUSSANAH 1447 H / 2026 M', 105, 50.5, { align: 'center' });
+      doc.text('MUSABAQAH AKHIRUSSANAH 1447 H / 2026 M', 105, 53.5, { align: 'center' });
 
       const cleanKelas = (meta.kelasDiniyah || '-').toUpperCase();
       const cleanTingkat = formatTingkat(meta.tingkat).toUpperCase();
@@ -155,7 +155,7 @@ export default function BuktiPendaftaranPage() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       const subtitleText = `KELAS : ${cleanKelas}   |   JENJANG : ${cleanTingkat}   |   WALI KELAS : ${cleanWali}`;
-      doc.text(subtitleText, 105, 56.5, { align: 'center' });
+      doc.text(subtitleText, 105, 58.5, { align: 'center' });
 
       // 5. Tabel Delegasi Santri (jsPDF AutoTable)
       const tableRows = entries.map((item, idx) => [
@@ -167,7 +167,7 @@ export default function BuktiPendaftaranPage() {
       ]);
 
       autoTable(doc, {
-        startY: 61,
+        startY: 63.5,
         margin: { left: leftMargin, right: rightMargin },
         head: [['NO.', 'ID SANTRI', 'NAMA LENGKAP SANTRI', 'CABANG LOMBA', 'KETERANGAN']],
         body: tableRows,
