@@ -75,9 +75,12 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   const waliDropdownRef = useRef(null);
   const waliInputRef = useRef(null);
 
-  // DATA DELEGASI 10 CABANG LOMBA
+  // DATA DELEGASI 11 CABANG LOMBA
   // 1. MQK (maks 3 santri)
   const [mqkSantri, setMqkSantri] = useState(['', '', '']);
+
+  // MHN (Musabaqoh Hifdzil Nadzom - maks 3 santri)
+  const [mhnSantri, setMhnSantri] = useState(['', '', '']);
 
   // 2. Pidato (maks 3 santri + pilihan 3 bahasa)
   const [pidatoSantri, setPidatoSantri] = useState([
@@ -169,6 +172,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         if (d.jenisKelamin) setJenisKelamin(d.jenisKelamin);
         if (d.nomorWA) setNomorWA(d.nomorWA);
         if (d.mqkSantri) setMqkSantri(d.mqkSantri);
+        if (d.mhnSantri) setMhnSantri(d.mhnSantri);
         if (d.pidatoSantri) setPidatoSantri(d.pidatoSantri);
         if (d.mcSantri) setMcSantri(d.mcSantri);
         if (d.syarhilRegu) setSyarhilRegu(d.syarhilRegu);
@@ -198,6 +202,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         jenisKelamin,
         nomorWA,
         mqkSantri,
+        mhnSantri,
         pidatoSantri,
         mcSantri,
         syarhilRegu,
@@ -214,7 +219,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     } catch (e) {}
   }, [
     waliInput, selectedWaliId, tingkat, tingkatName, kelasDiniyah, jenisKelamin, nomorWA,
-    mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, kaligrafiSantri,
+    mqkSantri, mhnSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, kaligrafiSantri,
     mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, formStage, activeBranchId
   ]);
 
@@ -282,6 +287,21 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         list.push({
           cabangId: 'mqk',
           cabangLomba: 'MQK',
+          namaSantri: nama.trim().toUpperCase(),
+          kelasDiniyah: kelasDiniyah,
+          kategoriDetail: kelasDiniyah,
+          detailCabang: 'Individu',
+          label: `Santri ${idx + 1}`
+        });
+      }
+    });
+
+    // MHN (Musabaqoh Hifdzil Nadzom)
+    mhnSantri.forEach((nama, idx) => {
+      if (nama.trim()) {
+        list.push({
+          cabangId: 'mhn',
+          cabangLomba: 'MHN',
           namaSantri: nama.trim().toUpperCase(),
           kelasDiniyah: kelasDiniyah,
           kategoriDetail: kelasDiniyah,
@@ -485,7 +505,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
     return list;
   }, [
-    mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
+    mqkSantri, mhnSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
     kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
     kelasDiniyah, isPutriClass
   ]);
@@ -538,6 +558,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       switch (c.id) {
         case 'mqk':
           names = mqkSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
+          count = names.length;
+          break;
+        case 'mhn':
+          names = mhnSantri.filter(n => n.trim()).map(n => n.trim().toUpperCase());
           count = names.length;
           break;
         case 'pidato':
@@ -611,11 +635,11 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         names,
         isEligible,
         isFilled: count > 0,
-        isComplete: count >= (c.type === 'regu' ? 3 : maxLimit)
+        isComplete: count >= maxLimit
       };
     });
   }, [
-    mqkSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
+    mqkSantri, mhnSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
     kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
     isPutriClass
   ]);
@@ -644,6 +668,17 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             : 'Wajib mengisi minimal 1 nama santri delegasi MQK, atau klik "Lewati Cabang" jika kelas tidak mengirim santri.'
         };
       }
+      case 'mhn': {
+        const count = mhnSantri.filter(s => s.trim().length > 0).length;
+        return {
+          isFilled: count > 0,
+          isPartial: false,
+          count,
+          message: count > 0
+            ? `${count} santri terdaftar untuk cabang MHN (Hifdzil Nadzom).`
+            : 'Wajib mengisi minimal 1 nama santri delegasi MHN, atau klik "Lewati Cabang" jika kelas tidak mengirim santri.'
+        };
+      }
       case 'pidato': {
         const count = pidatoSantri.filter(s => s.nama.trim().length > 0).length;
         return {
@@ -667,36 +702,51 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         };
       }
       case 'syarhil': {
-        const regu = syarhilRegu[0] || { pensyarah: '', tilawah: '', terjemah: '' };
-        const p = regu.pensyarah.trim().length > 0;
-        const t = regu.tilawah.trim().length > 0;
-        const j = regu.terjemah.trim().length > 0;
-        const filledFields = [p, t, j].filter(Boolean).length;
-        if (filledFields === 3) {
+        let totalMembers = 0;
+        let incompleteReguIndex = -1;
+        let incompleteMissing = [];
+
+        syarhilRegu.forEach((regu, idx) => {
+          const p = regu.pensyarah.trim().length > 0;
+          const t = regu.tilawah.trim().length > 0;
+          const j = regu.terjemah.trim().length > 0;
+          const filled = [p, t, j].filter(Boolean).length;
+          totalMembers += filled;
+          if (filled > 0 && filled < 3 && incompleteReguIndex === -1) {
+            incompleteReguIndex = idx + 1;
+            if (!p) incompleteMissing.push('Pensyarah');
+            if (!t) incompleteMissing.push('Tilawah');
+            if (!j) incompleteMissing.push('Terjemah');
+          } else if (idx > 0 && filled === 0 && incompleteReguIndex === -1 && totalMembers > 0) {
+            incompleteReguIndex = idx + 1;
+            incompleteMissing.push('Pensyarah', 'Tilawah', 'Terjemah');
+          }
+        });
+
+        if (totalMembers === 0) {
           return {
-            isFilled: true,
+            isFilled: false,
             isPartial: false,
-            count: 3,
-            message: 'Susunan Regu Syarhil Qur\'an (3 anggota) sudah lengkap.'
+            count: 0,
+            message: 'Wajib mengisi 3 anggota Regu Syarhil (Pensyarah, Tilawah, Terjemah), atau klik "Lewati Cabang".'
           };
         }
-        if (filledFields > 0) {
-          const missing = [];
-          if (!p) missing.push('Pensyarah');
-          if (!t) missing.push('Tilawah');
-          if (!j) missing.push('Terjemah');
+
+        if (incompleteReguIndex !== -1) {
           return {
             isFilled: false,
             isPartial: true,
-            count: filledFields,
-            message: `Regu Syarhil belum lengkap (${filledFields} dari 3). Kurang: ${missing.join(', ')}.`
+            count: totalMembers,
+            message: `Regu ${incompleteReguIndex} Syarhil belum lengkap (${3 - incompleteMissing.length} dari 3). Kurang: ${incompleteMissing.join(', ')}.`
           };
         }
+
+        const completeRegus = syarhilRegu.filter(r => r.pensyarah.trim() && r.tilawah.trim() && r.terjemah.trim()).length;
         return {
-          isFilled: false,
+          isFilled: true,
           isPartial: false,
-          count: 0,
-          message: 'Wajib mengisi 3 anggota Regu Syarhil (Pensyarah, Tilawah, Terjemah), atau klik "Lewati Cabang".'
+          count: totalMembers,
+          message: `Susunan Regu Syarhil Qur'an (${completeRegus} regu, ${totalMembers} anggota) sudah lengkap.`
         };
       }
       case 'tilawah': {
@@ -752,24 +802,26 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         };
       }
       case 'ccm': {
-        const regu1 = ccmRegu[0] || { anggota1: '', anggota2: '', anggota3: '' };
-        const a1 = regu1.anggota1.trim().length > 0;
-        const a2 = regu1.anggota2.trim().length > 0;
-        const a3 = regu1.anggota3.trim().length > 0;
-        const r1Count = [a1, a2, a3].filter(Boolean).length;
+        let totalMembers = 0;
+        let incompleteReguIndex = -1;
+        let incompleteFilled = 0;
 
-        const hasRegu2 = ccmRegu.length > 1;
-        let r2Count = 0;
-        if (hasRegu2) {
-          const regu2 = ccmRegu[1];
-          r2Count = [
-            regu2.anggota1.trim().length > 0,
-            regu2.anggota2.trim().length > 0,
-            regu2.anggota3.trim().length > 0
-          ].filter(Boolean).length;
-        }
+        ccmRegu.forEach((regu, idx) => {
+          const a1 = regu.anggota1.trim().length > 0;
+          const a2 = regu.anggota2.trim().length > 0;
+          const a3 = regu.anggota3.trim().length > 0;
+          const filled = [a1, a2, a3].filter(Boolean).length;
+          totalMembers += filled;
+          if (filled > 0 && filled < 3 && incompleteReguIndex === -1) {
+            incompleteReguIndex = idx + 1;
+            incompleteFilled = filled;
+          } else if (idx > 0 && filled === 0 && incompleteReguIndex === -1 && totalMembers > 0) {
+            incompleteReguIndex = idx + 1;
+            incompleteFilled = 0;
+          }
+        });
 
-        if (r1Count === 0 && (!hasRegu2 || r2Count === 0)) {
+        if (totalMembers === 0) {
           return {
             isFilled: false,
             isPartial: false,
@@ -778,30 +830,21 @@ export default function RegistrationForm({ onSubmitSuccess }) {
           };
         }
 
-        if (r1Count > 0 && r1Count < 3) {
+        if (incompleteReguIndex !== -1) {
           return {
             isFilled: false,
             isPartial: true,
-            count: r1Count,
-            message: `Regu 1 CCM belum lengkap (${r1Count} dari 3 anggota). Wajib diisi 3 orang.`
+            count: totalMembers,
+            message: `Regu ${incompleteReguIndex} CCM belum lengkap (${incompleteFilled} dari 3 anggota). Wajib diisi 3 orang atau hapus regu ini.`
           };
         }
 
-        if (hasRegu2 && r2Count > 0 && r2Count < 3) {
-          return {
-            isFilled: false,
-            isPartial: true,
-            count: r1Count + r2Count,
-            message: `Regu 2 CCM belum lengkap (${r2Count} dari 3 anggota). Wajib diisi 3 orang.`
-          };
-        }
-
-        const totalRegu = (r1Count === 3 ? 1 : 0) + (r2Count === 3 ? 1 : 0);
+        const completeRegus = ccmRegu.filter(r => r.anggota1.trim() && r.anggota2.trim() && r.anggota3.trim()).length;
         return {
           isFilled: true,
           isPartial: false,
-          count: r1Count + r2Count,
-          message: `Regu CCM (${totalRegu} regu) sudah terisi lengkap.`
+          count: totalMembers,
+          message: `Regu CCM (${completeRegus} regu, ${totalMembers} anggota) sudah terisi lengkap.`
         };
       }
       case 'kreasi_nadzom': {
@@ -819,7 +862,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         return { isFilled: true, isPartial: false, count: 0, message: '' };
     }
   }, [
-    activeBranchId, mqkSantri, pidatoSantri, mcSantri, syarhilRegu,
+    activeBranchId, mqkSantri, mhnSantri, pidatoSantri, mcSantri, syarhilRegu,
     tilawahSantri, kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu,
     kreasiNadzom, isPutriClass
   ]);
@@ -917,6 +960,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   const handleClearCurrentBranch = () => {
     switch (activeBranchId) {
       case 'mqk': setMqkSantri(['', '', '']); break;
+      case 'mhn': setMhnSantri(['', '', '']); break;
       case 'pidato':
         setPidatoSantri([
           { nama: '', bahasa: 'Bahasa Indonesia' },
@@ -1400,7 +1444,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-xs sm:text-sm font-black text-slate-900">
-                  {totalFilledBranches} dari 10 Cabang Terisi
+                  {totalFilledBranches} dari {eligibleBranches.length} Cabang Terisi
                 </span>
                 <span className="text-[11px] font-bold text-[#075B45] bg-emerald-100 px-2.5 py-0.5 rounded-full">
                   {allDelegates.length} Total Delegasi
@@ -1629,6 +1673,41 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </div>
             )}
 
+            {/* MHN (Musabaqoh Hifdzil Nadzom - Individu 3 Slot) */}
+            {activeBranchId === 'mhn' && (
+              <div className="space-y-3.5">
+                {[0, 1, 2].map((idx) => {
+                  const notice = getStudentCrossNotice(mhnSantri[idx], 'MHN');
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-800 block">
+                        Santri Delegasi #{idx + 1} {idx === 0 ? '(Utama)' : '(Cadangan / Delegasi Tambahan)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Ketik nama lengkap santri ${idx + 1}...`}
+                        value={mhnSantri[idx]}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setMhnSantri(prev => {
+                            const arr = [...prev];
+                            arr[idx] = val;
+                            return arr;
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                      />
+                      {notice && (
+                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {notice.text}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 2. PIDATO (3 Bahasa) */}
             {activeBranchId === 'pidato' && (
               <div className="space-y-3.5">
@@ -1809,14 +1888,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   </div>
                 ))}
 
-                {syarhilRegu.length < 2 && (
+                {syarhilRegu.length < 3 && (
                   <button
                     type="button"
                     onClick={() => setSyarhilRegu(prev => [...prev, { namaRegu: `Regu ${prev.length + 1}`, pensyarah: '', tilawah: '', terjemah: '' }])}
                     className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#075B45]/40 text-[#075B45] font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Tambah Regu Syarhil 2</span>
+                    <span>Tambah Regu Syarhil {syarhilRegu.length + 1} (Maks. 3 Regu)</span>
                   </button>
                 )}
               </div>
@@ -2056,14 +2135,14 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   </div>
                 ))}
 
-                {ccmRegu.length < 2 && (
+                {ccmRegu.length < 3 && (
                   <button
                     type="button"
                     onClick={() => setCcmRegu(prev => [...prev, { namaRegu: `Regu ${prev.length + 1}`, anggota1: '', anggota2: '', anggota3: '' }])}
                     className="w-full py-2.5 rounded-xl border-2 border-dashed border-[#075B45]/40 text-[#075B45] font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Tambah Regu CCM 2</span>
+                    <span>Tambah Regu CCM {ccmRegu.length + 1} (Maks. 3 Regu)</span>
                   </button>
                 )}
               </div>

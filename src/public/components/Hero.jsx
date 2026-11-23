@@ -161,7 +161,7 @@ export default function Hero({ onGoToForm, onGoToGuide, onGoToStatus }) {
                       {/* 2 Kolom Info Ringkas */}
                       <div className="grid grid-cols-2 gap-1.5 text-left text-[10px] text-emerald-100">
                         <div className="p-1.5 rounded bg-black/20 border border-white/10">
-                          <span className="font-bold text-white block">10 Cabang</span>
+                          <span className="font-bold text-white block">11 Cabang</span>
                           <span className="text-[9px] text-emerald-200">Ula, Wustho, Ulya</span>
                         </div>
                         <div className="p-1.5 rounded bg-black/20 border border-white/10">
@@ -208,7 +208,7 @@ export default function Hero({ onGoToForm, onGoToGuide, onGoToStatus }) {
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EAF4F0] text-[#075B45] flex items-center justify-center font-bold">
                 <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">10 Cabang Lomba</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">11 Cabang Lomba</h3>
               <p className="text-[11px] text-slate-500 leading-relaxed">
                 Tersedia untuk jenjang Ula, Wustho, dan Ulya.
               </p>

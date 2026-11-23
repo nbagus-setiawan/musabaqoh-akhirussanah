@@ -98,7 +98,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     },
     {
       stage: '2',
-      title: 'Tahap 2: Pengisian Delegasi Cabang Lomba (10 Cabang)',
+      title: 'Tahap 2: Pengisian Delegasi Cabang Lomba (11 Cabang)',
       desc: 'Wali kelas diarahkan mengisi delegasi santri untuk setiap mata perlombaan secara berurutan. Masukkan nama lengkap santri, pilihan juz (khusus MHQ), atau nama anggota regu. Jika kelas tidak memiliki peserta pada cabang tertentu, cukup klik "Lewati Cabang Ini" untuk melanjutkan.',
       tip: 'Tombol lanjut terkunci otomatis bila kolom belum diisi lengkap guna mencegah klik tidak sengaja.',
       badge: 'Input Delegasi'
@@ -119,7 +119,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
     }
   ];
 
-  // 10 Cabang Lomba Resmi
+  // 11 Cabang Lomba Resmi
   const competitionList = CABANG_LOMBA_LIST || [];
 
   return (
@@ -342,7 +342,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
         </div>
       </section>
 
-      {/* ================= BAGIAN D: 10 CABANG PERLOMBAAN & KELAS DINIYAH ================= */}
+      {/* ================= BAGIAN D: 11 CABANG PERLOMBAAN & KELAS DINIYAH ================= */}
       <section className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div className="flex items-center space-x-2">
@@ -351,7 +351,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
-                Daftar 10 Cabang Perlombaan Resmi
+                Daftar 11 Cabang Perlombaan Resmi
               </h2>
               <p className="text-[10.5px] sm:text-[11px] text-slate-500">
                 Mata musabaqah yang diperlombakan pada Akhirussanah 1447 H / 2026 M
@@ -359,11 +359,11 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
             </div>
           </div>
           <span className="text-[10px] sm:text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/20 shrink-0">
-            10 Cabang
+            11 Cabang
           </span>
         </div>
 
-        {/* Grid 10 Cabang Lomba */}
+        {/* Grid 11 Cabang Lomba */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
           {competitionList.map((c, index) => (
             <div 

@@ -82,7 +82,7 @@ export const PILIHAN_JUZ_MHQ = [
   '30 Juz'
 ];
 
-// 10 Cabang Perlombaan Resmi Al-Falah Putak (Urutan Sesuai Alur 12 Langkah Pendaftaran)
+// 11 Cabang Perlombaan Resmi Al-Falah Putak (Urutan Sesuai Alur Pendaftaran)
 export const CABANG_LOMBA_LIST = [
   {
     id: 'mqk',
@@ -93,6 +93,16 @@ export const CABANG_LOMBA_LIST = [
     type: 'individual',
     maxSantri: 3,
     tatibUrl: '/tatib-mqk-2026.pdf'
+  },
+  {
+    id: 'mhn',
+    name: 'MHN',
+    fullName: 'MHN (Musabaqoh Hifdzil Nadzom)',
+    tingkatAllowed: ['ula', 'wustho'],
+    description: 'Lomba hafalan bait nadhom fan tauhid, shorof, dan nahwu sesuai kelas diniyah (Maksimal 3 Santri).',
+    type: 'individual',
+    maxSantri: 3,
+    tatibUrl: '/tatib-hifdil-nadhom-2026.pdf'
   },
   {
     id: 'pidato',
@@ -119,7 +129,7 @@ export const CABANG_LOMBA_LIST = [
     name: 'Syarhil Qur\'an',
     fullName: 'Syarhil Qur\'an',
     tingkatAllowed: ['ula', 'wustho'],
-    description: 'Lomba beregu pensyarah, tilawah, dan penterjemah Al-Qur\'an (Tersedia tombol Tambah Regu).',
+    description: 'Lomba beregu pensyarah, tilawah, dan penterjemah Al-Qur\'an (Maksimal 3 Regu - Tersedia tombol Tambah Regu).',
     type: 'regu',
     membersPerRegu: 3,
     tatibUrl: '/tatib-syarhil-quran-2026.pdf'
@@ -172,7 +182,7 @@ export const CABANG_LOMBA_LIST = [
     name: 'CCM',
     fullName: 'CCM (Cerdas Cermat Musabaqoh)',
     tingkatAllowed: ['ula', 'wustho'],
-    description: 'Lomba cerdas cermat keagamaan & wawasan kepesantrenan beregu (Tersedia tombol Tambah Regu).',
+    description: 'Lomba cerdas cermat keagamaan & wawasan kepesantrenan beregu (Maksimal 3 Regu - Tersedia tombol Tambah Regu).',
     type: 'regu',
     membersPerRegu: 3,
     tatibUrl: '/tatib-cerdas-cermat-2026.pdf'
