@@ -778,7 +778,7 @@ export default function AdminPengaturan({ onRefresh }) {
                 URL Web App Google Apps Script
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Masukkan URL Web App hasil deployment dari Google Apps Script untuk menghubungkan seluruh 8 lembar kerja.
+                Masukkan URL Web App hasil deployment Google Apps Script. Perubahan di kolom ini berlaku untuk sesi tab aktif (untuk perubahan permanen lintas perangkat, perbarui variabel <code className="font-mono text-slate-700">VITE_GAS_URL</code> di <code className="font-mono text-slate-700">.env</code> / Vercel).
               </p>
             </div>
 

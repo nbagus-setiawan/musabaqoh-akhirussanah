@@ -550,11 +550,37 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     return violations;
   }, [studentParticipationMap]);
 
+  const maxQuotaPerCabang = Math.max(1, parseInt(pengaturan?.KUOTA_PER_CABANG, 10) || 3);
+
+  // Validasi kelengkapan regu (Syarhil 3 orang, CCM 3 orang, Kreasi Nadzom ketua + jumlah anggota > 0)
+  const teamViolations = useMemo(() => {
+    const errs = [];
+    syarhilRegu.forEach((regu, idx) => {
+      const filled = [regu.pensyarah.trim(), regu.tilawah.trim(), regu.terjemah.trim()].filter(Boolean).length;
+      if (filled > 0 && filled < 3) {
+        errs.push(`Syarhil Qur'an (${regu.namaRegu || `Regu ${idx + 1}`}: baru ${filled}/3 anggota)`);
+      }
+    });
+    ccmRegu.forEach((regu, idx) => {
+      const filled = [regu.anggota1.trim(), regu.anggota2.trim(), regu.anggota3.trim()].filter(Boolean).length;
+      if (filled > 0 && filled < 3) {
+        errs.push(`CCM (${regu.namaRegu || `Regu ${idx + 1}`}: baru ${filled}/3 anggota)`);
+      }
+    });
+    const anggotaNum = parseInt(String(kreasiNadzom.jumlahAnggota || '').replace(/\D/g, ''), 10) || 0;
+    if (kreasiNadzom.ketua.trim() && anggotaNum <= 0) {
+      errs.push('Kreasi Nadzom (Jumlah anggota wajib diisi minimal 1)');
+    } else if (!kreasiNadzom.ketua.trim() && anggotaNum > 0) {
+      errs.push('Kreasi Nadzom (Nama Ketua Regu wajib diisi)');
+    }
+    return errs;
+  }, [syarhilRegu, ccmRegu, kreasiNadzom]);
+
   // Data Rangkuman Tiap Cabang Lomba untuk Kartu Hub
   const branchesHubData = useMemo(() => {
     return CABANG_LOMBA_LIST.map((c, index) => {
       let count = 0;
-      let maxLimit = 3;
+      let maxLimit = maxQuotaPerCabang;
       let names = [];
       let isEligible = true;
 
@@ -648,7 +674,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   }, [
     mqkSantri, mhnSantri, pidatoSantri, mcSantri, syarhilRegu, tilawahSantri, 
     kaligrafiSantri, mhqSantri, adzanSantri, ccmRegu, kreasiNadzom, 
-    isPutriClass
+    isPutriClass, maxQuotaPerCabang
   ]);
 
   const totalFilledBranches = branchesHubData.filter(b => b.isFilled).length;
@@ -856,13 +882,30 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       }
       case 'kreasi_nadzom': {
         const hasKetua = kreasiNadzom.ketua.trim().length > 0;
+        const jml = parseInt(kreasiNadzom.jumlahAnggota, 10) || 0;
+        if (hasKetua && jml <= 0) {
+          return {
+            isFilled: false,
+            isPartial: true,
+            count: 1,
+            message: 'Jumlah anggota regu Kreasi Nadzom wajib lebih dari 0.'
+          };
+        }
+        if (!hasKetua && jml > 0) {
+          return {
+            isFilled: false,
+            isPartial: true,
+            count: 0,
+            message: 'Wajib mengisi nama Ketua Regu Kreasi Nadzom.'
+          };
+        }
         return {
-          isFilled: hasKetua,
+          isFilled: hasKetua && jml > 0,
           isPartial: false,
-          count: hasKetua ? 1 : 0,
-          message: hasKetua
-            ? 'Data Ketua Regu Kreasi Nadzom sudah terisi.'
-            : 'Wajib mengisi nama Ketua Regu Kreasi Nadzom, atau klik "Lewati Cabang" jika tanpa delegasi.'
+          count: hasKetua && jml > 0 ? 1 : 0,
+          message: hasKetua && jml > 0
+            ? 'Data Regu Kreasi Nadzom sudah lengkap.'
+            : 'Wajib mengisi nama Ketua Regu dan jumlah anggota Kreasi Nadzom, atau klik "Lewati Cabang" jika tanpa delegasi.'
         };
       }
       default:
@@ -958,6 +1001,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       setFormError('Belum ada santri delegasi yang diisi di cabang manapun. Harap isi minimal 1 cabang lomba.');
       return;
     }
+    if (teamViolations.length > 0) {
+      setFormError(`Data tim belum lengkap: ${teamViolations.join('; ')}.`);
+      return;
+    }
     if (ruleViolations.length > 0) {
       setFormError(`Terdapat santri yang melebihi batas 2 cabang lomba (${ruleViolations.map(r => r.nama).join(', ')}). Harap sesuaikan sebelum mengirim.`);
       return;
@@ -1016,6 +1063,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     }
     if (allDelegates.length === 0) {
       setFormError('Belum ada delegasi yang didaftarkan. Harap isi minimal 1 santri.');
+      return;
+    }
+    if (teamViolations.length > 0) {
+      setFormError(`Tidak dapat mengirim: Data tim belum lengkap (${teamViolations.join('; ')}).`);
       return;
     }
     if (ruleViolations.length > 0) {
@@ -1184,15 +1235,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
           {/* Step 3 */}
           <button
             type="button"
-            onClick={() => {
-              if (allDelegates.length > 0) {
-                setFormError('');
-                setFormStage('review');
-              }
-            }}
-            disabled={allDelegates.length === 0}
+            onClick={handleProceedToReview}
+            disabled={allDelegates.length === 0 || ruleViolations.length > 0 || teamViolations.length > 0}
             className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-              allDelegates.length === 0
+              allDelegates.length === 0 || ruleViolations.length > 0 || teamViolations.length > 0
                 ? 'cursor-not-allowed text-slate-400 font-semibold'
                 : 'cursor-pointer'
             } ${
@@ -1239,6 +1285,24 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               <li key={idx}>
                 <strong>{v.nama}</strong>: terdaftar di {v.count} cabang ({v.cabangList})
               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Global Team Validation Warning Banner */}
+      {teamViolations.length > 0 && (
+        <div className="p-3.5 bg-amber-50 border border-amber-300 text-amber-900 text-xs rounded-2xl space-y-1 animate-fadeIn shadow-2xs">
+          <div className="flex items-center space-x-2 font-bold text-amber-950">
+            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>Peringatan Kelengkapan Regu / Tim Cabang Lomba</span>
+          </div>
+          <p className="text-[11.5px] leading-relaxed">
+            Mohon lengkapi susunan regu berikut atau klik "Lewati Cabang" jika tidak mendelegasikan cabang tersebut:
+          </p>
+          <ul className="list-disc pl-5 text-[11px] font-semibold space-y-0.5 pt-0.5 text-amber-900">
+            {teamViolations.map((msg, idx) => (
+              <li key={idx}>{msg}</li>
             ))}
           </ul>
         </div>
@@ -1294,6 +1358,12 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   value={waliInput}
                   onChange={(e) => {
                     setWaliInput(e.target.value);
+                    if (selectedWaliId || kelasDiniyah) {
+                      setSelectedWaliId('');
+                      setTingkat('');
+                      setTingkatName('');
+                      setKelasDiniyah('');
+                    }
                     setShowSuggestions(true);
                     setFormError('');
                   }}
@@ -1386,7 +1456,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
                     <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Ketentuan Kuota</span>
-                    <strong className="text-[#075B45] text-xs sm:text-sm font-black block mt-0.5 truncate">Maks. 3 / Cabang</strong>
+                    <strong className="text-[#075B45] text-xs sm:text-sm font-black block mt-0.5 truncate">Maks. {maxQuotaPerCabang} / Cabang</strong>
                   </div>
                 </div>
               </div>
@@ -1508,9 +1578,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             <button
               type="button"
               onClick={handleProceedToReview}
-              disabled={allDelegates.length === 0 || ruleViolations.length > 0}
+              disabled={allDelegates.length === 0 || ruleViolations.length > 0 || teamViolations.length > 0}
               className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm transition-all shrink-0 cursor-pointer ${
-                allDelegates.length > 0 && ruleViolations.length === 0
+                allDelegates.length > 0 && ruleViolations.length === 0 && teamViolations.length === 0
                   ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
               }`}
@@ -2443,9 +2513,9 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               <button
                 type="button"
                 onClick={handleSubmitAll}
-                disabled={isSubmitting || allDelegates.length === 0 || ruleViolations.length > 0}
+                disabled={isSubmitting || allDelegates.length === 0 || ruleViolations.length > 0 || teamViolations.length > 0}
                 className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center space-x-2 transition-all cursor-pointer min-h-[46px] ${
-                  allDelegates.length > 0 && ruleViolations.length === 0
+                  allDelegates.length > 0 && ruleViolations.length === 0 && teamViolations.length === 0
                     ? 'bg-[#075B45] hover:bg-[#054736] text-white active:scale-98'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
                 }`}

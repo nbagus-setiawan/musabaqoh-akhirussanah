@@ -1723,22 +1723,38 @@ export default function AdminSantri({
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Jenjang Tingkat</label>
                   <select
-                    value={editForm.Tingkat}
+                    value={
+                      (() => {
+                        const t = String(editForm.Tingkat || '').toLowerCase();
+                        if (t.includes('wustho')) return 'Tingkat Wustho';
+                        if (t.includes('ulya')) return 'Tingkat Ulya';
+                        if (t.includes('mhq')) return 'Tingkat MHQ';
+                        return 'Tingkat Ula';
+                      })()
+                    }
                     onChange={(e) => {
                       const newT = e.target.value;
-                      const avail = subKelasData[newT.toLowerCase()] || [];
+                      const lower = newT.toLowerCase();
+                      const key = lower.includes('wustho')
+                        ? 'wustho'
+                        : lower.includes('ulya')
+                        ? 'ulya'
+                        : lower.includes('mhq')
+                        ? 'mhq_juz'
+                        : 'ula';
+                      const avail = subKelasData[key] || [];
                       setEditForm(prev => ({ 
                         ...prev, 
                         Tingkat: newT, 
-                        Kelas_Kategori: avail[0] || prev.Kelas_Kategori 
+                        Kelas_Kategori: avail.includes(prev.Kelas_Kategori) ? prev.Kelas_Kategori : (avail[0] || prev.Kelas_Kategori)
                       }));
                     }}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-medium text-slate-800 focus:border-emerald-700 outline-none bg-white cursor-pointer"
                   >
-                    <option value="Ula">Tingkat Ula</option>
-                    <option value="Wustho">Tingkat Wustho</option>
-                    <option value="Ulya">Tingkat Ulya</option>
-                    <option value="MHQ">Tingkat MHQ (Hifdzil Qur'an)</option>
+                    <option value="Tingkat Ula">Tingkat Ula</option>
+                    <option value="Tingkat Wustho">Tingkat Wustho</option>
+                    <option value="Tingkat Ulya">Tingkat Ulya</option>
+                    <option value="Tingkat MHQ">Tingkat MHQ (Hifdzil Qur'an)</option>
                   </select>
                 </div>
 

@@ -1243,6 +1243,8 @@ function doPost(e) {
         added.push(idPendaftaran);
       });
 
+      SpreadsheetApp.flush();
+
       return jsonResponse({
         status: 'success',
         message: 'Berhasil mendaftarkan ' + added.length + ' santri.',
@@ -1522,6 +1524,8 @@ function doPost(e) {
         }
       }
 
+      SpreadsheetApp.flush();
+
       return jsonResponse({
         status: 'success',
         message: 'Data Ustadz berhasil disimpan.'
@@ -1541,6 +1545,8 @@ function doPost(e) {
           break;
         }
       }
+
+      if (deleted) SpreadsheetApp.flush();
 
       return jsonResponse({
         status: deleted ? 'success' : 'not_found',
@@ -1573,6 +1579,8 @@ function doPost(e) {
         sheet.appendRow([tingkatId, namaTingkat, namaKelas, keterangan]);
       }
 
+      SpreadsheetApp.flush();
+
       return jsonResponse({
         status: 'success',
         message: 'Kelas diniyah berhasil disimpan.'
@@ -1592,6 +1600,8 @@ function doPost(e) {
           break;
         }
       }
+
+      if (deleted) SpreadsheetApp.flush();
 
       return jsonResponse({
         status: deleted ? 'success' : 'not_found',
