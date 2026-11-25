@@ -22,7 +22,7 @@ const SYSTEM_FOOTER_2026 =
   '_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._';
 
 const DEFAULT_EXTRA_NOTE =
-  'Bagi santri yang telah dinyatakan DITERIMA, dimohon kepada Ustadz/Ustadzah untuk mencatat/mencetak serta menyetorkan daftar Nomor Urut Peserta di atas kepada Panitia Pelaksana Musabaqah Akhirussanah 2026 guna keperluan pencetakan kartu/nomor undian resmi dan penjadwalan tampil.';
+  'Bagi santri yang telah dinyatakan DITERIMA, Nomor Urut di atas merupakan nomor undian resmi peserta. Pencetakan kartu/nomor undian dilaksanakan langsung oleh Panitia Musabaqah Akhirussanah 2026; mohon Ustadz/Ustadzah menginformasikan nomor urut tersebut kepada santri binaan serta menghubungi panitia apabila terdapat data yang perlu disesuaikan.';
 
 function formatWaliSection(items) {
   const accepted = items.filter(s => s.Status === 'Terverifikasi');
@@ -468,7 +468,7 @@ export default function BulkWhatsAppDialog({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <label htmlFor={noteInputId} className="text-xs font-bold text-slate-700">
-                Catatan / Instruksi Penyetoran Nomor Urut
+                Catatan / Keterangan Nomor Undian
               </label>
               <span className="text-[11px] text-slate-400">
                 Otomatis disisipkan sebelum penutup resmi
@@ -480,7 +480,7 @@ export default function BulkWhatsAppDialog({
               value={extraNote}
               onChange={(e) => setExtraNote(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 bg-white focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 outline-none"
-              placeholder="Tulis instruksi penyetoran/cetak nomor urut atau jadwal tampil..."
+              placeholder="Tulis keterangan nomor undian atau informasi tambahan dari panitia..."
             />
           </div>
 
