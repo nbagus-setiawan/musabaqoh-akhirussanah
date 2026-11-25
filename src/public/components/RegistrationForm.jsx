@@ -1423,37 +1423,34 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
             {/* Kartu Konfirmasi Kelas Diniyah (Muncul Seketika Saat Guru Dipilih) */}
             {kelasDiniyah ? (
-              <div className="p-3.5 sm:p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-3 animate-fadeIn shadow-2xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-emerald-200/60">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 rounded-lg bg-[#075B45] text-white flex items-center justify-center shrink-0">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
-                    <span className="text-xs font-bold text-[#075B45]">
-                      Kelas Diniyah Terverifikasi Otomatis
-                    </span>
+              <div className="p-3.5 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl animate-fadeIn shadow-2xs">
+                {/* Baris status: ikon + label + badge putra/putri */}
+                <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-emerald-200/60">
+                  <div className="w-5 h-5 rounded-md bg-[#075B45] flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                   </div>
-                  <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    isPutriClass 
-                      ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                  <span className="text-xs font-bold text-[#075B45] flex-1">Terverifikasi Otomatis</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                    isPutriClass
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
                       : 'bg-emerald-100 text-[#075B45] border-emerald-200'
                   }`}>
-                    {isPutriClass ? 'Kelas Santri Putri' : 'Kelas Santri Putra'}
+                    {isPutriClass ? 'Santri Putri' : 'Santri Putra'}
                   </span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Kelas Diniyah</span>
-                    <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{kelasDiniyah}</strong>
+                {/* Info kelas — layout: Kelas Diniyah (full) | Jenjang */}
+                <div className="space-y-1.5">
+                  <div className="bg-white px-3 py-2 rounded-xl border border-emerald-150 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">Kelas Diniyah</span>
+                    <strong className="text-slate-900 text-xs font-black text-right">{kelasDiniyah}</strong>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Jenjang</span>
-                    <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{tingkatName || tingkat}</strong>
+                  <div className="bg-white px-3 py-2 rounded-xl border border-emerald-150 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">Jenjang Tingkat</span>
+                    <strong className="text-slate-900 text-xs font-black text-right">{tingkatName || tingkat}</strong>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Wali Kelas</span>
-                    <strong className="text-slate-900 text-xs sm:text-sm font-bold block mt-0.5 truncate">{waliInput}</strong>
+                  <div className="bg-white px-3 py-2 rounded-xl border border-emerald-150 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">Wali Kelas</span>
+                    <strong className="text-slate-900 text-xs font-semibold text-right leading-tight">{waliInput}</strong>
                   </div>
                 </div>
               </div>
