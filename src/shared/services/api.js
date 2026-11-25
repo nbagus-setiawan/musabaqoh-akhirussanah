@@ -426,15 +426,40 @@ export const batchUpdateStatus = async (idList = [], newStatus) => {
 /**
  * Edit Santri Lengkap Langsung ke Google Sheets
  */
-export const updateRegistration = async (idPendaftaran, updatedFields) => {
+export const updateRegistration = async (idPendaftaran, updatedFields, rowMeta = {}) => {
   const sanitizedFields = { ...updatedFields };
   if (sanitizedFields.Nomor_WA !== undefined) {
     sanitizedFields.Nomor_WA = normalizePhoneLocal08(sanitizedFields.Nomor_WA);
   }
+  if (sanitizedFields.Nama_Lengkap !== undefined) {
+    const upperName = String(sanitizedFields.Nama_Lengkap).trim().toUpperCase();
+    sanitizedFields.Nama_Lengkap = upperName;
+    sanitizedFields.Nama_Santri = upperName;
+  } else if (sanitizedFields.Nama_Santri !== undefined) {
+    const upperName = String(sanitizedFields.Nama_Santri).trim().toUpperCase();
+    sanitizedFields.Nama_Santri = upperName;
+    sanitizedFields.Nama_Lengkap = upperName;
+  }
+  if (sanitizedFields.Kelas_Kategori !== undefined) {
+    sanitizedFields.Kelas_Diniyah = sanitizedFields.Kelas_Kategori;
+  } else if (sanitizedFields.Kelas_Diniyah !== undefined) {
+    sanitizedFields.Kelas_Kategori = sanitizedFields.Kelas_Diniyah;
+  }
+
+  const targetRowIndex = rowMeta?.rowIndex || updatedFields?.rowIndex;
+  const matchNama = String(rowMeta?.Nama_Santri || rowMeta?.Nama_Lengkap || '').trim().toUpperCase();
+  const matchCabang = String(rowMeta?.Cabang_Lomba || '').trim().toLowerCase();
 
   const currentList = getLocalRegistrations();
   const updated = currentList.map(item => {
-    if (item.ID_Pendaftaran === idPendaftaran) {
+    const sameRow = targetRowIndex
+      ? Number(item.rowIndex) === Number(targetRowIndex)
+      : (
+          item.ID_Pendaftaran === idPendaftaran &&
+          (!matchNama || String(item.Nama_Lengkap || item.Nama_Santri || '').trim().toUpperCase() === matchNama) &&
+          (!matchCabang || String(item.Cabang_Lomba || '').trim().toLowerCase() === matchCabang)
+        );
+    if (sameRow) {
       return { ...item, ...sanitizedFields };
     }
     return item;
@@ -457,15 +482,27 @@ export const updateRegistration = async (idPendaftaran, updatedFields) => {
       if (remoteFields.Nomor_WA !== undefined) {
         remoteFields.Nomor_WA = toSheetPlainTextPhone(remoteFields.Nomor_WA);
       }
-      await fetch(gasUrl, {
+      if (remoteFields.Nomor_Urut !== undefined && String(remoteFields.Nomor_Urut).trim() !== '') {
+        remoteFields.Nomor_Urut = `'${String(remoteFields.Nomor_Urut).trim()}`;
+      }
+      const resp = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'edit_santri',
           ID_Pendaftaran: idPendaftaran,
+          ...(targetRowIndex ? { rowIndex: targetRowIndex } : {}),
+          ...(matchNama ? { Match_Nama: matchNama } : {}),
+          ...(matchCabang ? { Match_Cabang: matchCabang } : {}),
           ...remoteFields
         })
       });
+      if (resp.ok) {
+        const resJson = await resp.json().catch(() => null);
+        if (resJson && resJson.status !== 'success') {
+          console.warn('Google Sheets edit_santri warning:', resJson.message);
+        }
+      }
     } catch (e) {
       console.warn('Update santri ke Google Sheets gagal:', e);
     } finally {
@@ -480,9 +517,20 @@ export const updateRegistration = async (idPendaftaran, updatedFields) => {
 /**
  * Hapus Santri Langsung dari Google Sheets
  */
-export const deleteRegistration = async (idPendaftaran) => {
+export const deleteRegistration = async (idPendaftaran, rowMeta = {}) => {
+  const targetRowIndex = rowMeta?.rowIndex;
+  const matchNama = String(rowMeta?.Nama_Santri || rowMeta?.Nama_Lengkap || '').trim().toUpperCase();
   const currentList = getLocalRegistrations();
-  const filtered = currentList.filter(item => item.ID_Pendaftaran !== idPendaftaran);
+  const filtered = currentList.filter(item => {
+    if (targetRowIndex && item.rowIndex) {
+      return Number(item.rowIndex) !== Number(targetRowIndex);
+    }
+    if (item.ID_Pendaftaran !== idPendaftaran) return true;
+    if (matchNama) {
+      return String(item.Nama_Lengkap || item.Nama_Santri || '').trim().toUpperCase() !== matchNama;
+    }
+    return false;
+  });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
   notifyDataChanged('registrations', { deletedId: idPendaftaran });
@@ -491,17 +539,23 @@ export const deleteRegistration = async (idPendaftaran) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
+    activeRegistrationMutations++;
     try {
       await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'delete_santri',
-          ID_Pendaftaran: idPendaftaran
+          ID_Pendaftaran: idPendaftaran,
+          ...(targetRowIndex ? { rowIndex: targetRowIndex } : {}),
+          ...(matchNama ? { Match_Nama: matchNama } : {})
         })
       });
     } catch (e) {
       console.warn('Hapus santri di Google Sheets gagal:', e);
+    } finally {
+      activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
+      lastRegistrationMutationAt = Date.now();
     }
   }
 

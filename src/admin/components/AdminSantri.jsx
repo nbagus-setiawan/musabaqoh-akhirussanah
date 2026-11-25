@@ -130,13 +130,19 @@ export default function AdminSantri({
       const cleanForm = {
         ...editForm,
         Nama_Lengkap: editForm.Nama_Lengkap.trim().toUpperCase(),
+        Nama_Santri: editForm.Nama_Lengkap.trim().toUpperCase(),
+        Kelas_Diniyah: editForm.Kelas_Kategori,
         Nomor_WA: normalizePhoneLocal08(editForm.Nomor_WA || '')
       };
-      await updateRegistration(editingSantri.ID_Pendaftaran, cleanForm);
+      await updateRegistration(editingSantri.ID_Pendaftaran, cleanForm, {
+        rowIndex: editingSantri.rowIndex,
+        Nama_Santri: editingSantri.Nama_Lengkap || editingSantri.Nama_Santri,
+        Cabang_Lomba: editingSantri.Cabang_Lomba
+      });
       Swal.fire({
         icon: 'success',
-        title: 'Berhasil Diedit!',
-        text: `Data ${cleanForm.Nama_Lengkap} (${editingSantri.ID_Pendaftaran}) telah diperbarui.`,
+        title: 'Berhasil Disimpan!',
+        text: `Data ${cleanForm.Nama_Lengkap} (${editingSantri.ID_Pendaftaran}) telah diperbarui di website & Google Sheets.`,
         timer: 2000,
         showConfirmButton: false
       });
@@ -163,7 +169,10 @@ export default function AdminSantri({
 
     if (result.isConfirmed) {
       try {
-        await deleteRegistration(item.ID_Pendaftaran);
+        await deleteRegistration(item.ID_Pendaftaran, {
+          rowIndex: item.rowIndex,
+          Nama_Santri: item.Nama_Lengkap || item.Nama_Santri
+        });
         Swal.fire({
           icon: 'success',
           title: 'Terhapus!',
@@ -251,7 +260,8 @@ export default function AdminSantri({
         (item.ID_Pendaftaran || '').toLowerCase().includes(q) ||
         (item.Nomor_Urut || '').includes(q) ||
         (item.Cabang_Lomba || '').toLowerCase().includes(q) ||
-        (item.Kelas_Kategori || '').toLowerCase().includes(q)
+        (item.Kelas_Kategori || '').toLowerCase().includes(q) ||
+        normalizePhoneLocal08(item.Nomor_WA || '').includes(q)
       );
       if (!matchText) return false;
     }
@@ -924,24 +934,64 @@ export default function AdminSantri({
     window.open(buildWaUrl(item.Nomor_WA, pesan), '_blank', 'noopener,noreferrer');
   };
 
-  const tabPills = [
-    { id: 'ALL', label: 'Semua Peserta', count: countAll },
-    { id: 'Terverifikasi', label: 'Terverifikasi', count: countVerified },
-    { id: 'Pending', label: 'Pending', count: countPending },
-    { id: 'Ditolak', label: 'Ditolak', count: countRejected }
+  const statusCards = [
+    {
+      id: 'ALL',
+      label: 'Semua Pendaftar',
+      sublabel: 'Semua delegasi masuk',
+      count: countAll,
+      icon: Users,
+      accent: 'blue',
+      ringClass: 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30',
+      iconClass: 'bg-blue-50 text-blue-600 border-blue-100/80',
+      subClass: 'text-blue-600'
+    },
+    {
+      id: 'Terverifikasi',
+      label: 'Diterima / Lolos',
+      sublabel: 'Siap diundi / tanding',
+      count: countVerified,
+      icon: CheckCircle2,
+      accent: 'emerald',
+      ringClass: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/30',
+      iconClass: 'bg-emerald-50 text-emerald-600 border-emerald-100/80',
+      subClass: 'text-emerald-600'
+    },
+    {
+      id: 'Pending',
+      label: 'Menunggu Verifikasi',
+      sublabel: 'Perlu dicek panitia',
+      count: countPending,
+      icon: Clock,
+      accent: 'amber',
+      ringClass: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/30',
+      iconClass: 'bg-amber-50 text-amber-600 border-amber-100/80',
+      subClass: 'text-amber-600'
+    },
+    {
+      id: 'Ditolak',
+      label: 'Ditolak / Batal',
+      sublabel: 'Tidak memenuhi syarat',
+      count: countRejected,
+      icon: AlertCircle,
+      accent: 'rose',
+      ringClass: 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30',
+      iconClass: 'bg-rose-50 text-rose-600 border-rose-100/80',
+      subClass: 'text-rose-600'
+    }
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="p-3 sm:p-5 lg:p-7 space-y-4 sm:space-y-5 max-w-7xl mx-auto animate-in fade-in duration-200">
       
       {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
-            <Users className="w-6 h-6" />
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="flex items-start sm:items-center space-x-3.5 min-w-0">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
               <span>Data Peserta Santri</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
                 {countAll} Santri
@@ -954,11 +1004,11 @@ export default function AdminSantri({
         </div>
 
         {/* Toolbar Aksi (WA Massal, Undi, Unduh PDF) */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setIsBulkWaOpen(true)}
-            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
+            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
             title="Kirim pesan WhatsApp massal penerimaan santri"
           >
             <WhatsAppIcon variant="white" className="w-4 h-4 shrink-0" />
@@ -968,170 +1018,97 @@ export default function AdminSantri({
           <button
             type="button"
             onClick={handleOpenLotteryModal}
-            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
+            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
             title="Undi nomor urut santri"
           >
-            <Dices className="w-4 h-4 text-white" />
+            <Dices className="w-4 h-4 text-white" aria-hidden="true" />
             <span>Undi Nomor Urut</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenDownloadPdfModal}
-            className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center space-x-2 transition-all shadow-2xs cursor-pointer active:scale-95"
+            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center space-x-2 transition-all shadow-2xs cursor-pointer active:scale-95"
             title="Pilih tingkat lalu unduh PDF"
           >
-            <FileText className="w-4 h-4 text-rose-600" />
+            <FileText className="w-4 h-4 text-rose-600" aria-hidden="true" />
             <span>Unduh PDF</span>
           </button>
         </div>
       </div>
 
-      {/* 2. KARTU METRIK KPI STATISTIK (SEJAJAR PERSIS REFERENSI DESAIN) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Total Santri */}
-        <div 
-          onClick={() => { setStatusTab('ALL'); }}
-          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Total Pendaftar
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {countAll}
-            </span>
-            <span className="text-[10.5px] font-semibold text-blue-600 block mt-0.5">
-              Semua delegasi masuk
-            </span>
-          </div>
-        </div>
-
-        {/* KPI 2: Terverifikasi */}
-        <div 
-          onClick={() => { setStatusTab('Terverifikasi'); }}
-          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Lolos Verifikasi
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {countVerified}
-            </span>
-            <span className="text-[10.5px] font-semibold text-emerald-600 block mt-0.5">
-              Siap diundi / tanding
-            </span>
-          </div>
-        </div>
-
-        {/* KPI 3: Menunggu Verifikasi */}
-        <div 
-          onClick={() => { setStatusTab('Pending'); }}
-          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Menunggu Verifikasi
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {countPending}
-            </span>
-            <span className="text-[10.5px] font-semibold text-amber-600 block mt-0.5">
-              Perlu dicek panitia
-            </span>
-          </div>
-        </div>
-
-        {/* KPI 4: Ditolak */}
-        <div 
-          onClick={() => { setStatusTab('Ditolak'); }}
-          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center space-x-3.5 group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Ditolak / Batal
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {countRejected}
-            </span>
-            <span className="text-[10.5px] font-semibold text-rose-600 block mt-0.5">
-              Tidak memenuhi syarat
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. TAB NAVIGATION PILLS */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
-        {tabPills.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setStatusTab(tab.id)}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer ${
-              statusTab === tab.id
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
-            }`}
-          >
-            <span>{tab.label}</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-extrabold ${
-              statusTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+      {/* 2. KARTU FILTER STATUS INTERAKTIF (RINGKAS & MUDAH DIPINDAI) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {statusCards.map((card) => {
+          const IconComponent = card.icon;
+          const isActive = statusTab === card.id;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => setStatusTab(card.id)}
+              className={`text-left rounded-2xl p-3.5 sm:p-4 border transition-all cursor-pointer flex items-center space-x-3 group ${
+                isActive
+                  ? card.ringClass
+                  : 'bg-white border-slate-100 shadow-xs hover:shadow-md hover:border-slate-200'
+              }`}
+            >
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.iconClass}`}>
+                <IconComponent className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10.5px] font-bold text-slate-500 block tracking-wider uppercase leading-tight truncate">
+                  {card.label}
+                </span>
+                <span className="text-lg sm:text-2xl font-black text-slate-900 leading-tight block mt-0.5">
+                  {card.count}
+                </span>
+                <span className={`text-[10px] font-semibold block mt-0.5 truncate ${card.subClass}`}>
+                  {card.sublabel}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* 4. MAIN TABLE CONTAINER */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
 
-        {/* Filter Bar (Search + Tingkat + Wali Kelas + Gender + Reset) */}
-        <div className="p-4 border-b border-slate-100 bg-white flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          
-          {/* Input Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari nama santri, ID, nomor urut, cabang..."
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-medium outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
-            />
-            {localSearch && (
-              <button
-                type="button"
-                onClick={() => setLocalSearch('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {/* Filter Bar (<search> semantik, responsif di semua ukuran layar) */}
+        <search aria-label="Pencarian dan Filter Data Peserta Santri" className="p-3.5 sm:p-4 border-b border-slate-100 bg-white space-y-3">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+            {/* Input Search */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true" />
+              <input
+                type="search"
+                aria-label="Cari santri"
+                placeholder="Cari nama santri, ID, no. urut, cabang, wali kelas, atau 08..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="santri-control w-full pl-9 pr-9 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-medium outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
+              />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={() => setLocalSearch('')}
+                  aria-label="Bersihkan kata kunci pencarian"
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-4 h-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
 
-          {/* Group Filter Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            
-            {/* Filter 1: Tingkat */}
-            <div className="relative">
+            {/* Group Filter Controls */}
+            <div className="flex flex-wrap items-center gap-2">
               <select
+                aria-label="Filter Tingkat"
                 value={filterTingkat}
                 onChange={(e) => handleTingkatChange(e.target.value)}
-                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
+                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterTingkat !== 'ALL' 
                     ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
                     : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
@@ -1142,14 +1119,12 @@ export default function AdminSantri({
                 <option value="Wustho">Tingkat Wustho</option>
                 <option value="MHQ">Tingkat MHQ</option>
               </select>
-            </div>
 
-            {/* Filter 2: Wali Kelas */}
-            <div className="relative">
               <select
+                aria-label="Filter Wali Kelas"
                 value={filterWaliKelas}
                 onChange={(e) => setFilterWaliKelas(e.target.value)}
-                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer max-w-[210px] truncate ${
+                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer max-w-[200px] truncate ${
                   filterWaliKelas !== 'ALL' 
                     ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
                     : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
@@ -1163,14 +1138,12 @@ export default function AdminSantri({
                   </option>
                 ))}
               </select>
-            </div>
 
-            {/* Filter 3: Gender */}
-            <div className="relative">
               <select
+                aria-label="Filter Gender"
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
-                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
+                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterGender !== 'ALL' 
                     ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
                     : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
@@ -1180,14 +1153,12 @@ export default function AdminSantri({
                 <option value="L">Putra</option>
                 <option value="P">Putri</option>
               </select>
-            </div>
 
-            {/* Filter 4: Status Nomor Undian (3 Digit) */}
-            <div className="relative">
               <select
+                aria-label="Filter Status Nomor Undian"
                 value={filterLottery}
                 onChange={(e) => setFilterLottery(e.target.value)}
-                className={`pl-3.5 pr-8 py-2.5 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
+                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
                   filterLottery !== 'ALL' 
                     ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
                     : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
@@ -1197,54 +1168,76 @@ export default function AdminSantri({
                 <option value="ASSIGNED">Sudah Diundi (3 Digit)</option>
                 <option value="UNASSIGNED">Belum Diundi</option>
               </select>
+
+              {isFilterActive && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="santri-control px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  title="Reset semua filter"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Reset</span>
+                </button>
+              )}
             </div>
-
-            {/* Reset Filter Button */}
-            {isFilterActive && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center space-x-1.5 transition-colors cursor-pointer"
-                title="Reset semua filter"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
-              </button>
-            )}
-
           </div>
-        </div>
 
-        {/* Responsive Table yang Halus Sesuai Referensi Desain */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#F8FAFC] text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100">
+          {/* Sub-bar Pilih Semua & Ringkasan Hasil Filter */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+            <label className="santri-control inline-flex items-center gap-2 cursor-pointer text-slate-600 font-semibold select-none">
+              <input
+                type="checkbox"
+                checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(d.ID_Pendaftaran))}
+                onChange={handleToggleSelectAllVisible}
+                disabled={paginatedData.length === 0}
+                className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+              />
+              <span>Pilih semua di halaman ini ({paginatedData.length})</span>
+            </label>
+
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+              <span>
+                Ditemukan <strong className="text-slate-800">{filteredData.length}</strong> santri
+              </span>
+              {selectedIds.size > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-200">
+                  {selectedIds.size} dipilih
+                </span>
+              )}
+            </div>
+          </div>
+        </search>
+
+        {/* Responsive Table + Stacked Card Fallback (@container) */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-labelledby="santri-table-caption"
+          className="santri-table-wrapper"
+        >
+          <table className="santri-table text-left text-xs">
+            <caption id="santri-table-caption" className="sr-only">
+              Daftar Peserta Santri Musabaqah Akhirussanah YPPS Al-Falah Putak
+            </caption>
+            <thead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100">
               <tr>
-                <th className="py-3.5 px-3 text-center w-10">
-                  <input
-                    type="checkbox"
-                    checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(d.ID_Pendaftaran))}
-                    onChange={handleToggleSelectAllVisible}
-                    className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                    title="Pilih Semua di Halaman Ini"
-                  />
-                </th>
-                <th className="py-3.5 px-4 text-center w-28">No. Urut</th>
-                <th className="py-3.5 px-4">Nama Santri</th>
-                <th className="py-3.5 px-4">Cabang Perlombaan</th>
-                <th className="py-3.5 px-4">Jenjang & Kelas</th>
-                <th className="py-3.5 px-4">Wali Kelas</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-center w-36">Aksi</th>
+                <th scope="col" className="py-3.5 px-4">Santri & ID</th>
+                <th scope="col" className="py-3.5 px-3 text-center w-28">No. Urut</th>
+                <th scope="col" className="py-3.5 px-4">Cabang Perlombaan</th>
+                <th scope="col" className="py-3.5 px-4">Kelas Diniyah</th>
+                <th scope="col" className="py-3.5 px-4">Wali Kelas & WA</th>
+                <th scope="col" className="py-3.5 px-4 text-center">Status</th>
+                <th scope="col" className="py-3.5 px-4 text-center w-44">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-16 text-center">
+                  <td colSpan="7" className="py-16 text-center">
                     <div className="max-w-xs mx-auto text-center space-y-2">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-                        <Users className="w-6 h-6" />
+                        <Users className="w-6 h-6" aria-hidden="true" />
                       </div>
                       <p className="text-xs font-bold text-slate-700">
                         Tidak ditemukan data santri yang cocok
@@ -1254,10 +1247,11 @@ export default function AdminSantri({
                       </p>
                       {isFilterActive && (
                         <button
+                          type="button"
                           onClick={handleResetFilters}
                           className="mt-2 inline-flex items-center space-x-1 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 transition-colors cursor-pointer"
                         >
-                          <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                          <RotateCcw className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                           <span>Reset Semua Filter</span>
                         </button>
                       )}
@@ -1265,175 +1259,196 @@ export default function AdminSantri({
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((item, idx) => (
-                  <tr key={item.ID_Pendaftaran || idx} className={`transition-colors ${selectedIds.has(item.ID_Pendaftaran) ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'}`}>
-                    
-                    {/* Checkbox Pilihan Baris */}
-                    <td className="py-3.5 px-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(item.ID_Pendaftaran)}
-                        onChange={() => handleToggleSelectOne(item.ID_Pendaftaran)}
-                        className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                      />
-                    </td>
+                paginatedData.map((item, idx) => {
+                  const rowKey = getRowKey(item);
+                  const isChecked = selectedIds.has(item.ID_Pendaftaran);
+                  const wa08 = normalizePhoneLocal08(item.Nomor_WA);
 
-                    {/* Nomor Urut (Format 3 Digit Monospace) */}
-                    <td className="py-3.5 px-4 text-center">
-                      {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
-                        <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 font-mono font-bold text-xs border border-blue-200/70">
-                          {String(item.Nomor_Urut).padStart(3, '0')}
-                        </span>
-                      ) : (
-                        <span className="inline-block text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg font-mono">
-                          Belum Diundi
-                        </span>
-                      )}
-                    </td>
+                  return (
+                    <tr
+                      key={`${rowKey}-${idx}`}
+                      className={`transition-colors ${
+                        isChecked
+                          ? 'bg-blue-50/45 santri-row-selected'
+                          : 'bg-white hover:bg-slate-50/80'
+                      }`}
+                    >
+                      {/* Santri Identity + Checkbox (Row Header sticky kiri di desktop, sticky atas kartu di mobile) */}
+                      <th scope="row" className="py-3.5 px-4 font-normal align-middle">
+                        <div className="flex items-start gap-2.5">
+                          <label className="santri-control inline-flex items-center justify-center cursor-pointer pt-0.5 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleSelectOne(item.ID_Pendaftaran)}
+                              aria-label={`Pilih ${item.Nama_Lengkap}`}
+                              className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                            />
+                          </label>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-slate-900 leading-snug text-xs sm:text-[13px]">
+                              {item.Nama_Lengkap}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold ${
+                                item.Jenis_Kelamin === 'L' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                              }`}>
+                                {item.Jenis_Kelamin === 'L' ? 'Putra' : 'Putri'}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {item.ID_Pendaftaran}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </th>
 
-                    {/* Nama Santri */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900 leading-snug">
-                        {item.Nama_Lengkap}
-                      </div>
-                      <div className="flex items-center space-x-1.5 mt-0.5">
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                          item.Jenis_Kelamin === 'L' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                      {/* Nomor Urut (Format 3 Digit Monospace) */}
+                      <td data-label="No. Urut" className="py-3.5 px-3 text-center align-middle">
+                        {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
+                          <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 font-mono font-bold text-xs border border-blue-200/70">
+                            {String(item.Nomor_Urut).padStart(3, '0')}
+                          </span>
+                        ) : (
+                          <span className="inline-block text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg font-mono">
+                            Belum Diundi
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Cabang Lomba */}
+                      <td data-label="Cabang Lomba" className="py-3.5 px-4 align-middle">
+                        <div className="font-bold text-slate-800 leading-snug">
+                          {item.Cabang_Lomba}
+                        </div>
+                        {item.Detail_Cabang && item.Detail_Cabang !== 'Individu' && (
+                          <div className="text-[10.5px] text-slate-500 mt-0.5">
+                            {item.Detail_Cabang}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Kelas Diniyah */}
+                      <td data-label="Kelas Diniyah" className="py-3.5 px-4 align-middle">
+                        <div className="font-semibold text-slate-800">
+                          {item.Kelas_Kategori}
+                        </div>
+                        <div className="text-[10.5px] text-slate-500 mt-0.5">
+                          {item.Tingkat}
+                        </div>
+                      </td>
+
+                      {/* Wali Kelas & Nomor WA 08... */}
+                      <td data-label="Wali Kelas & WA" className="py-3.5 px-4 align-middle">
+                        <div className="text-slate-800 font-semibold leading-snug">
+                          {item.Wali_Kelas}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSendWA(item)}
+                          className="inline-flex items-center space-x-1.5 mt-1 px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/70 text-[10.5px] font-bold transition-colors cursor-pointer"
+                          title="Kirim pesan WhatsApp ke Wali Kelas"
+                        >
+                          <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
+                          <span className="font-mono">{wa08 || 'Chat WA'}</span>
+                        </button>
+                      </td>
+
+                      {/* Status */}
+                      <td data-label="Status" className="py-3.5 px-4 text-center align-middle">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
+                          item.Status === 'Terverifikasi'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : item.Status === 'Ditolak'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border border-amber-100'
                         }`}>
-                          {item.Jenis_Kelamin === 'L' ? 'Putra' : 'Putri'}
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                            item.Status === 'Terverifikasi' ? 'bg-emerald-500' : item.Status === 'Ditolak' ? 'bg-rose-500' : 'bg-amber-500'
+                          }`}></span>
+                          {item.Status}
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          {item.ID_Pendaftaran}
-                        </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Cabang Lomba */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-800 leading-snug">
-                        {item.Cabang_Lomba}
-                      </div>
-                    </td>
+                      {/* Aksi Panitia */}
+                      <td data-label="Aksi Panitia" className="santri-actions-cell py-3.5 px-4 text-center align-middle">
+                        <div className="flex flex-wrap items-center justify-end lg:justify-center gap-1.5">
+                          {item.Status !== 'Terverifikasi' ? (
+                            <button
+                              type="button"
+                              disabled={statusProcessingId === rowKey}
+                              onClick={() => handleQuickStatus(item, 'Terverifikasi')}
+                              title="Verifikasi / Terima Santri"
+                              className="santri-control px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {statusProcessingId === rowKey ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 animate-spin text-white" aria-hidden="true" />
+                                  <span>Proses...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 text-white" aria-hidden="true" />
+                                  <span>Terima</span>
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={statusProcessingId === rowKey}
+                              onClick={() => handleQuickStatus(item, 'Pending')}
+                              title="Kembalikan ke status Pending"
+                              className="santri-control px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-[11px] border border-slate-200/80 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {statusProcessingId === rowKey ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 animate-spin text-slate-400" aria-hidden="true" />
+                                  <span>Proses...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw className="w-3 h-3 text-slate-500" aria-hidden="true" />
+                                  <span>Reset</span>
+                                </>
+                              )}
+                            </button>
+                          )}
 
-                    {/* Jenjang & Kelas */}
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-1.5 font-medium text-slate-800">
-                        <span>{item.Kelas_Kategori}</span>
-                        {item.Jenis_Kelamin === 'P' || (item.Kelas_Kategori && item.Kelas_Kategori.toLowerCase().includes('putri')) ? (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700">Putri</span>
-                        ) : (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700">Putra</span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-400">{item.Tingkat}</div>
-                    </td>
-
-                    {/* Wali Kelas */}
-                    <td className="py-3.5 px-4">
-                      <div className="text-slate-800 font-semibold">{item.Wali_Kelas}</div>
-                      <button
-                        onClick={() => handleSendWA(item)}
-                        className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center space-x-1 mt-0.5 cursor-pointer"
-                      >
-                        <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
-                        <span>Chat WA</span>
-                      </button>
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-3.5 px-4 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
-                        item.Status === 'Terverifikasi'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          : item.Status === 'Ditolak'
-                          ? 'bg-rose-50 text-rose-700 border border-rose-100'
-                          : 'bg-amber-50 text-amber-700 border border-amber-100'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                          item.Status === 'Terverifikasi' ? 'bg-emerald-500' : item.Status === 'Ditolak' ? 'bg-rose-500' : 'bg-amber-500'
-                        }`}></span>
-                        {item.Status}
-                      </span>
-                    </td>
-
-                    {/* Aksi Panitia */}
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-1.5">
-                        
-                        {item.Status !== 'Terverifikasi' ? (
                           <button
                             type="button"
-                            disabled={statusProcessingId === getRowKey(item)}
-                            onClick={() => handleQuickStatus(item, 'Terverifikasi')}
-                            title="Verifikasi / Terima Santri"
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => setSelectedSantri(item)}
+                            aria-label={`Lihat detail ${item.Nama_Lengkap}`}
+                            title="Lihat Detail Santri"
+                            className="santri-control p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/70 transition-colors cursor-pointer"
                           >
-                            {statusProcessingId === getRowKey(item) ? (
-                              <>
-                                <RefreshCw className="w-3 h-3 animate-spin text-white" />
-                                <span>Proses...</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="w-3 h-3 text-white" />
-                                <span>Terima</span>
-                              </>
-                            )}
+                            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
-                        ) : (
+
                           <button
                             type="button"
-                            disabled={statusProcessingId === getRowKey(item)}
-                            onClick={() => handleQuickStatus(item, 'Pending')}
-                            title="Kembalikan ke status Pending"
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-[11px] border border-slate-200/80 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => handleOpenEdit(item)}
+                            aria-label={`Edit data ${item.Nama_Lengkap}`}
+                            title="Edit Lengkap Data Santri"
+                            className="santri-control p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/70 transition-colors cursor-pointer"
                           >
-                            {statusProcessingId === getRowKey(item) ? (
-                              <>
-                                <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />
-                                <span>Proses...</span>
-                              </>
-                            ) : (
-                              <>
-                                <RotateCcw className="w-3 h-3 text-slate-500" />
-                                <span>Reset</span>
-                              </>
-                            )}
+                            <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
-                        )}
 
-                        {/* Tombol Detail */}
-                        <button
-                          onClick={() => setSelectedSantri(item)}
-                          title="Lihat Detail Santri"
-                          className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-100 transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Tombol Edit Santri */}
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          title="Edit Lengkap Data Santri"
-                          className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 transition-colors cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Tombol Hapus Santri */}
-                        <button
-                          onClick={() => handleDeleteSantri(item)}
-                          title="Hapus Data Santri"
-                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-100 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                      </div>
-                    </td>
-
-                  </tr>
-                ))
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSantri(item)}
+                            aria-label={`Hapus data ${item.Nama_Lengkap}`}
+                            title="Hapus Data Santri"
+                            className="santri-control p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/70 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -2029,7 +2044,7 @@ export default function AdminSantri({
 
       {/* 5. STICKY FLOATING BULK ACTION BAR */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex flex-wrap items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="santri-bulk-dock fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-1.5rem)] w-max bg-slate-900 text-white px-4 sm:px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-xs font-bold font-mono">

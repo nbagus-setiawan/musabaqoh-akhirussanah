@@ -1128,14 +1128,21 @@ function doPost(e) {
       const headers = rows[0].map(h => String(h).trim());
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
       const targetRowIdx = contents.rowIndex ? parseInt(contents.rowIndex, 10) : 0;
-      const hintNama = String(contents.Nama_Santri || contents.Nama_Lengkap || '').trim().toUpperCase();
-      const hintCabang = String(contents.Cabang_Lomba || '').trim().toLowerCase();
+      const hintNama = String(contents.Match_Nama || contents.Nama_Santri || contents.Nama_Lengkap || '').trim().toUpperCase();
+      const hintCabang = String(contents.Match_Cabang || contents.Cabang_Lomba || '').trim().toLowerCase();
       let updated = false;
 
       const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
       const colNama = headers.findIndex(h => h.toLowerCase() === 'nama_santri' || h.toLowerCase() === 'nama_lengkap');
       const colCabang = headers.findIndex(h => h.toLowerCase() === 'cabang_lomba');
       const colStatus = headers.findIndex(h => h.toLowerCase() === 'status');
+
+      const HEADER_ALIASES = {
+        nama_lengkap: 'nama_santri',
+        nama_santri: 'nama_lengkap',
+        kelas_kategori: 'kelas_diniyah',
+        kelas_diniyah: 'kelas_kategori'
+      };
 
       const applyRowUpdate = (rowNum) => {
         if (action === 'update_single') {
@@ -1145,14 +1152,25 @@ function doPost(e) {
           }
           return;
         }
+        const skipKeys = { action: 1, rowindex: 1, match_nama: 1, match_cabang: 1 };
         Object.keys(contents).forEach(key => {
-          const cIdx = headers.findIndex(h => h.toLowerCase() === key.toLowerCase());
+          const lk = key.toLowerCase();
+          if (skipKeys[lk]) return;
+          let cIdx = headers.findIndex(h => h.toLowerCase() === lk);
+          if (cIdx === -1 && HEADER_ALIASES[lk]) {
+            cIdx = headers.findIndex(h => h.toLowerCase() === HEADER_ALIASES[lk]);
+          }
           if (cIdx !== -1) {
             let val = contents[key];
-            if (key.toLowerCase() === 'nama_santri' || key.toLowerCase() === 'nama_lengkap') {
-              val = String(val).toUpperCase();
-            } else if (key.toLowerCase() === 'nomor_wa') {
+            if (lk === 'nama_santri' || lk === 'nama_lengkap') {
+              val = String(val || '').trim().toUpperCase();
+            } else if (lk === 'nomor_wa') {
               val = normalizePhoneLocal08_(val);
+              sheet.getRange(rowNum, cIdx + 1).setNumberFormat('@').setValue(val);
+              return;
+            } else if (lk === 'nomor_urut') {
+              const strUrut = String(val || '').trim();
+              val = (strUrut && !isNaN(strUrut) && Number(strUrut) > 0) ? strUrut.padStart(3, '0') : strUrut;
               sheet.getRange(rowNum, cIdx + 1).setNumberFormat('@').setValue(val);
               return;
             }
@@ -1172,7 +1190,7 @@ function doPost(e) {
         }
       }
 
-      // Prioritas 2: Fallback mencari berdasarkan ID_Pendaftaran (dan hint Nama/Cabang jika ada duplikat ID)
+      // Prioritas 2: Fallback mencari berdasarkan ID_Pendaftaran (dan hint Nama/Cabang lama jika ada duplikat ID)
       if (!updated && colId !== -1 && idPendaftaran) {
         for (let i = 1; i < rows.length; i++) {
           if (String(rows[i][colId]).trim() === idPendaftaran) {
@@ -1236,20 +1254,37 @@ function doPost(e) {
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
       const headers = rows[0].map(h => String(h).trim());
-      const colId = headers.indexOf('ID_Pendaftaran');
+      const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
+      const colNama = headers.findIndex(h => h.toLowerCase() === 'nama_santri' || h.toLowerCase() === 'nama_lengkap');
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
+      const targetRowIdx = contents.rowIndex ? parseInt(contents.rowIndex, 10) : 0;
+      const hintNama = String(contents.Match_Nama || contents.Nama_Santri || contents.Nama_Lengkap || '').trim().toUpperCase();
       let deleted = false;
 
-      if (colId !== -1) {
+      if (targetRowIdx >= 2 && targetRowIdx <= rows.length) {
+        const r = rows[targetRowIdx - 1];
+        const rowId = colId !== -1 ? String(r[colId] || '').trim() : '';
+        const rowNama = colNama !== -1 ? String(r[colNama] || '').trim().toUpperCase() : '';
+        if ((idPendaftaran && rowId === idPendaftaran) || (hintNama && rowNama === hintNama)) {
+          sheet.deleteRow(targetRowIdx);
+          deleted = true;
+        }
+      }
+
+      if (!deleted && colId !== -1 && idPendaftaran) {
         for (let i = 1; i < rows.length; i++) {
           if (String(rows[i][colId]).trim() === idPendaftaran) {
-            sheet.deleteRow(i + 1);
-            deleted = true;
-            break;
+            const rowNama = colNama !== -1 ? String(rows[i][colNama] || '').trim().toUpperCase() : '';
+            if (!hintNama || !rowNama || rowNama === hintNama) {
+              sheet.deleteRow(i + 1);
+              deleted = true;
+              break;
+            }
           }
         }
       }
 
+      SpreadsheetApp.flush();
       return jsonResponse({
         status: deleted ? 'success' : 'not_found',
         message: deleted ? 'Data santri berhasil dihapus.' : 'Data tidak ditemukan.'
