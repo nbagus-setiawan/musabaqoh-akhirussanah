@@ -919,7 +919,7 @@ export default function AdminSantri({
       `- Kelas Diniyah: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
       `- Status: ${statusText}\n` +
       `- Nomor Urut: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n\n` +
-      `Mohon Ustadz/Ustadzah mengonfirmasikan Nomor Urut dan data peserta di atas kepada Panitia Musabaqah Akhirussanah 2026 agar Panitia dapat segera mencetak kartu nomor undian resmi. Syukron Katsiron.\n\n` +
+      `Mohon segera mengonfirmasikan ke Panitia Musabaqah Akhirussanah 2026 agar Panitia dapat segera mencetak kartu nomor undian resmi. Syukron Katsiron.\n\n` +
       `_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._`;
     window.open(buildWaUrl(item.Nomor_WA, pesan), '_blank', 'noopener,noreferrer');
   };
