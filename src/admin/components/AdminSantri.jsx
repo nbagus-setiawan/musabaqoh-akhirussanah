@@ -24,7 +24,8 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  UserCheck
 } from 'lucide-react';
 import { 
   updateStatus, 
@@ -72,6 +73,7 @@ export default function AdminSantri({
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [downloadTingkat, setDownloadTingkat] = useState('ALL');
   const [downloadCabang, setDownloadCabang] = useState('ALL');
+  const [downloadWali, setDownloadWali] = useState('ALL');
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Modal Kirim WhatsApp Massal
@@ -597,7 +599,7 @@ export default function AdminSantri({
   // ==========================================
   // 2. UNDUH REKAP PDF RESMI DENGAN KOP & TTD
   // ==========================================
-  const generateAndDownloadPdf = async (selectedTingkat = 'ALL', selectedCabang = 'ALL') => {
+  const generateAndDownloadPdf = async (selectedTingkat = 'ALL', selectedCabang = 'ALL', selectedWali = 'ALL') => {
     try {
       // Hanya cetak santri resmi berstatus Terverifikasi
       let targetSantri = registrations.filter(item => item.Status === 'Terverifikasi');
@@ -617,11 +619,19 @@ export default function AdminSantri({
         );
       }
 
+      if (selectedWali && selectedWali !== 'ALL') {
+        const wLower = selectedWali.toLowerCase();
+        targetSantri = targetSantri.filter(item =>
+          (item.Wali_Kelas || '').toLowerCase().includes(wLower) ||
+          wLower.includes((item.Wali_Kelas || '').toLowerCase())
+        );
+      }
+
       if (targetSantri.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tidak Ada Data Terverifikasi',
-          text: `Belum ada santri berstatus Terverifikasi pada filter yang dipilih (${selectedTingkat !== 'ALL' ? selectedTingkat : 'Semua Tingkat'}${selectedCabang !== 'ALL' ? ` - ${selectedCabang}` : ''}).`,
+          text: `Belum ada santri berstatus Terverifikasi pada filter yang dipilih (${selectedTingkat !== 'ALL' ? selectedTingkat : 'Semua Tingkat'}${selectedCabang !== 'ALL' ? ` - ${selectedCabang}` : ''}${selectedWali !== 'ALL' ? ` - ${selectedWali}` : ''}).`,
           confirmButtonColor: '#065f46'
         });
         return;
@@ -710,10 +720,14 @@ export default function AdminSantri({
         ? 'SEMUA CABANG'
         : selectedCabang.toUpperCase();
 
-      const subtitleText = `TINGKAT : ${namaTingkatLabel} | CABANG : ${namaCabangLabel}`;
+      const subtitleParts = [`TINGKAT : ${namaTingkatLabel}`, `CABANG : ${namaCabangLabel}`];
+      if (selectedWali && selectedWali !== 'ALL') {
+        subtitleParts.push(`WALI KELAS : ${selectedWali.toUpperCase()}`);
+      }
+      const subtitleText = subtitleParts.join(' | ');
       doc.setFontSize(10);
       if (doc.getTextWidth(subtitleText) > 170) {
-        doc.setFontSize(8.5);
+        doc.setFontSize(8);
       }
       doc.text(subtitleText, 105, 54.0, { align: 'center' });
 
@@ -799,13 +813,14 @@ export default function AdminSantri({
       // Simpan File PDF
       const cleanTingkat = (selectedTingkat || 'Semua').replace(/[^a-zA-Z0-9]/g, '_');
       const cleanCabang = (selectedCabang || 'Semua').replace(/[^a-zA-Z0-9]/g, '_');
-      const cleanFileName = `Daftar_Peserta_${cleanTingkat}_${cleanCabang}_Musabaqoh_1447H.pdf`;
+      const cleanWali = (!selectedWali || selectedWali === 'ALL') ? '' : `_${selectedWali.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const cleanFileName = `Daftar_Peserta_${cleanTingkat}_${cleanCabang}${cleanWali}_Musabaqoh_1447H.pdf`;
       doc.save(cleanFileName);
 
       Swal.hideLoading();
       Swal.close();
 
-      const filterSummary = `${selectedTingkat === 'ALL' ? 'Semua Tingkat' : selectedTingkat}${selectedCabang !== 'ALL' ? ` (${selectedCabang})` : ''}`;
+      const filterSummary = `${selectedTingkat === 'ALL' ? 'Semua Tingkat' : selectedTingkat}${selectedCabang !== 'ALL' ? ` (${selectedCabang})` : ''}${selectedWali !== 'ALL' ? ` - Wali: ${selectedWali}` : ''}`;
       Swal.fire({
         icon: 'success',
         title: 'Berhasil Diunduh!',
@@ -833,25 +848,94 @@ export default function AdminSantri({
     if (filterTingkat !== 'ALL') {
       const match = filterTingkat.toLowerCase().includes('ula') ? 'Tingkat Ula' :
         filterTingkat.toLowerCase().includes('wustho') ? 'Tingkat Wustho' :
-        filterTingkat.toLowerCase().includes('ulya') ? 'Tingkat Ulya' :
-        filterTingkat.toLowerCase().includes('mhq') ? 'Tingkat Hifdzil Qur\'an (MHQ)' : 'ALL';
+        filterTingkat.toLowerCase().includes('mhq') ? 'Tingkat MHQ' : 'ALL';
       setDownloadTingkat(match);
     } else {
       setDownloadTingkat('ALL');
+    }
+    if (filterWaliKelas !== 'ALL') {
+      setDownloadWali(filterWaliKelas);
+    } else {
+      setDownloadWali('ALL');
     }
     setDownloadCabang('ALL');
     setIsDownloadModalOpen(true);
   };
 
-  // Kumpulan opsi cabang unik untuk modal unduh PDF
-  const uniqueCabangOptions = useMemo(() => {
-    return Array.from(
-      new Set([
-        ...CABANG_LOMBA_LIST.map(c => c.name),
-        ...registrations.map(r => r.Cabang_Lomba).filter(Boolean)
-      ])
-    ).sort((a, b) => a.localeCompare(b, 'id'));
+  // Hitung jumlah santri Terverifikasi per jenjang tingkat secara dinamis dari database
+  const tingkatStats = useMemo(() => {
+    const verified = registrations.filter(r => r.Status === 'Terverifikasi');
+    let ula = 0;
+    let wustho = 0;
+    let mhq = 0;
+    verified.forEach(r => {
+      const t = (r.Tingkat || '').toLowerCase();
+      if (t.includes('ula')) ula++;
+      else if (t.includes('wustho')) wustho++;
+      else if (t.includes('mhq')) mhq++;
+    });
+    return {
+      total: verified.length,
+      ula,
+      wustho,
+      mhq
+    };
   }, [registrations]);
+
+  // Kumpulan opsi cabang yang SUDAH TERDAFTAR di database, sinkron dengan Tingkat yang dipilih
+  const availableCabangOptions = useMemo(() => {
+    let pool = registrations.filter(item => item.Status === 'Terverifikasi');
+    if (downloadTingkat !== 'ALL') {
+      const tLower = downloadTingkat.toLowerCase();
+      pool = pool.filter(item =>
+        (item.Tingkat || '').toLowerCase().includes(tLower) ||
+        tLower.includes((item.Tingkat || '').toLowerCase())
+      );
+    }
+
+    const countsMap = {};
+    pool.forEach(item => {
+      const c = (item.Cabang_Lomba || '').trim();
+      if (c) {
+        countsMap[c] = (countsMap[c] || 0) + 1;
+      }
+    });
+
+    return Object.entries(countsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }, [registrations, downloadTingkat]);
+
+  // Kumpulan opsi Wali Kelas / Guru yang SUDAH TERDAFTAR di database, sinkron dengan Tingkat & Cabang
+  const availableWaliOptions = useMemo(() => {
+    let pool = registrations.filter(item => item.Status === 'Terverifikasi');
+    if (downloadTingkat !== 'ALL') {
+      const tLower = downloadTingkat.toLowerCase();
+      pool = pool.filter(item =>
+        (item.Tingkat || '').toLowerCase().includes(tLower) ||
+        tLower.includes((item.Tingkat || '').toLowerCase())
+      );
+    }
+    if (downloadCabang !== 'ALL') {
+      const cLower = downloadCabang.toLowerCase();
+      pool = pool.filter(item =>
+        (item.Cabang_Lomba || '').toLowerCase().includes(cLower) ||
+        cLower.includes((item.Cabang_Lomba || '').toLowerCase())
+      );
+    }
+
+    const countsMap = {};
+    pool.forEach(item => {
+      const w = (item.Wali_Kelas || '').trim();
+      if (w) {
+        countsMap[w] = (countsMap[w] || 0) + 1;
+      }
+    });
+
+    return Object.entries(countsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }, [registrations, downloadTingkat, downloadCabang]);
 
   // Preview hitung jumlah santri Terverifikasi yang match secara real-time (sesuai isi PDF)
   const downloadPreviewStats = useMemo(() => {
@@ -870,6 +954,13 @@ export default function AdminSantri({
         cLower.includes((item.Cabang_Lomba || '').toLowerCase())
       );
     }
+    if (downloadWali !== 'ALL') {
+      const wLower = downloadWali.toLowerCase();
+      filtered = filtered.filter(item =>
+        (item.Wali_Kelas || '').toLowerCase().includes(wLower) ||
+        wLower.includes((item.Wali_Kelas || '').toLowerCase())
+      );
+    }
     const putriCount = filtered.filter(isSantriPutri).length;
     const putraCount = filtered.length - putriCount;
     return {
@@ -877,7 +968,7 @@ export default function AdminSantri({
       putri: putriCount,
       putra: putraCount
     };
-  }, [registrations, downloadTingkat, downloadCabang]);
+  }, [registrations, downloadTingkat, downloadCabang, downloadWali]);
 
   const downloadPreviewCount = downloadPreviewStats.total;
 
@@ -885,7 +976,7 @@ export default function AdminSantri({
   const handleExecuteDownload = async () => {
     setIsDownloading(true);
     try {
-      await generateAndDownloadPdf(downloadTingkat, downloadCabang);
+      await generateAndDownloadPdf(downloadTingkat, downloadCabang, downloadWali);
       setIsDownloadModalOpen(false);
     } finally {
       setIsDownloading(false);
@@ -2044,116 +2135,172 @@ export default function AdminSantri({
         </div>
       )}
 
-      {/* MODAL UNDUH REKAP PDF MODERN & INTERAKTIF */}
+      {/* MODAL UNDUH REKAP PDF MODERN & SINKRON DATABASE */}
       {isDownloadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 relative overflow-hidden">
-            {/* Top decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-100 space-y-4 relative overflow-hidden">
+            {/* Top decorative gradient bar Hijau & Gold Al-Falah */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#054736] via-[#075B45] to-[#D9B45B]" />
 
             {/* Header Modal */}
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-2xs">
-                  <FileText className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[#054736] shrink-0 shadow-2xs">
+                  <FileText className="w-5 h-5 text-[#054736]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
                     Unduh Rekap PDF Peserta
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Filter dokumen resmi daftar peserta musabaqoh
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Filter dokumen resmi daftar peserta musabaqah
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsDownloadModalOpen(false)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Tutup"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Form Fields */}
-            <div className="space-y-4 text-xs">
+            {/* Form Fields: Tingkat, Cabang, dan Wali Kelas */}
+            <div className="space-y-3 text-xs">
               
-              {/* Field 1: Tingkat */}
+              {/* Field 1: Tingkat Perlombaan */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-700 mb-1">
                   Tingkat Perlombaan
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-600">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#054736]">
                     <Layers className="w-4 h-4" />
                   </div>
                   <select
                     value={downloadTingkat}
-                    onChange={(e) => setDownloadTingkat(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
+                    onChange={(e) => {
+                      setDownloadTingkat(e.target.value);
+                      setDownloadCabang('ALL');
+                      setDownloadWali('ALL');
+                    }}
+                    className="w-full pl-9 pr-8 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-1 focus:ring-[#054736] focus:border-[#054736] outline-none transition-all appearance-none cursor-pointer"
                   >
-                    <option value="ALL">Semua Tingkat</option>
-                    <option value="Tingkat Ula">Tingkat Ula (Dasar / TPA)</option>
-                    <option value="Tingkat Wustho">Tingkat Wustho (Sifir & Jurumiyah)</option>
-                    <option value="Tingkat Ulya">Tingkat Ulya (Imrithi & Alfiyah)</option>
-                    <option value="Tingkat Hifdzil Qur'an (MHQ)">Tingkat Hifdzil Qur'an (MHQ)</option>
+                    <option value="ALL">Semua Tingkat ({tingkatStats.total} Peserta Terdaftar)</option>
+                    <option value="Tingkat Ula">
+                      Tingkat Ula (Sifir s/d Jurumiyah) {tingkatStats.ula > 0 ? `(${tingkatStats.ula} Peserta)` : '(0 Peserta)'}
+                    </option>
+                    <option value="Tingkat Wustho">
+                      Tingkat Wustho (Imrithi s/d Alfiyah) {tingkatStats.wustho > 0 ? `(${tingkatStats.wustho} Peserta)` : '(0 Peserta)'}
+                    </option>
+                    {tingkatStats.mhq > 0 && (
+                      <option value="Tingkat MHQ">
+                        Tingkat Hifdzil Qur'an (MHQ) ({tingkatStats.mhq} Peserta)
+                      </option>
+                    )}
                   </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+                  <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
 
-              {/* Field 2: Cabang */}
+              {/* Field 2: Cabang Perlombaan (Hanya Cabang yang Sudah Terdaftar di Tingkat Ini) */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Cabang Perlombaan
+                <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Cabang Perlombaan (Terdaftar)
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-600">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#054736]">
                     <Trophy className="w-4 h-4" />
                   </div>
                   <select
                     value={downloadCabang}
-                    onChange={(e) => setDownloadCabang(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
+                    onChange={(e) => {
+                      setDownloadCabang(e.target.value);
+                      setDownloadWali('ALL');
+                    }}
+                    className="w-full pl-9 pr-8 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-1 focus:ring-[#054736] focus:border-[#054736] outline-none transition-all appearance-none cursor-pointer"
                   >
-                    <option value="ALL">Semua Cabang Lomba</option>
-                    {uniqueCabangOptions.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                    <option value="ALL">
+                      Semua Cabang Lomba ({availableCabangOptions.reduce((acc, c) => acc + c.count, 0)} Peserta)
+                    </option>
+                    {availableCabangOptions.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} ({c.count} Peserta)
                       </option>
                     ))}
+                    {availableCabangOptions.length === 0 && (
+                      <option value="NONE" disabled>
+                        Belum ada peserta terdaftar di tingkat ini
+                      </option>
+                    )}
                   </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+                  <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Field 3: Wali Kelas / Guru Pembina (Hanya Guru yang Memiliki Peserta Terdaftar) */}
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Wali Kelas / Guru Pembina (Terdaftar)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#054736]">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                  <select
+                    value={downloadWali}
+                    onChange={(e) => setDownloadWali(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-1 focus:ring-[#054736] focus:border-[#054736] outline-none transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="ALL">
+                      Semua Wali Kelas ({availableWaliOptions.reduce((acc, w) => acc + w.count, 0)} Peserta)
+                    </option>
+                    {availableWaliOptions.map((w) => (
+                      <option key={w.name} value={w.name}>
+                        {w.name} ({w.count} Peserta)
+                      </option>
+                    ))}
+                    {availableWaliOptions.length === 0 && (
+                      <option value="NONE" disabled>
+                        Belum ada santri untuk wali kelas pada filter ini
+                      </option>
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
 
               {/* Live Preview Summary Card */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
+              <div className={`p-3 rounded-xl border transition-all ${
                 downloadPreviewCount > 0 
-                  ? 'bg-blue-50/70 border-blue-100 text-blue-950' 
-                  : 'bg-amber-50/70 border-amber-200 text-amber-900'
+                  ? 'bg-emerald-50/80 border-emerald-200/90 text-[#054736]' 
+                  : 'bg-amber-50/80 border-amber-200 text-amber-900'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className={`w-2 h-2 rounded-full ${
-                      downloadPreviewCount > 0 ? 'bg-blue-600 animate-pulse' : 'bg-amber-500'
+                      downloadPreviewCount > 0 ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'
                     }`} />
                     <span className="font-semibold text-xs text-slate-800">
-                      {downloadPreviewCount > 0 ? 'Jumlah santri terdata:' : 'Belum ada santri:'}
+                      {downloadPreviewCount > 0 ? 'Jumlah santri terdata:' : 'Belum ada santri terdaftar:'}
                     </span>
                   </div>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    downloadPreviewCount > 0 ? 'bg-blue-600 text-white shadow-2xs' : 'bg-amber-200 text-amber-900'
+                    downloadPreviewCount > 0 ? 'bg-[#054736] text-white shadow-2xs' : 'bg-amber-200 text-amber-900'
                   }`}>
                     {downloadPreviewCount} Peserta
                   </span>
                 </div>
                 {downloadPreviewCount > 0 && (
-                  <div className="mt-2 pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-blue-900">
+                  <div className="mt-2 pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[11px] text-emerald-900">
                     <span className="font-medium">Komposisi:</span>
                     <span className="font-semibold">
                       {downloadPreviewStats.putri} Putri • {downloadPreviewStats.putra} Putra
@@ -2165,11 +2312,11 @@ export default function AdminSantri({
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-end space-x-2.5 border-t border-slate-100">
+            <div className="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setIsDownloadModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs transition-colors cursor-pointer"
               >
                 Batal
               </button>
@@ -2178,9 +2325,9 @@ export default function AdminSantri({
                 type="button"
                 disabled={downloadPreviewCount === 0 || isDownloading}
                 onClick={handleExecuteDownload}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center space-x-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#054736] hover:bg-[#075B45] active:scale-95 text-white font-bold text-xs shadow-2xs flex items-center space-x-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                <Download className="w-4 h-4 text-white" />
+                <Download className="w-3.5 h-3.5 text-white" />
                 <span>{isDownloading ? 'Menyusun PDF...' : 'Unduh PDF'}</span>
               </button>
             </div>
