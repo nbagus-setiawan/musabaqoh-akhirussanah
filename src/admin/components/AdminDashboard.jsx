@@ -125,7 +125,9 @@ export default function AdminDashboard({
       const santriList = registrations.filter(r => {
         const k = (r.Kelas_Kategori || r.Kelas_Diniyah || '').toLowerCase().trim();
         const w = (r.Wali_Kelas || '').toLowerCase().trim();
-        return (k && k === kelasName.toLowerCase()) || (w && w === waliName.toLowerCase());
+        const targetK = kelasName.toLowerCase();
+        const targetW = waliName.toLowerCase();
+        return (k && (k === targetK || k.startsWith(targetK))) || (w && (w === targetW || (targetW && w.includes(targetW))));
       });
 
       const totalCount = santriList.length;
@@ -343,8 +345,8 @@ export default function AdminDashboard({
 
     let msg = `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n`;
     msg += `Salam ta'dzim kami haturkan kepada segenap Asatidz dan Asatidzah Wali Kelas Diniyah Pondok Pesantren Al-Falah Putak.\n\n`;
-    msg += `Semoga para Asatidz senantiasa berada dalam lindungan taufiq, rahmat, dan kesehatan dari Allah Subhanahu wa Ta'ala.\n\n`;
-    msg += `Izin kami dari Panitia Pelaksana menyampaikan rekapitulasi status pengisian formulir pendaftaran delegasi santri untuk *Musabaqah Akhirussanah 1447 H / 2026 M* (per ${dateStr}):\n\n`;
+    msg += `Semoga para Asatidz dan Asatidzah senantiasa berada dalam lindungan taufiq, rahmat, dan kesehatan dari Allah Subhanahu wa Ta'ala.\n\n`;
+    msg += `Izin kami dari Panitia Pelaksana menyampaikan rekapitulasi status pengisian formulir pendaftaran delegasi santri untuk *Musabaqah Akhirussanah 1447 H / 2026 M* (${dateStr}):\n\n`;
 
     msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `*KELAS & TINGKAT YANG BELUM MENGISI FORMULIR:*\n`;
@@ -410,7 +412,7 @@ export default function AdminDashboard({
         msg += `\n`;
       }
 
-      msg += `Bagi para Asatidz/Asatidzah yang kelasnya sudah mengisi di atas, kami mohon konfirmasinya apakah data pendaftaran delegasi santri dari kelas panjenengan sudah *fix (lengkap & final)*, ataukah masih ada delegasi santri tambahan yang akan didaftarkan?\n\n`;
+      msg += `Bagi para Asatidz/Asatidzah yang kelasnya sudah mengisi di atas, kami mohon konfirmasinya apakah data pendaftaran delegasi santri dari kelas panjenengan sudah *lengkap & final*, ataukah masih ada delegasi santri tambahan yang akan didaftarkan?\n\n`;
     } else {
       msg += `_(Belum ada kelas yang mengisi pendaftaran)_\n\n`;
     }
@@ -436,6 +438,13 @@ export default function AdminDashboard({
     setEditableGroupMsg(generateGroupWaMessage());
     setCopiedGroupMsg(false);
     setIsGroupWaModalOpen(true);
+  };
+
+  const handleRefreshModalData = () => {
+    handleRefresh();
+    setTimeout(() => {
+      setEditableGroupMsg(generateGroupWaMessage());
+    }, 700);
   };
 
   const handleCopyGroupMsg = () => {
@@ -1174,13 +1183,26 @@ export default function AdminDashboard({
 
             {/* Modal Footer */}
             <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/70 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={() => setEditableGroupMsg(generateGroupWaMessage())}
-                className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border border-slate-200 transition-all cursor-pointer"
-              >
-                Reset Pesan Asli
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleRefreshModalData}
+                  disabled={isRefreshing}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 flex-1 sm:flex-none"
+                  title="Sinkronkan data pendaftaran terbaru dari database Google Sheets secara realtime"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#075B45] ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>Perbarui Realtime</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEditableGroupMsg(generateGroupWaMessage())}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border border-slate-200 transition-all cursor-pointer flex-1 sm:flex-none"
+                >
+                  Reset
+                </button>
+              </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
