@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
 import AdminLogin from './components/AdminLogin';
@@ -43,6 +43,8 @@ export default function AdminApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [registrations, setRegistrations] = useState(() => getLocalRegistrations());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const menuTriggerRef = useRef(null);
   const [guruCount, setGuruCount] = useState(0);
   const [tingkatCount, setTingkatCount] = useState(0);
 
@@ -132,12 +134,10 @@ export default function AdminApp() {
   };
 
   return (
-    <div className="h-screen h-[100dvh] w-full overflow-hidden bg-[#F4F7FC] flex font-sans antialiased text-slate-800">
+    <div className="h-screen h-[100dvh] w-full overflow-hidden bg-[#F3F6F4] flex font-sans antialiased text-slate-800">
       
       {/* 
-        SIDEBAR PANITIA - Didesain Fixed Penuh 
-        Di Desktop (lg:) menempel permanen (fixed left-0) dan tidak pernah ikut terscroll.
-        Di Mobile / Tablet bertindak sebagai off-canvas sliding drawer.
+        SIDEBAR PANITIA - Ramping, Beridentitas Al-Falah, & Mendukung Collapse Desktop
       */}
       <AdminSidebar
         activeView={activeView}
@@ -145,6 +145,9 @@ export default function AdminApp() {
         onLogout={handleLogout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        menuTriggerRef={menuTriggerRef}
         registrationsCount={registrations.length}
         registrations={registrations}
         guruCount={guruCount}
@@ -153,10 +156,10 @@ export default function AdminApp() {
 
       {/* 
         AREA KONTEN UTAMA
-        lg:pl-64 memberikan ruang tepat untuk lebar sidebar (w-64)
-        Hanya area <main> yang dapat discroll secara vertikal.
       */}
-      <div className="flex-1 flex flex-col h-screen h-[100dvh] min-w-0 overflow-hidden bg-[#F4F7FC] lg:pl-64 transition-all">
+      <div className={`flex-1 flex flex-col h-screen h-[100dvh] min-w-0 overflow-hidden bg-[#F3F6F4] transition-[padding] duration-200 ease-out ${
+        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+      }`}>
         
         {/* Header Sticky di Atas Main Content */}
         <AdminHeader
@@ -164,6 +167,9 @@ export default function AdminApp() {
           activeView={activeView}
           setActiveView={setActiveView}
           onOpenSidebar={() => setSidebarOpen(true)}
+          isSidebarOpen={sidebarOpen}
+          menuTriggerRef={menuTriggerRef}
+          onLogout={handleLogout}
           registrationsCount={registrations.length}
           registrations={registrations}
           searchTerm={searchTerm}
@@ -171,10 +177,9 @@ export default function AdminApp() {
         />
 
         {/* 
-          Main Scroll Container - SATU-SATUNYA area yang scroll! 
-          Sidebar dan Header tetap statis/fixed di tempatnya.
+          Main Scroll Container - SATU-SATUNYA area yang scroll!
         */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F4F7FC] scroll-smooth">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F3F6F4] scroll-smooth">
           
           {/* 1. VIEW: DASHBOARD */}
           {activeView === 'dashboard' && (

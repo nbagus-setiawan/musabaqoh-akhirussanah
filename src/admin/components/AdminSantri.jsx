@@ -262,6 +262,7 @@ export default function AdminSantri({
         (item.Nomor_Urut || '').includes(q) ||
         (item.Cabang_Lomba || '').toLowerCase().includes(q) ||
         (item.Kelas_Kategori || '').toLowerCase().includes(q) ||
+        (item.Tingkat || '').toLowerCase().includes(q) ||
         normalizePhoneLocal08(item.Nomor_WA || '').includes(q)
       );
       if (!matchText) return false;

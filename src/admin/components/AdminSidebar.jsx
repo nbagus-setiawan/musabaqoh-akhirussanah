@@ -1,36 +1,38 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserCheck, 
-  GraduationCap, 
-  FileSpreadsheet, 
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import {
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  GraduationCap,
+  FileSpreadsheet,
   LogOut,
   ExternalLink,
   X,
   ChevronRight,
   ChevronDown,
-  Dices,
-  CheckCircle2,
-  Clock,
   ClipboardList,
   Receipt,
-  ListChecks
+  ListChecks,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
-import { 
-  getWaliKelasList, 
-  getSubKelasByTingkat, 
-  getPengeluaranList, 
+import {
+  getWaliKelasList,
+  getSubKelasByTingkat,
+  getPengeluaranList,
   getKebutuhanList,
   subscribeDataChanged
 } from '../../shared/services/api';
 
-export default function AdminSidebar({ 
-  activeView, 
-  setActiveView, 
+export default function AdminSidebar({
+  activeView,
+  setActiveView,
   onLogout,
   isOpen = false,
   onClose,
+  isCollapsed = false,
+  onToggleCollapse,
+  menuTriggerRef,
   registrationsCount = 0,
   registrations = [],
   guruCount = 0,
@@ -40,6 +42,20 @@ export default function AdminSidebar({
   const [isPencatatanOpen, setIsPencatatanOpen] = useState(true);
   const [pengeluaranCount, setPengeluaranCount] = useState(() => getPengeluaranList().length);
   const [kebutuhanCount, setKebutuhanCount] = useState(() => getKebutuhanList().length);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true
+  );
+  const closeBtnRef = useRef(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   useEffect(() => {
     if (isPencatatanActive) setIsPencatatanOpen(true);
@@ -59,7 +75,33 @@ export default function AdminSidebar({
     return () => unsub();
   }, [activeView]);
 
-  // Hitung jumlah riil guru dari data lokal / props
+  // Kelola Escape & fokus drawer mobile saat bertindak sebagai dialog modal
+  useEffect(() => {
+    if (isDesktop) return;
+
+    if (isOpen) {
+      wasOpenRef.current = true;
+      const timer = setTimeout(() => {
+        closeBtnRef.current?.focus();
+      }, 40);
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose?.();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      menuTriggerRef?.current?.focus();
+    }
+  }, [isOpen, isDesktop, onClose, menuTriggerRef]);
+
   const realGuruCount = useMemo(() => {
     try {
       const list = getWaliKelasList();
@@ -68,7 +110,6 @@ export default function AdminSidebar({
     return typeof guruCount === 'number' ? guruCount : 0;
   }, [guruCount, activeView]);
 
-  // Hitung jumlah riil kelas diniyah (Ula + Wustho)
   const realKelasCount = useMemo(() => {
     try {
       const sub = getSubKelasByTingkat();
@@ -84,41 +125,34 @@ export default function AdminSidebar({
     }
   }, [tingkatCount, activeView]);
 
-  const verifiedCount = registrations.filter(r => r.Status === 'Terverifikasi').length;
-  const pendingCount = registrations.filter(r => r.Status === 'Pending').length;
-  const undianCount = registrations.filter(r => r.Nomor_Urut && String(r.Nomor_Urut).trim() !== '').length;
   const totalCount = registrations.length || registrationsCount;
-  const progressPct = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
+  const compact = isDesktop && isCollapsed;
 
   const mainNavigation = [
-    { 
-      id: 'dashboard', 
-      label: 'Dashboard', 
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
       icon: LayoutDashboard,
-      badge: 'Live',
-      badgeColor: 'emerald'
+      badge: 'Live'
     },
-    { 
-      id: 'santri', 
-      label: 'Data Santri', 
-      icon: Users, 
-      count: totalCount,
-      badgeColor: 'slate'
+    {
+      id: 'santri',
+      label: 'Data Santri',
+      icon: Users,
+      count: totalCount
     },
-    { 
-      id: 'guru', 
-      label: 'Data Guru', 
-      icon: UserCheck, 
-      count: realGuruCount,
-      badgeColor: 'slate'
+    {
+      id: 'guru',
+      label: 'Data Guru',
+      icon: UserCheck,
+      count: realGuruCount
     },
-    { 
-      id: 'tingkat_kelas', 
-      label: 'Tingkat & Kelas', 
-      icon: GraduationCap, 
-      count: realKelasCount,
-      badgeColor: 'slate'
-    },
+    {
+      id: 'tingkat_kelas',
+      label: 'Tingkat & Kelas',
+      icon: GraduationCap,
+      count: realKelasCount
+    }
   ];
 
   const pencatatanSubMenus = [
@@ -137,74 +171,124 @@ export default function AdminSidebar({
   ];
 
   const systemNavigation = [
-    { 
-      id: 'pengaturan', 
-      label: 'Pengaturan Sheet', 
+    {
+      id: 'pengaturan',
+      label: 'Pengaturan Sheet',
       icon: FileSpreadsheet,
-      badge: 'Cloud',
-      badgeColor: 'emerald'
-    },
+      badge: 'Cloud'
+    }
   ];
+
+  const handleNavigate = (viewId) => {
+    setActiveView(viewId);
+    if (!isDesktop && onClose) onClose();
+  };
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div 
+      {/* Backdrop Mobile Drawer */}
+      {isOpen && !isDesktop && (
+        <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden transition-opacity duration-300"
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-slate-900/55 backdrop-blur-xs lg:hidden transition-opacity duration-200"
         />
       )}
 
-      {/* 
-        SIDEBAR PANITIA - Kaya Konten, Elegan, Berwibawa & Tidak Polosan
-        Terkunci secara fixed di viewport (top-0, bottom-0, left-0, w-64)
-      */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen h-[100dvh] max-h-[100dvh] flex flex-col shrink-0 no-print transition-transform duration-300 ease-in-out select-none bg-white border-r border-slate-200/90 shadow-sm text-slate-800 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-        
-        {/* Brand Header: Logo di Atas, Tulisan Bersih di Bawah Logo */}
-        <div className="pt-6 pb-4 px-4 border-b border-slate-100 bg-white relative shrink-0 text-center flex flex-col items-center">
-          <button
-            onClick={onClose}
-            className="lg:hidden absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-            title="Tutup Menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          {/* Logo Al-Falah Bersih & Berwibawa */}
-          <div className="mb-2.5 flex items-center justify-center">
-            <img 
-              src="/logo.webp" 
-              alt="Logo Al-Falah Putak" 
-              className="w-20 h-20 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-200" 
-            />
-          </div>
-
-          {/* Identitas Resmi Pesantren */}
-          <div className="w-full space-y-0.5">
-            <h1 className="text-sm font-extrabold text-slate-900 tracking-tight uppercase leading-snug">
-              YPPS AL-FALAH PUTAK
-            </h1>
-            <p className="text-xs font-semibold text-emerald-700 leading-tight">
-              Musabaqah Akhirussanah 1447 H
-            </p>
-          </div>
-        </div>
-
-        {/* Scrollable Navigation Area */}
-        <div className="flex-1 px-3 py-3 space-y-4 overflow-y-auto">
-          
-          {/* Kelompok 1: Navigasi Menu Utama */}
-          <div className="space-y-1">
-            <div className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
-              <span>Navigasi Utama</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <aside
+        id="admin-sidebar"
+        role={!isDesktop && isOpen ? 'dialog' : undefined}
+        aria-modal={!isDesktop && isOpen ? 'true' : undefined}
+        aria-label="Navigasi Panel Panitia"
+        aria-hidden={!isDesktop && !isOpen ? 'true' : undefined}
+        className={`fixed inset-y-0 left-0 z-50 h-[100dvh] max-h-[100dvh] flex flex-col shrink-0 no-print transition-[width,transform] duration-200 ease-out select-none bg-white border-r border-slate-200/90 shadow-sm text-slate-800 ${
+          compact ? 'lg:w-20' : 'lg:w-64'
+        } w-[min(17.5rem,85dvw)] ${
+          isOpen
+            ? 'translate-x-0 visible'
+            : '-translate-x-full invisible lg:translate-x-0 lg:visible'
+        }`}
+      >
+        {/* Header Brand Ringkas Horizontal */}
+        <div className={`px-3.5 py-3.5 border-b border-slate-100 bg-white shrink-0 flex items-center ${
+          compact ? 'justify-center' : 'justify-between gap-2.5'
+        }`}>
+          <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'gap-2.5'}`}>
+            <div className="w-9 h-9 rounded-xl bg-[#EAF4F0] border border-[#075B45]/15 flex items-center justify-center shrink-0 p-1">
+              <img
+                src="/logo.webp"
+                alt="Logo Al-Falah Putak"
+                width="36"
+                height="36"
+                className="w-full h-full object-contain"
+              />
             </div>
 
-            <nav className="space-y-1">
+            {!compact && (
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold text-slate-900 tracking-tight uppercase truncate leading-tight">
+                  YPPS Al-Falah
+                </p>
+                <p className="text-[11px] font-bold text-[#075B45] truncate leading-tight mt-0.5">
+                  Musabaqah 1447 H
+                </p>
+              </div>
+            )}
+          </div>
+
+          {!compact && onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:inline-flex p-1.5 rounded-lg text-slate-400 hover:text-[#075B45] hover:bg-[#EAF4F0] transition-colors cursor-pointer shrink-0"
+              title="Kecilkan Sidebar"
+              aria-label="Kecilkan Sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
+
+          {!isDesktop && (
+            <button
+              ref={closeBtnRef}
+              type="button"
+              onClick={onClose}
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+              title="Tutup Menu"
+              aria-label="Tutup Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Tombol Perluas Sidebar saat Mode Ringkas Desktop */}
+        {compact && onToggleCollapse && (
+          <div className="hidden lg:flex justify-center pt-2.5 pb-1 shrink-0">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-2 rounded-xl text-slate-500 hover:text-[#075B45] hover:bg-[#EAF4F0] transition-colors cursor-pointer"
+              title="Perluas Sidebar"
+              aria-label="Perluas Sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Area Navigasi Utama */}
+        <div className="flex-1 px-2.5 py-3 space-y-4 overflow-y-auto admin-sidebar-scroll">
+          {/* Kelompok 1: Menu Utama */}
+          <div className="space-y-1">
+            {!compact && (
+              <div className="px-2.5 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
+                <span>Menu Utama</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              </div>
+            )}
+
+            <nav aria-label="Menu Utama" className="space-y-1">
               {mainNavigation.map(item => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;
@@ -212,71 +296,89 @@ export default function AdminSidebar({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setActiveView(item.id);
-                      if (onClose) onClose();
-                    }}
-                    className={`w-full group flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                    onClick={() => handleNavigate(item.id)}
+                    title={compact ? item.label : undefined}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`w-full group flex items-center rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+                      compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
+                    } ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                        ? 'bg-[#075B45] text-white shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-semibold'
                     }`}
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <Icon className={`w-4.5 h-4.5 shrink-0 transition-colors ${
-                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'
+                    <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${
+                        isActive ? 'text-[#D9B45B]' : 'text-slate-400 group-hover:text-[#075B45]'
                       }`} />
-                      <span className="truncate">{item.label}</span>
+                      {!compact && <span className="truncate">{item.label}</span>}
                     </div>
 
-                    {item.count !== undefined ? (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                    {!compact && item.count !== undefined && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tabular-nums shrink-0 ${
                         isActive
-                          ? 'bg-white/20 text-white'
+                          ? 'bg-white/15 text-white'
                           : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/80'
                       }`}>
                         {item.count}
                       </span>
-                    ) : item.badge ? (
-                      <span className={`px-2 py-0.2 rounded-full text-[9px] font-semibold tracking-wide shrink-0 ${
+                    )}
+
+                    {!compact && item.badge && (
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wide shrink-0 ${
                         isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-blue-50 text-blue-600 border border-blue-100'
+                          ? 'bg-[#D9B45B]/20 text-[#F6E2A8]'
+                          : 'bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/15'
                       }`}>
                         {item.badge}
                       </span>
-                    ) : null}
+                    )}
                   </button>
                 );
               })}
 
-              {/* Menu Pencatatan dengan Sub-Menu Pengeluaran & Kebutuhan */}
+              {/* Menu Pencatatan + Submenu */}
               <div className="space-y-1">
                 <button
                   type="button"
-                  aria-expanded={isPencatatanOpen}
-                  aria-controls="submenu-pencatatan"
-                  onClick={() => setIsPencatatanOpen(prev => !prev)}
-                  className={`w-full group flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                  aria-expanded={compact ? undefined : isPencatatanOpen}
+                  aria-controls={compact ? undefined : 'submenu-pencatatan'}
+                  title={compact ? 'Pencatatan Panitia' : undefined}
+                  aria-label="Pencatatan Panitia"
+                  onClick={() => {
+                    if (compact) {
+                      onToggleCollapse?.();
+                      setIsPencatatanOpen(true);
+                      if (!isPencatatanActive) handleNavigate('pencatatan_pengeluaran');
+                    } else {
+                      setIsPencatatanOpen(prev => !prev);
+                    }
+                  }}
+                  className={`w-full group flex items-center rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+                    compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
+                  } ${
                     isPencatatanActive
-                      ? 'bg-blue-50 text-blue-700 border border-blue-100 font-bold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                      ? 'bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 font-bold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-semibold'
                   }`}
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <ClipboardList className={`w-4.5 h-4.5 shrink-0 transition-colors ${
-                      isPencatatanActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'
+                  <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
+                    <ClipboardList className={`w-4 h-4 shrink-0 transition-colors ${
+                      isPencatatanActive ? 'text-[#075B45]' : 'text-slate-400 group-hover:text-[#075B45]'
                     }`} />
-                    <span className="truncate">Pencatatan</span>
+                    {!compact && <span className="truncate">Pencatatan</span>}
                   </div>
 
-                  <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
-                    isPencatatanOpen ? 'rotate-0' : '-rotate-90'
-                  } ${isPencatatanActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                  {!compact && (
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
+                      isPencatatanOpen ? 'rotate-0' : '-rotate-90'
+                    } ${isPencatatanActive ? 'text-[#075B45]' : 'text-slate-400'}`} />
+                  )}
                 </button>
 
-                {isPencatatanOpen && (
-                  <div id="submenu-pencatatan" className="pl-4 ml-3 border-l border-slate-200/90 space-y-1">
+                {!compact && isPencatatanOpen && (
+                  <div id="submenu-pencatatan" className="pl-3 ml-3 border-l border-slate-200 space-y-1">
                     {pencatatanSubMenus.map(sub => {
                       const SubIcon = sub.icon;
                       const isSubActive = activeView === sub.id;
@@ -284,25 +386,23 @@ export default function AdminSidebar({
                         <button
                           key={sub.id}
                           type="button"
-                          onClick={() => {
-                            setActiveView(sub.id);
-                            if (onClose) onClose();
-                          }}
-                          className={`w-full group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                          onClick={() => handleNavigate(sub.id)}
+                          aria-current={isSubActive ? 'page' : undefined}
+                          className={`w-full group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-150 text-left cursor-pointer ${
                             isSubActive
-                              ? 'bg-blue-600 text-white shadow-xs font-bold'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                              ? 'bg-[#075B45] text-white shadow-xs font-bold'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-semibold'
                           }`}
                         >
                           <div className="flex items-center space-x-2 min-w-0">
                             <SubIcon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                              isSubActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'
+                              isSubActive ? 'text-[#D9B45B]' : 'text-slate-400 group-hover:text-[#075B45]'
                             }`} />
                             <span className="truncate">{sub.label}</span>
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tabular-nums shrink-0 ${
                             isSubActive
-                              ? 'bg-white/20 text-white'
+                              ? 'bg-white/15 text-white'
                               : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/80'
                           }`}>
                             {sub.count}
@@ -317,153 +417,88 @@ export default function AdminSidebar({
           </div>
 
           {/* Kelompok 2: Sistem & Database */}
-          <div className="space-y-1 pt-1">
-            <div className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-              Sistem & Sinkronisasi
-            </div>
+          <div className="space-y-1 pt-1 border-t border-slate-100">
+            {!compact && (
+              <div className="px-2.5 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                Sistem
+              </div>
+            )}
 
-            <nav className="space-y-1">
+            <nav aria-label="Menu Sistem" className="space-y-1">
               {systemNavigation.map(item => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      setActiveView(item.id);
-                      if (onClose) onClose();
-                    }}
-                    className={`w-full group flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                    type="button"
+                    onClick={() => handleNavigate(item.id)}
+                    title={compact ? item.label : undefined}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`w-full group flex items-center rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+                      compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
+                    } ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                        ? 'bg-[#075B45] text-white shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-semibold'
                     }`}
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <Icon className={`w-4.5 h-4.5 shrink-0 transition-colors ${
-                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'
+                    <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${
+                        isActive ? 'text-[#D9B45B]' : 'text-slate-400 group-hover:text-[#075B45]'
                       }`} />
-                      <span className="truncate">{item.label}</span>
+                      {!compact && <span className="truncate">{item.label}</span>}
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold shrink-0 ${
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                    }`}>
-                      {item.badge}
-                    </span>
+                    {!compact && (
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
+                        isActive
+                          ? 'bg-[#D9B45B]/20 text-[#F6E2A8]'
+                          : 'bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/15'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </nav>
           </div>
-
-          {/* WIDGET INTERAKTIF: Status Undian & Kuota Peserta (Sesuai Referensi Desain) */}
-          <div className="pt-2">
-            <div className="rounded-2xl p-3.5 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 text-slate-800 shadow-2xs border border-blue-100/80 relative overflow-hidden">
-              <div className="relative z-10 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold tracking-wide uppercase">
-                    <Dices className="w-2.5 h-2.5 text-blue-600" />
-                    <span>Sistem Undian</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-blue-700 font-bold bg-white px-2 py-0.5 rounded-full border border-blue-100 shadow-2xs">
-                    {undianCount} Diundi
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-bold text-slate-900">Status Kuota</span>
-                    <span className="text-[11px] font-mono font-bold text-blue-600">
-                      {progressPct}% Sah
-                    </span>
-                  </div>
-
-                  {/* Progress bar mini */}
-                  <div className="w-full h-1.5 bg-blue-200/50 rounded-full mt-1.5 overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${progressPct}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-blue-100/80 text-[10px]">
-                  <div className="flex items-center space-x-1.5 text-slate-700">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                    <span>{verifiedCount} Sah</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 text-slate-700">
-                    <Clock className="w-3 h-3 text-amber-500 shrink-0" />
-                    <span>{pendingCount} Pending</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setActiveView('santri');
-                    if (onClose) onClose();
-                  }}
-                  className="w-full mt-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-blue-600 hover:text-white text-blue-700 text-[10px] font-semibold text-center transition-all flex items-center justify-center space-x-1 border border-blue-200/80 shadow-2xs cursor-pointer"
-                >
-                  <span>Buka Data Undian</span>
-                  <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Footer Sidebar: Profil Panitia & Aksi Cepat */}
-        <div className="p-3 border-t border-slate-100 space-y-2 shrink-0 bg-white">
-          {/* Kartu Profil Ustadz Panitia */}
-          <div className="p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 shadow-2xs flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-              UA
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-xs font-bold text-slate-900 truncate">
-                Ustadz Admin
-              </span>
-              <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-600 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Panitia Pelaksana</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Tombol Pintasan */}
-          <div className="space-y-0.5">
-            <a
-              href="/"
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 transition-colors group"
-            >
-              <span className="flex items-center space-x-2">
-                <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                <span>Portal Formulir Publik</span>
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-            </a>
-
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors text-left cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5 text-rose-500" />
-              <span>Logout</span>
-            </button>
-          </div>
-
-          <div className="pt-1 text-center">
-            <span className="text-[9px] text-slate-400 font-medium block">
-              YPPS Al-Falah Putak
+        {/* Footer Sidebar Ramping: Pintasan Portal & Logout */}
+        <div className="p-2.5 border-t border-slate-100 space-y-1 shrink-0 bg-white">
+          <a
+            href="/"
+            title={compact ? 'Portal Formulir Publik' : undefined}
+            aria-label="Portal Formulir Publik"
+            className={`w-full flex items-center rounded-xl text-xs font-semibold text-slate-600 hover:text-[#075B45] hover:bg-[#EAF4F0]/70 transition-colors group ${
+              compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2'
+            }`}
+          >
+            <span className={`flex items-center ${compact ? 'justify-center' : 'space-x-2'}`}>
+              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#075B45] transition-colors shrink-0" />
+              {!compact && <span>Portal Publik</span>}
             </span>
-          </div>
-        </div>
+            {!compact && (
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            )}
+          </a>
 
+          <button
+            type="button"
+            onClick={onLogout}
+            title={compact ? 'Keluar / Logout' : undefined}
+            aria-label="Keluar dari Panel Admin"
+            className={`w-full flex items-center rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer ${
+              compact ? 'justify-center px-2 py-2.5' : 'space-x-2 px-3 py-2 text-left'
+            }`}
+          >
+            <LogOut className="w-4 h-4 text-rose-500 shrink-0" />
+            {!compact && <span>Logout</span>}
+          </button>
+        </div>
       </aside>
     </>
   );
