@@ -1050,131 +1050,129 @@ export default function AdminSantri({
       <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
 
         {/* Filter Bar (<search> semantik, responsif di semua ukuran layar) */}
-        <search aria-label="Pencarian dan Filter Data Peserta Santri" className="p-3.5 sm:p-4 border-b border-slate-100 bg-white space-y-3">
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
-            {/* Input Search */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true" />
-              <input
-                type="search"
-                aria-label="Cari santri"
-                placeholder="Cari nama santri, ID, no. peserta, cabang, wali kelas, atau 08..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                className="santri-control w-full pl-9 pr-9 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-medium outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
-              />
-              {localSearch && (
-                <button
-                  type="button"
-                  onClick={() => setLocalSearch('')}
-                  aria-label="Bersihkan kata kunci pencarian"
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-4 h-4" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-
-            {/* Group Filter Controls */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                aria-label="Filter Tingkat"
-                value={filterTingkat}
-                onChange={(e) => handleTingkatChange(e.target.value)}
-                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
-                  filterTingkat !== 'ALL' 
-                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
-                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
-                }`}
+        <search aria-label="Pencarian dan Filter Data Peserta Santri" className="p-2.5 sm:p-3.5 border-b border-slate-100 bg-white space-y-2">
+          {/* Baris 1: Search Input */}
+          <div className="relative w-full">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Cari santri"
+              placeholder="Cari nama santri, ID, no. peserta, cabang, atau wali..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200/90 text-xs font-medium outline-none focus:border-[#075B45] focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
+            />
+            {localSearch && (
+              <button
+                type="button"
+                onClick={() => setLocalSearch('')}
+                aria-label="Bersihkan kata kunci pencarian"
+                className="absolute inset-y-0 right-0 px-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                <option value="ALL">Semua Tingkat</option>
-                <option value="Ula">Tingkat Ula</option>
-                <option value="Wustho">Tingkat Wustho</option>
-                <option value="MHQ">Tingkat MHQ</option>
-              </select>
-
-              <select
-                aria-label="Filter Wali Kelas"
-                value={filterWaliKelas}
-                onChange={(e) => setFilterWaliKelas(e.target.value)}
-                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer max-w-[200px] truncate ${
-                  filterWaliKelas !== 'ALL' 
-                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
-                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
-                }`}
-                title="Filter berdasarkan Wali Kelas"
-              >
-                <option value="ALL">Semua Wali Kelas ({filteredWaliOptions.length})</option>
-                {filteredWaliOptions.map(name => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                aria-label="Filter Gender"
-                value={filterGender}
-                onChange={(e) => setFilterGender(e.target.value)}
-                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
-                  filterGender !== 'ALL' 
-                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
-                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <option value="ALL">Semua Gender</option>
-                <option value="L">Putra</option>
-                <option value="P">Putri</option>
-              </select>
-
-              <select
-                aria-label="Filter Status Nomor Undian"
-                value={filterLottery}
-                onChange={(e) => setFilterLottery(e.target.value)}
-                className={`santri-control px-3 py-2 rounded-2xl border text-xs font-semibold outline-none bg-white transition-all cursor-pointer ${
-                  filterLottery !== 'ALL' 
-                    ? 'border-blue-600 text-blue-700 bg-blue-50/40' 
-                    : 'border-slate-200/90 text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <option value="ALL">Semua Undian</option>
-                <option value="ASSIGNED">Sudah Diundi (3 Digit)</option>
-                <option value="UNASSIGNED">Belum Diundi</option>
-              </select>
-
-              {isFilterActive && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="santri-control px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center space-x-1.5 transition-colors cursor-pointer"
-                  title="Reset semua filter"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Reset</span>
-                </button>
-              )}
-            </div>
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            )}
           </div>
 
-          {/* Sub-bar Pilih Semua & Ringkasan Hasil Filter */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-            <label className="santri-control inline-flex items-center gap-2 cursor-pointer text-slate-600 font-semibold select-none">
+          {/* Baris 2: Filter Swipeable 1 Baris Horizontal di HP (Anti-Bengkak) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-0.5 px-0.5">
+            <select
+              aria-label="Filter Tingkat"
+              value={filterTingkat}
+              onChange={(e) => handleTingkatChange(e.target.value)}
+              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold outline-none transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                filterTingkat !== 'ALL' 
+                  ? 'border-[#075B45] text-[#075B45] bg-[#EAF4F0]' 
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white'
+              }`}
+            >
+              <option value="ALL">Semua Tingkat</option>
+              <option value="Ula">Tingkat Ula</option>
+              <option value="Wustho">Tingkat Wustho</option>
+              <option value="MHQ">Tingkat MHQ</option>
+            </select>
+
+            <select
+              aria-label="Filter Wali Kelas"
+              value={filterWaliKelas}
+              onChange={(e) => setFilterWaliKelas(e.target.value)}
+              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold outline-none transition-all cursor-pointer shrink-0 whitespace-nowrap max-w-[160px] truncate ${
+                filterWaliKelas !== 'ALL' 
+                  ? 'border-[#075B45] text-[#075B45] bg-[#EAF4F0]' 
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white'
+              }`}
+              title="Filter berdasarkan Wali Kelas"
+            >
+              <option value="ALL">Semua Wali Kelas ({filteredWaliOptions.length})</option>
+              {filteredWaliOptions.map(name => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              aria-label="Filter Gender"
+              value={filterGender}
+              onChange={(e) => setFilterGender(e.target.value)}
+              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold outline-none transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                filterGender !== 'ALL' 
+                  ? 'border-[#075B45] text-[#075B45] bg-[#EAF4F0]' 
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white'
+              }`}
+            >
+              <option value="ALL">Semua Gender</option>
+              <option value="L">Putra</option>
+              <option value="P">Putri</option>
+            </select>
+
+            <select
+              aria-label="Filter Status Nomor Undian"
+              value={filterLottery}
+              onChange={(e) => setFilterLottery(e.target.value)}
+              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold outline-none transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                filterLottery !== 'ALL' 
+                  ? 'border-[#075B45] text-[#075B45] bg-[#EAF4F0]' 
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300 bg-white'
+              }`}
+            >
+              <option value="ALL">Semua Undian</option>
+              <option value="ASSIGNED">Sudah Diundi</option>
+              <option value="UNASSIGNED">Belum Diundi</option>
+            </select>
+
+            {isFilterActive && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center space-x-1 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                title="Reset semua filter"
+              >
+                <RotateCcw className="w-3 h-3" aria-hidden="true" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
+
+          {/* Baris 3: Sub-bar Pilih Semua & Ringkasan Hasil Filter (1 Baris Ringkas) */}
+          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100 text-[11px]">
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-600 font-medium select-none">
               <input
                 type="checkbox"
                 checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(getRowKey(d)))}
                 onChange={handleToggleSelectAllVisible}
                 disabled={paginatedData.length === 0}
-                className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                className="rounded text-[#075B45] focus:ring-[#075B45] w-3.5 h-3.5 cursor-pointer"
               />
-              <span>Pilih semua di halaman ini ({paginatedData.length})</span>
+              <span>Pilih semua ({paginatedData.length})</span>
             </label>
 
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-1.5 text-slate-500 font-medium">
               <span>
-                Ditemukan <strong className="text-slate-800">{filteredData.length}</strong> santri
+                Total <strong className="text-slate-800">{filteredData.length}</strong> santri
               </span>
               {selectedIds.size > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-200">
+                <span className="px-1.5 py-0.2 rounded-full bg-[#EAF4F0] text-[#054736] font-bold border border-[#075B45]/20 text-[10px]">
                   {selectedIds.size} dipilih
                 </span>
               )}
