@@ -1314,21 +1314,22 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       {formStage === 'identity' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-fadeIn">
           
-          {/* Header Hijau Tua Resmi */}
-          <div className="bg-[#075B45] text-white p-4 sm:p-5 border-b border-[#054736]">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 border border-white/20">
-                <UserCheck className="w-5 h-5 text-[#D9B45B]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  Tahap 1: Identitas Wali Kelas & Kelas Diniyah
-                </h1>
-                <p className="text-[11px] sm:text-xs text-emerald-100/90 mt-0.5 line-clamp-1">
-                  Pilih Wali Kelas untuk menghubungkan delegasi santri secara resmi
-                </p>
+          {/* Header Tahap 1 */}
+          <div className="bg-[#075B45] px-4 py-3 border-b border-[#054736]">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#D9B45B] bg-[#D9B45B]/10 border border-[#D9B45B]/30 px-2 py-0.5 rounded-full">
+                Tahap 1 dari 3
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+                <UserCheck className="w-4 h-4 text-[#D9B45B]" />
               </div>
             </div>
+            <h1 className="text-sm font-bold text-white leading-tight">
+              Identitas Wali Kelas
+            </h1>
+            <p className="text-[11px] text-emerald-100/80 mt-0.5">
+              Pilih nama Wali Kelas &amp; Kelas Diniyah
+            </p>
           </div>
 
           <form onSubmit={handleProceedToHub} className="p-4 sm:p-6 space-y-5">
