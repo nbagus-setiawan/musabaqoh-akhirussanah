@@ -18,10 +18,54 @@ const STATUS_LABEL_MAP = {
   Ditolak: 'TIDAK LOLOS / DITOLAK'
 };
 
+const SYSTEM_FOOTER_2026 =
+  '_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._';
+
+const DEFAULT_EXTRA_NOTE =
+  'Bagi santri yang telah dinyatakan DITERIMA, dimohon kepada Ustadz/Ustadzah untuk mencatat/mencetak serta menyetorkan daftar Nomor Urut Peserta di atas kepada Panitia Pelaksana Musabaqah Akhirussanah 2026 guna keperluan pencetakan kartu/nomor undian resmi dan penjadwalan tampil.';
+
+function formatWaliSection(items) {
+  const accepted = items.filter(s => s.Status === 'Terverifikasi');
+  const pending = items.filter(s => (s.Status || 'Pending') === 'Pending');
+  const rejected = items.filter(s => s.Status === 'Ditolak');
+
+  const sections = [];
+
+  if (accepted.length > 0) {
+    const lines = accepted.map((s, i) => {
+      const nama = s.Nama_Lengkap || s.Nama_Santri || '-';
+      const cabang = s.Cabang_Lomba || '-';
+      const urut = s.Nomor_Urut ? `*${s.Nomor_Urut}*` : '_Belum Diundi_';
+      return `${i + 1}. No. Urut: ${urut} | *${nama}* - Cabang: ${cabang}`;
+    });
+    sections.push(`*A. SANTRI DITERIMA / TERVERIFIKASI (${accepted.length} Santri):*\n${lines.join('\n')}`);
+  }
+
+  if (pending.length > 0) {
+    const lines = pending.map((s, i) => {
+      const nama = s.Nama_Lengkap || s.Nama_Santri || '-';
+      const cabang = s.Cabang_Lomba || '-';
+      return `${i + 1}. *${nama}* - Cabang: ${cabang} (Status: Pending)`;
+    });
+    sections.push(`*B. SANTRI MENUNGGU VERIFIKASI / PENDING (${pending.length} Santri):*\n${lines.join('\n')}`);
+  }
+
+  if (rejected.length > 0) {
+    const lines = rejected.map((s, i) => {
+      const nama = s.Nama_Lengkap || s.Nama_Santri || '-';
+      const cabang = s.Cabang_Lomba || '-';
+      return `${i + 1}. *${nama}* - Cabang: ${cabang} (Status: Ditolak)`;
+    });
+    sections.push(`*C. SANTRI DITOLAK (${rejected.length} Santri):*\n${lines.join('\n')}`);
+  }
+
+  return { accepted, pending, rejected, sections };
+}
+
 /**
  * Dialog native <dialog> untuk mengirim WhatsApp massal penerimaan santri.
- * Mendukung mode pengelompokan per Wali Kelas (satu pesan merangkum seluruh santri binaan)
- * maupun mode per individu santri, dengan format nomor 08... -> wa.me/628... otomatis.
+ * Merangkum seluruh santri binaan per Wali Kelas (Diterima + No. Urut, Pending, Ditolak)
+ * dalam satu pesan terpadu, maupun 1 pesan rekap gabungan untuk dibagikan ke Grup WA.
  */
 export default function BulkWhatsAppDialog({
   isOpen,
@@ -35,12 +79,10 @@ export default function BulkWhatsAppDialog({
   const noteInputId = useId();
   const dialogRef = useRef(null);
 
-  const [scope, setScope] = useState(selectedIds.size > 0 ? 'SELECTED' : 'Terverifikasi');
+  const [scope, setScope] = useState(selectedIds.size > 0 ? 'SELECTED' : 'ALL');
   const [tingkatFilter, setTingkatFilter] = useState('ALL');
-  const [groupMode, setGroupMode] = useState('WALI_KELAS'); // 'WALI_KELAS' | 'INDIVIDU'
-  const [extraNote, setExtraNote] = useState(
-    'Mohon santri yang telah diterima agar mempersiapkan diri dengan baik dan hadir tepat waktu sesuai jadwal Musabaqah Akhirussanah 1447 H.'
-  );
+  const [groupMode, setGroupMode] = useState('WALI_KELAS'); // 'WALI_KELAS' | 'REKAP_GRUP' | 'INDIVIDU'
+  const [extraNote, setExtraNote] = useState(DEFAULT_EXTRA_NOTE);
   const [sentKeys, setSentKeys] = useState(() => new Set());
   const [copiedKey, setCopiedKey] = useState('');
   const [previewKey, setPreviewKey] = useState('');
@@ -48,7 +90,7 @@ export default function BulkWhatsAppDialog({
   // Reset default scope saat modal dibuka sesuai konteks seleksi saat ini
   useEffect(() => {
     if (isOpen) {
-      setScope(selectedIds.size > 0 ? 'SELECTED' : 'Terverifikasi');
+      setScope(selectedIds.size > 0 ? 'SELECTED' : 'ALL');
       setTingkatFilter('ALL');
       setCopiedKey('');
     }
@@ -121,17 +163,19 @@ export default function BulkWhatsAppDialog({
         const key = `ind-${item.ID_Pendaftaran || idx}-${idx}`;
         const statusText = STATUS_LABEL_MAP[item.Status] || item.Status || 'Terdaftar';
         const message =
-          `Assalamu'alaikum Wr. Wb.\n` +
+          `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n` +
           `Yth. *${item.Wali_Kelas || 'Wali Kelas'}* / Ananda *${item.Nama_Lengkap || item.Nama_Santri}*\n\n` +
-          `Informasi Penerimaan Peserta *Musabaqah Akhirussanah 1447 H* YPPS Al-Falah Putak:\n` +
+          `Informasi Penerimaan Peserta *Musabaqah Akhirussanah 2026* YPPS Al-Falah Putak:\n` +
           `- ID Pendaftaran: ${item.ID_Pendaftaran || '-'}\n` +
           `- Nama Santri: *${item.Nama_Lengkap || item.Nama_Santri || '-'}*\n` +
           `- Kelas Diniyah: ${item.Tingkat || '-'} - ${item.Kelas_Kategori || item.Kelas_Diniyah || '-'}\n` +
           `- Cabang Lomba: ${item.Cabang_Lomba || '-'}\n` +
           `- Status Penerimaan: *${statusText}*\n` +
-          (item.Nomor_Urut ? `- Nomor Urut Tampil: *${item.Nomor_Urut}*\n` : '') +
+          `- Nomor Urut: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n` +
           (extraNote.trim() ? `\n${extraNote.trim()}\n` : '\n') +
-          `\nSyukron Katsiron.\nWassalamu'alaikum Wr. Wb.\n*Panitia Musabaqah Akhirussanah YPPS Al-Falah Putak*`;
+          `\nSyukron Katsiron.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n` +
+          `*Panitia Musabaqah Akhirussanah 2026 YPPS Al-Falah Putak*\n\n` +
+          `${SYSTEM_FOOTER_2026}`;
 
         return {
           key,
@@ -145,7 +189,7 @@ export default function BulkWhatsAppDialog({
       });
     }
 
-    // Mode WALI_KELAS: gabungkan santri berdasarkan Nomor WA + Nama Wali Kelas
+    // Kelompokkan santri berdasarkan Nomor WA + Nama Wali Kelas
     const map = new Map();
     scopedRegistrations.forEach((item) => {
       const phone08 = normalizePhoneLocal08(item.Nomor_WA);
@@ -167,37 +211,73 @@ export default function BulkWhatsAppDialog({
       entry.items.push(item);
     });
 
-    return Array.from(map.values()).map((grp) => {
-      const classLabel = Array.from(grp.classes).join(', ') || '-';
-      const acceptedCount = grp.items.filter(x => x.Status === 'Terverifikasi').length;
-      const lines = grp.items.map((s, i) => {
-        const nama = s.Nama_Lengkap || s.Nama_Santri || '-';
-        const cabang = s.Cabang_Lomba || '-';
-        const urut = s.Nomor_Urut ? ` | No. Urut: ${s.Nomor_Urut}` : '';
-        const st = s.Status === 'Terverifikasi' ? 'DITERIMA' : (s.Status || 'Pending');
-        return `${i + 1}. *${nama}* (${cabang}${urut}) - Status: *${st}*`;
+    const groupedList = Array.from(map.values());
+
+    // Mode REKAP_GRUP: 1 pesan gabungan seluruh wali kelas untuk langsung dishare ke Grup WA / teruskan banyak kontak
+    if (groupMode === 'REKAP_GRUP') {
+      if (groupedList.length === 0) return [];
+      const blocks = groupedList.map((grp, idx) => {
+        const classLabel = Array.from(grp.classes).join(', ') || '-';
+        const { accepted, pending, rejected, sections } = formatWaliSection(grp.items);
+        return (
+          `*${idx + 1}. ${grp.waliName}* (Kelas Diniyah: ${classLabel})\n` +
+          `Ringkasan: Total ${grp.items.length} | Diterima: ${accepted.length}` +
+          (pending.length > 0 ? ` | Pending: ${pending.length}` : '') +
+          (rejected.length > 0 ? ` | Ditolak: ${rejected.length}` : '') +
+          `\n${sections.join('\n')}`
+        );
       });
 
-      const headerStatus =
-        acceptedCount === grp.items.length
-          ? 'Pemberitahuan Resmi Penerimaan Santri Peserta'
-          : 'Rekap Status Penerimaan Santri Peserta';
-
       const message =
-        `Assalamu'alaikum Wr. Wb.\n` +
-        `Yth. *${grp.waliName}*\n` +
-        `Wali Kelas Diniyah: *${classLabel}*\n\n` +
-        `*${headerStatus} - Musabaqah Akhirussanah 1447 H* YPPS Al-Falah Putak (${grp.items.length} Santri):\n\n` +
-        `${lines.join('\n')}\n` +
+        `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+        `Yth. Bapak/Ibu Ustadz/Ustadzah Wali Kelas Diniyah\n` +
+        `Pondok Pesantren YPPS Al-Falah Putak\n\n` +
+        `Berikut kami sampaikan *Rekapitulasi Resmi Penerimaan & Nomor Urut Santri Peserta Musabaqah Akhirussanah 2026* (${scopedRegistrations.length} Santri):\n\n` +
+        `${blocks.join('\n\n------------------------------\n\n')}\n` +
         (extraNote.trim() ? `\n${extraNote.trim()}\n` : '\n') +
         `\nAtas perhatian dan kerja sama Ustadz/Ustadzah, kami ucapkan Syukron Katsiron.\n` +
-        `Wassalamu'alaikum Wr. Wb.\n` +
-        `*Panitia Musabaqah Akhirussanah YPPS Al-Falah Putak*`;
+        `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n` +
+        `*Panitia Musabaqah Akhirussanah 2026 YPPS Al-Falah Putak*\n\n` +
+        `${SYSTEM_FOOTER_2026}`;
+
+      return [{
+        key: 'rekap-grup-all',
+        isBroadcast: true,
+        title: `Rekap Gabungan Semua Kelas (${groupedList.length} Wali Kelas)`,
+        subtitle: `Merangkum ${scopedRegistrations.length} santri siap bagikan ke Grup WA`,
+        phone08: '',
+        count: scopedRegistrations.length,
+        items: scopedRegistrations,
+        message
+      }];
+    }
+
+    // Mode WALI_KELAS: 1 pesan terpadu per Wali Kelas merangkum Diterima (+No.Urut), Pending, dan Ditolak
+    return groupedList.map((grp) => {
+      const classLabel = Array.from(grp.classes).join(', ') || '-';
+      const { accepted, pending, rejected, sections } = formatWaliSection(grp.items);
+
+      const message =
+        `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
+        `Kepada Yth. *${grp.waliName}*\n` +
+        `Wali Kelas Diniyah: *${classLabel}*\n\n` +
+        `Berikut rangkuman resmi status pendaftaran & penerimaan santri yang Ustadz/Ustadzah daftarkan pada *Musabaqah Akhirussanah 2026* YPPS Al-Falah Putak:\n` +
+        `Total Didaftarkan: *${grp.items.length} Santri*` +
+        ` (Diterima: ${accepted.length}` +
+        (pending.length > 0 ? `, Pending: ${pending.length}` : '') +
+        (rejected.length > 0 ? `, Ditolak: ${rejected.length}` : '') +
+        `)\n\n` +
+        `${sections.join('\n\n')}\n` +
+        (extraNote.trim() ? `\n${extraNote.trim()}\n` : '\n') +
+        `\nAtas perhatian dan kerja sama Ustadz/Ustadzah, kami ucapkan Syukron Katsiron.\n` +
+        `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n` +
+        `*Panitia Musabaqah Akhirussanah 2026 YPPS Al-Falah Putak*\n\n` +
+        `${SYSTEM_FOOTER_2026}`;
 
       return {
         key: grp.key,
         title: grp.waliName,
-        subtitle: `Kelas Diniyah: ${classLabel} (${grp.items.length} santri)`,
+        subtitle: `Kelas Diniyah: ${classLabel} | Total ${grp.items.length} (Diterima: ${accepted.length}${pending.length ? `, Pending: ${pending.length}` : ''}${rejected.length ? `, Ditolak: ${rejected.length}` : ''})`,
         phone08: grp.phone08,
         count: grp.items.length,
         items: grp.items,
@@ -212,7 +292,7 @@ export default function BulkWhatsAppDialog({
   }, [recipients, previewKey]);
 
   const validRecipients = useMemo(
-    () => recipients.filter(r => r.phone08 && r.phone08.length >= 9),
+    () => recipients.filter(r => r.isBroadcast || (r.phone08 && r.phone08.length >= 9)),
     [recipients]
   );
 
@@ -227,8 +307,8 @@ export default function BulkWhatsAppDialog({
   );
 
   const handleOpenWhatsApp = (recipient) => {
-    if (!recipient?.phone08) return;
-    const url = buildWaUrl(recipient.phone08, recipient.message);
+    if (!recipient || (!recipient.isBroadcast && !recipient.phone08)) return;
+    const url = buildWaUrl(recipient.isBroadcast ? '' : recipient.phone08, recipient.message);
     window.open(url, '_blank', 'noopener,noreferrer');
     setSentKeys(prev => {
       const next = new Set(prev);
@@ -319,9 +399,9 @@ export default function BulkWhatsAppDialog({
                 {selectedIds.size > 0 && (
                   <option value="SELECTED">Santri Terpilih ({selectedIds.size})</option>
                 )}
-                <option value="Terverifikasi">Semua Diterima / Terverifikasi</option>
-                <option value="Pending">Semua Menunggu Verifikasi (Pending)</option>
-                <option value="ALL">Semua Peserta Terdaftar</option>
+                <option value="ALL">Semua Status (Diterima + Pending + Ditolak)</option>
+                <option value="Terverifikasi">Hanya Diterima / Terverifikasi</option>
+                <option value="Pending">Hanya Menunggu Verifikasi (Pending)</option>
               </select>
             </div>
 
@@ -346,11 +426,11 @@ export default function BulkWhatsAppDialog({
               <legend className="block font-bold text-slate-700 text-[11px] uppercase tracking-wider mb-1">
                 Mode Pengiriman
               </legend>
-              <div className="grid grid-cols-2 gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setGroupMode('WALI_KELAS')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-1.5 rounded-lg text-[10.5px] font-bold transition-colors cursor-pointer ${
                     groupMode === 'WALI_KELAS'
                       ? 'bg-emerald-700 text-white'
                       : 'text-slate-600 hover:bg-slate-50'
@@ -360,8 +440,19 @@ export default function BulkWhatsAppDialog({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setGroupMode('REKAP_GRUP')}
+                  className={`px-2 py-1.5 rounded-lg text-[10.5px] font-bold transition-colors cursor-pointer ${
+                    groupMode === 'REKAP_GRUP'
+                      ? 'bg-emerald-700 text-white'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  1 Pesan Grup
+                </button>
+                <button
+                  type="button"
                   onClick={() => setGroupMode('INDIVIDU')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-1.5 rounded-lg text-[10.5px] font-bold transition-colors cursor-pointer ${
                     groupMode === 'INDIVIDU'
                       ? 'bg-emerald-700 text-white'
                       : 'text-slate-600 hover:bg-slate-50'
@@ -377,10 +468,10 @@ export default function BulkWhatsAppDialog({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <label htmlFor={noteInputId} className="text-xs font-bold text-slate-700">
-                Catatan / Pengumuman Tambahan di Pesan WhatsApp
+                Catatan / Instruksi Penyetoran Nomor Urut
               </label>
               <span className="text-[11px] text-slate-400">
-                Otomatis disisipkan pada semua pesan
+                Otomatis disisipkan sebelum penutup resmi
               </span>
             </div>
             <textarea
@@ -389,7 +480,7 @@ export default function BulkWhatsAppDialog({
               value={extraNote}
               onChange={(e) => setExtraNote(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 bg-white focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 outline-none"
-              placeholder="Tulis informasi tambahan jadwal, tempat daftar ulang, atau pesan panitia..."
+              placeholder="Tulis instruksi penyetoran/cetak nomor urut atau jadwal tampil..."
             />
           </div>
 
@@ -404,7 +495,7 @@ export default function BulkWhatsAppDialog({
                   {recipients.length} Target Chat ({scopedRegistrations.length} Santri)
                 </p>
                 <p className="text-[11px] text-emerald-800">
-                  Terkirim sesi ini: <span className="font-bold">{sentValidCount}</span> dari <span className="font-bold">{validRecipients.length}</span> nomor aktif
+                  Terkirim sesi ini: <span className="font-bold">{sentValidCount}</span> dari <span className="font-bold">{validRecipients.length}</span> target siap kirim
                 </p>
               </div>
             </div>
@@ -430,8 +521,10 @@ export default function BulkWhatsAppDialog({
                 <Send className="w-3.5 h-3.5" />
                 <span>
                   {nextUnsentRecipient
-                    ? `Kirim WA Berikutnya (${sentValidCount + 1}/${validRecipients.length})`
-                    : 'Semua Nomor Aktif Terkirim'}
+                    ? (nextUnsentRecipient.isBroadcast
+                      ? 'Bagikan ke Grup WA Sekarang'
+                      : `Kirim WA Berikutnya (${sentValidCount + 1}/${validRecipients.length})`)
+                    : 'Semua Target Aktif Terkirim'}
                 </span>
               </button>
             </div>
@@ -454,7 +547,7 @@ export default function BulkWhatsAppDialog({
                 {recipients.map((rec, idx) => {
                   const isSent = sentKeys.has(rec.key);
                   const isActive = activePreviewRecipient?.key === rec.key;
-                  const hasValidPhone = Boolean(rec.phone08 && rec.phone08.length >= 9);
+                  const canSend = rec.isBroadcast || Boolean(rec.phone08 && rec.phone08.length >= 9);
 
                   return (
                     <div
@@ -483,7 +576,11 @@ export default function BulkWhatsAppDialog({
                           {rec.subtitle}
                         </p>
                         <div className="flex items-center gap-2 text-[11px]">
-                          {hasValidPhone ? (
+                          {rec.isBroadcast ? (
+                            <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
+                              Siap dibagikan ke Grup WA atau diteruskan banyak kontak
+                            </span>
+                          ) : canSend ? (
                             <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
                               {rec.phone08}
                             </span>
@@ -509,7 +606,7 @@ export default function BulkWhatsAppDialog({
                           )}
                         </button>
 
-                        {hasValidPhone && (
+                        {canSend && (
                           <>
                             <button
                               type="button"
@@ -534,7 +631,7 @@ export default function BulkWhatsAppDialog({
                               }`}
                             >
                               <WhatsAppIcon variant={isSent ? 'brand' : 'white'} className="w-3.5 h-3.5 shrink-0" />
-                              <span>{isSent ? 'Kirim Ulang' : 'Kirim WA'}</span>
+                              <span>{rec.isBroadcast ? 'Bagikan WA' : (isSent ? 'Kirim Ulang' : 'Kirim WA')}</span>
                               <ExternalLink className="w-3 h-3 opacity-80" />
                             </button>
                           </>

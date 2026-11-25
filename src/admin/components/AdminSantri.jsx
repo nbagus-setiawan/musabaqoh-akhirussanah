@@ -913,13 +913,14 @@ export default function AdminSantri({
       : (item.Status || 'Pending');
     const pesan =
       `Assalamu'alaikum Wr. Wb. Yth. ${item.Wali_Kelas} / Ananda ${item.Nama_Lengkap}.\n\n` +
-      `Konfirmasi Penerimaan & Pendaftaran Musabaqah Akhirussanah YPPS Al-Falah Putak:\n` +
+      `Konfirmasi Penerimaan & Pendaftaran Musabaqah Akhirussanah 2026 YPPS Al-Falah Putak:\n` +
       `- ID Pendaftaran: ${item.ID_Pendaftaran}\n` +
       `- Cabang Lomba: ${item.Cabang_Lomba}\n` +
-      `- Jenjang & Kelas: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
+      `- Kelas Diniyah: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
       `- Status: ${statusText}\n` +
-      (item.Nomor_Urut ? `- NOMOR URUT PEMANGGILAN: ${item.Nomor_Urut}\n\n` : `\n`) +
-      `Harap hadir tepat waktu sesuai jadwal musabaqah. Syukron Katsiron.`;
+      `- Nomor Urut: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n\n` +
+      `Bagi santri yang telah dinyatakan DITERIMA, dimohon mencatat/mencetak serta menyetorkan Nomor Urut tersebut kepada Panitia Musabaqah Akhirussanah 2026 guna pencetakan kartu undian resmi. Syukron Katsiron.\n\n` +
+      `_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._`;
     window.open(buildWaUrl(item.Nomor_WA, pesan), '_blank', 'noopener,noreferrer');
   };
 
