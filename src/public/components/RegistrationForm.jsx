@@ -1324,8 +1324,8 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Tahap 1: Identitas Wali Kelas & Kelas Diniyah
                 </h1>
-                <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed mt-0.5">
-                  Pilih nama Ustadz / Ustadzah pengampu kelas untuk memastikan delegasi terhubung resmi
+                <p className="text-[11px] sm:text-xs text-emerald-100/90 mt-0.5 line-clamp-1">
+                  Pilih Wali Kelas untuk menghubungkan delegasi santri secara resmi
                 </p>
               </div>
             </div>
@@ -1441,30 +1441,26 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
                     <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Kelas Diniyah</span>
                     <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{kelasDiniyah}</strong>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Jenjang Tingkat</span>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Jenjang</span>
                     <strong className="text-slate-900 text-xs sm:text-sm font-black block mt-0.5 truncate">{tingkatName || tingkat}</strong>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
                     <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Wali Kelas</span>
                     <strong className="text-slate-900 text-xs sm:text-sm font-bold block mt-0.5 truncate">{waliInput}</strong>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-emerald-150 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Ketentuan Kuota</span>
-                    <strong className="text-[#075B45] text-xs sm:text-sm font-black block mt-0.5 truncate">Maks. {maxQuotaPerCabang} / Cabang</strong>
-                  </div>
                 </div>
               </div>
             ) : (
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-600">
-                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <p>
-                  Silakan pilih nama Wali Kelas pada kolom di atas. Sistem akan mendeteksi jenjang tingkat dan nama <strong>Kelas Diniyah</strong> secara otomatis tanpa perlu diketik manual.
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center space-x-2.5 text-xs text-slate-600">
+                <Info className="w-4 h-4 text-slate-400 shrink-0" />
+                <p className="line-clamp-2">
+                  Pilih nama Wali Kelas di atas. Tingkat dan <strong>Kelas Diniyah</strong> terdeteksi otomatis.
                 </p>
               </div>
             )}
