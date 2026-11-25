@@ -15,6 +15,8 @@ const WALI_KELAS_KEY = 'akhirusanah_ustadz_v2';
 const SUB_KELAS_KEY = 'akhirusanah_kelas_v2';
 const ACTIVITY_LOGS_KEY = 'akhirusanah_activity_logs_v2';
 const JUARA_KEY = 'akhirusanah_juara_v2';
+const PENGELUARAN_KEY = 'akhirusanah_pengeluaran_v2';
+const KEBUTUHAN_KEY = 'akhirusanah_kebutuhan_v2';
 
 // URL Google Apps Script dari .env (VITE_GAS_URL)
 export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyg6odSPbv_pqXFD2qPTUROwooyWWmZ9N4Y4SZRAtfiBDb7FlKcy7cuIwVqiSFpXJSt/exec';
@@ -995,3 +997,238 @@ export const savePengaturan = async (settings) => {
 
   return merged;
 };
+
+// =========================================================================
+// 7. PENCATATAN PANITIA: PENGELUARAN & KEBUTUHAN SEBELUM HARI-H
+// =========================================================================
+
+export const getPengeluaranList = () => {
+  try {
+    const raw = localStorage.getItem(PENGELUARAN_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const fetchPengeluaran = async () => {
+  const local = getPengeluaranList();
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return local;
+
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_pengeluaran` : `${gasUrl}?action=get_pengeluaran`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (
+        result.status === 'success' &&
+        result.sheet === 'Pencatatan_Pengeluaran' &&
+        Array.isArray(result.data)
+      ) {
+        localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(result.data));
+        return result.data;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal mengambil data Pengeluaran dari Google Sheets, memakai data lokal:', err);
+  }
+
+  return local;
+};
+
+export const savePengeluaran = async (itemData) => {
+  const list = getPengeluaranList();
+  const idPengeluaran = itemData.idPengeluaran || `OUT-${Date.now()}`;
+  const hargaSatuan = Math.max(0, Number(itemData.hargaSatuan) || 0);
+  const qty = Math.max(0, Number(itemData.qty) || 0);
+  const computedTotal = hargaSatuan > 0 && qty > 0 ? hargaSatuan * qty : Math.max(0, Number(itemData.total) || 0);
+  const total = itemData.manualTotal && Number(itemData.total) >= 0 ? Number(itemData.total) : computedTotal;
+
+  const entry = {
+    idPengeluaran,
+    tanggal: itemData.tanggal || new Date().toISOString().slice(0, 10),
+    namaAkun: String(itemData.namaAkun || '').trim(),
+    satuan: String(itemData.satuan || 'Pcs').trim(),
+    hargaSatuan,
+    qty,
+    total,
+    keterangan: String(itemData.keterangan || '').trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const existingIdx = list.findIndex(x => x.idPengeluaran === idPengeluaran);
+  let updatedList;
+  if (existingIdx >= 0) {
+    updatedList = [...list];
+    updatedList[existingIdx] = { ...updatedList[existingIdx], ...entry };
+  } else {
+    updatedList = [entry, ...list];
+  }
+
+  localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(updatedList));
+  notifyDataChanged('pengeluaran', entry);
+  addActivityLog(
+    existingIdx >= 0 ? 'Perbarui Pengeluaran' : 'Catat Pengeluaran',
+    `${entry.namaAkun} (${entry.qty} ${entry.satuan} = Rp ${entry.total.toLocaleString('id-ID')})`,
+    'update'
+  );
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_pengeluaran', ...entry })
+      });
+    } catch (e) {
+      console.warn('Simpan pengeluaran ke GAS gagal:', e);
+    }
+  }
+
+  return updatedList;
+};
+
+export const deletePengeluaran = async (idPengeluaran) => {
+  const list = getPengeluaranList();
+  const target = list.find(x => x.idPengeluaran === idPengeluaran);
+  const filtered = list.filter(x => x.idPengeluaran !== idPengeluaran);
+
+  localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(filtered));
+  notifyDataChanged('pengeluaran', { deletedId: idPengeluaran });
+  if (target) {
+    addActivityLog('Hapus Pengeluaran', `${target.namaAkun} dihapus dari pencatatan`, 'delete');
+  }
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_pengeluaran', idPengeluaran })
+      });
+    } catch (e) {
+      console.warn('Hapus pengeluaran di GAS gagal:', e);
+    }
+  }
+
+  return filtered;
+};
+
+export const getKebutuhanList = () => {
+  try {
+    const raw = localStorage.getItem(KEBUTUHAN_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const fetchKebutuhan = async () => {
+  const local = getKebutuhanList();
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return local;
+
+  try {
+    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_kebutuhan` : `${gasUrl}?action=get_kebutuhan`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (resp.ok) {
+      const result = await resp.json();
+      if (
+        result.status === 'success' &&
+        result.sheet === 'Pencatatan_Kebutuhan' &&
+        Array.isArray(result.data)
+      ) {
+        localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(result.data));
+        return result.data;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal mengambil data Kebutuhan dari Google Sheets, memakai data lokal:', err);
+  }
+
+  return local;
+};
+
+export const saveKebutuhan = async (itemData) => {
+  const list = getKebutuhanList();
+  const idKebutuhan = itemData.idKebutuhan || `KEB-${Date.now()}`;
+  const qty = Math.max(0, Number(itemData.qty) || 0);
+
+  const entry = {
+    idKebutuhan,
+    namaKebutuhan: String(itemData.namaKebutuhan || '').trim(),
+    kategori: String(itemData.kategori || 'Perlengkapan').trim(),
+    qty: qty > 0 ? qty : 1,
+    satuan: String(itemData.satuan || 'Pcs').trim(),
+    targetTanggal: String(itemData.targetTanggal || '').trim(),
+    penanggungJawab: String(itemData.penanggungJawab || '').trim(),
+    status: itemData.status || 'Belum Siap',
+    keterangan: String(itemData.keterangan || '').trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const existingIdx = list.findIndex(x => x.idKebutuhan === idKebutuhan);
+  let updatedList;
+  if (existingIdx >= 0) {
+    updatedList = [...list];
+    updatedList[existingIdx] = { ...updatedList[existingIdx], ...entry };
+  } else {
+    updatedList = [entry, ...list];
+  }
+
+  localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(updatedList));
+  notifyDataChanged('kebutuhan', entry);
+  addActivityLog(
+    existingIdx >= 0 ? 'Perbarui Kebutuhan' : 'Catat Kebutuhan',
+    `${entry.namaKebutuhan} (${entry.qty} ${entry.satuan} • ${entry.status})`,
+    'update'
+  );
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save_kebutuhan', ...entry })
+      });
+    } catch (e) {
+      console.warn('Simpan kebutuhan ke GAS gagal:', e);
+    }
+  }
+
+  return updatedList;
+};
+
+export const deleteKebutuhan = async (idKebutuhan) => {
+  const list = getKebutuhanList();
+  const target = list.find(x => x.idKebutuhan === idKebutuhan);
+  const filtered = list.filter(x => x.idKebutuhan !== idKebutuhan);
+
+  localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(filtered));
+  notifyDataChanged('kebutuhan', { deletedId: idKebutuhan });
+  if (target) {
+    addActivityLog('Hapus Kebutuhan', `${target.namaKebutuhan} dihapus dari daftar`, 'delete');
+  }
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_kebutuhan', idKebutuhan })
+      });
+    } catch (e) {
+      console.warn('Hapus kebutuhan di GAS gagal:', e);
+    }
+  }
+
+  return filtered;
+};
+

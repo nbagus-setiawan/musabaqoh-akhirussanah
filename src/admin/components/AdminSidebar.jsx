@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,14 +9,21 @@ import {
   ExternalLink,
   X,
   ChevronRight,
+  ChevronDown,
   Dices,
-  ShieldCheck,
   CheckCircle2,
   Clock,
-  Sparkles,
-  Trophy
+  ClipboardList,
+  Receipt,
+  ListChecks
 } from 'lucide-react';
-import { getWaliKelasList, getSubKelasByTingkat, getJuaraList } from '../../shared/services/api';
+import { 
+  getWaliKelasList, 
+  getSubKelasByTingkat, 
+  getPengeluaranList, 
+  getKebutuhanList,
+  subscribeDataChanged
+} from '../../shared/services/api';
 
 export default function AdminSidebar({ 
   activeView, 
@@ -29,6 +36,29 @@ export default function AdminSidebar({
   guruCount = 0,
   tingkatCount = 0
 }) {
+  const isPencatatanActive = activeView === 'pencatatan_pengeluaran' || activeView === 'pencatatan_kebutuhan';
+  const [isPencatatanOpen, setIsPencatatanOpen] = useState(true);
+  const [pengeluaranCount, setPengeluaranCount] = useState(() => getPengeluaranList().length);
+  const [kebutuhanCount, setKebutuhanCount] = useState(() => getKebutuhanList().length);
+
+  useEffect(() => {
+    if (isPencatatanActive) setIsPencatatanOpen(true);
+  }, [isPencatatanActive]);
+
+  useEffect(() => {
+    const refreshCounts = () => {
+      setPengeluaranCount(getPengeluaranList().length);
+      setKebutuhanCount(getKebutuhanList().length);
+    };
+    refreshCounts();
+    const unsub = subscribeDataChanged((evt) => {
+      if (!evt || evt.type === 'pengeluaran' || evt.type === 'kebutuhan' || evt.type === 'storage_change') {
+        refreshCounts();
+      }
+    });
+    return () => unsub();
+  }, [activeView]);
+
   // Hitung jumlah riil guru dari data lokal / props
   const realGuruCount = useMemo(() => {
     try {
@@ -89,13 +119,21 @@ export default function AdminSidebar({
       count: realKelasCount,
       badgeColor: 'slate'
     },
-    { 
-      id: 'juara', 
-      label: 'Rekap & Juara Umum', 
-      icon: Trophy, 
-      badge: 'Juara',
-      badgeColor: 'amber'
+  ];
+
+  const pencatatanSubMenus = [
+    {
+      id: 'pencatatan_pengeluaran',
+      label: 'Pengeluaran',
+      icon: Receipt,
+      count: pengeluaranCount
     },
+    {
+      id: 'pencatatan_kebutuhan',
+      label: 'Kebutuhan',
+      icon: ListChecks,
+      count: kebutuhanCount
+    }
   ];
 
   const systemNavigation = [
@@ -173,6 +211,7 @@ export default function AdminSidebar({
                 return (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => {
                       setActiveView(item.id);
                       if (onClose) onClose();
@@ -210,6 +249,70 @@ export default function AdminSidebar({
                   </button>
                 );
               })}
+
+              {/* Menu Pencatatan dengan Sub-Menu Pengeluaran & Kebutuhan */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  aria-expanded={isPencatatanOpen}
+                  aria-controls="submenu-pencatatan"
+                  onClick={() => setIsPencatatanOpen(prev => !prev)}
+                  className={`w-full group flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                    isPencatatanActive
+                      ? 'bg-blue-50 text-blue-700 border border-blue-100 font-bold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <ClipboardList className={`w-4.5 h-4.5 shrink-0 transition-colors ${
+                      isPencatatanActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'
+                    }`} />
+                    <span className="truncate">Pencatatan</span>
+                  </div>
+
+                  <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
+                    isPencatatanOpen ? 'rotate-0' : '-rotate-90'
+                  } ${isPencatatanActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                </button>
+
+                {isPencatatanOpen && (
+                  <div id="submenu-pencatatan" className="pl-4 ml-3 border-l border-slate-200/90 space-y-1">
+                    {pencatatanSubMenus.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeView === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveView(sub.id);
+                            if (onClose) onClose();
+                          }}
+                          className={`w-full group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
+                            isSubActive
+                              ? 'bg-blue-600 text-white shadow-xs font-bold'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <SubIcon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                              isSubActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'
+                            }`} />
+                            <span className="truncate">{sub.label}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                            isSubActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/80'
+                          }`}>
+                            {sub.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
 

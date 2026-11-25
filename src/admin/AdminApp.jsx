@@ -6,15 +6,12 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminSantri from './components/AdminSantri';
 import AdminGuru from './components/AdminGuru';
 import AdminTingkatKelas from './components/AdminTingkatKelas';
-import AdminJuara from './components/AdminJuara';
+import AdminPencatatan from './components/AdminPencatatan';
 import AdminPengaturan from './components/AdminPengaturan';
 import { 
   fetchRegistrations, 
   fetchWaliKelas, 
   fetchTingkatKelas, 
-  getWaliKelasList, 
-  getTingkatList, 
-  getSubKelasByTingkat,
   subscribeDataChanged,
   syncRemoteRegistrationsSilently,
   getLocalRegistrations
@@ -34,7 +31,9 @@ export default function AdminApp() {
   const [activeView, setActiveView] = useState(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('view') || 'dashboard';
+      const rawView = urlParams.get('view');
+      if (rawView === 'juara' || rawView === 'pencatatan') return 'pencatatan_pengeluaran';
+      return rawView || 'dashboard';
     } catch (e) {
       return 'dashboard';
     }
@@ -125,7 +124,8 @@ export default function AdminApp() {
       case 'santri': return 'Data Santri & Undian';
       case 'guru': return 'Data Wali Kelas';
       case 'tingkat_kelas': return 'Tingkat & Kelas';
-      case 'juara': return 'Rekap & Juara Umum';
+      case 'pencatatan_pengeluaran': return 'Catat Pengeluaran';
+      case 'pencatatan_kebutuhan': return 'Catat Kebutuhan';
       case 'pengaturan': return 'Pengaturan Google Sheets';
       default: return 'Dashboard';
     }
@@ -214,10 +214,11 @@ export default function AdminApp() {
             />
           )}
 
-          {/* 5. VIEW: REKAPITULASI JUARA & KLASEMEN JUARA UMUM KELAS */}
-          {activeView === 'juara' && (
-            <AdminJuara
-              registrations={registrations}
+          {/* 5. VIEW: PENCATATAN PANITIA (PENGELUARAN & KEBUTUHAN SEBELUM HARI-H) */}
+          {(activeView === 'pencatatan_pengeluaran' || activeView === 'pencatatan_kebutuhan') && (
+            <AdminPencatatan
+              activeSubMenu={activeView === 'pencatatan_kebutuhan' ? 'kebutuhan' : 'pengeluaran'}
+              setActiveView={setActiveView}
               onRefresh={loadData}
             />
           )}

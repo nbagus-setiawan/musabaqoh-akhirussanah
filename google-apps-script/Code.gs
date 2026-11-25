@@ -1,20 +1,22 @@
 /**
  * =========================================================================
- * BACKEND GOOGLE APPS SCRIPT LENGKAP & TERINTEGRASI (6 LEMBAR KERJA)
+ * BACKEND GOOGLE APPS SCRIPT LENGKAP & TERINTEGRASI (8 LEMBAR KERJA)
  * MUSABAQAH AKHIRUSSANAH PONDOK PESANTREN AL-FALAH PUTAK
  * =========================================================================
  * 
- * 6 LEMBAR KERJA RESMI:
- * 1. Sheet "Admin"             -> Akun & PIN Login Panitia
- * 2. Sheet "Pendaftaran"       -> Data Peserta Santri (13 Kolom Rapi & Bersih)
- * 3. Sheet "Tingkat_dan_Kelas" -> Master Jenjang & 30 Kelas Diniyah (4 Kolom)
- * 4. Sheet "Ustadz"            -> Data Wali Kelas & Asatidz (5 Kolom)
- * 5. Sheet "Juara_Lomba"       -> Rekapitulasi Juara & Poin Juara Umum (7 Kolom)
- * 6. Sheet "Pengaturan"        -> Konfigurasi Musabaqah (3 Kolom)
+ * 8 LEMBAR KERJA RESMI:
+ * 1. Sheet "Admin"                  -> Akun & PIN Login Panitia
+ * 2. Sheet "Pendaftaran"            -> Data Peserta Santri (13 Kolom Rapi & Bersih)
+ * 3. Sheet "Tingkat_dan_Kelas"      -> Master Jenjang & 30 Kelas Diniyah (4 Kolom)
+ * 4. Sheet "Ustadz"                 -> Data Wali Kelas & Asatidz (5 Kolom)
+ * 5. Sheet "Juara_Lomba"            -> Rekapitulasi Juara & Poin (7 Kolom)
+ * 6. Sheet "Pengaturan"             -> Konfigurasi Musabaqah (3 Kolom)
+ * 7. Sheet "Pencatatan_Pengeluaran" -> Pencatatan Pengeluaran Panitia (8 Kolom)
+ * 8. Sheet "Pencatatan_Kebutuhan"   -> Pencatatan Kebutuhan Sebelum Hari-H (9 Kolom)
  * =========================================================================
  */
 
-// NAMA RESMI 6 LEMBAR KERJA
+// NAMA RESMI 8 LEMBAR KERJA
 const SHEET_ADMIN = 'Admin';
 const SHEET_PENDAFTARAN = 'Pendaftaran';
 const SHEET_TINGKAT_KELAS = 'Tingkat_dan_Kelas';
@@ -22,6 +24,8 @@ const SHEET_USTADZ = 'Ustadz';
 const SHEET_DATA_GURU_FALLBACK = 'Data_Guru'; // Dukungan kompatibilitas jika sheet bernama Data_Guru
 const SHEET_JUARA = 'Juara_Lomba';
 const SHEET_PENGATURAN = 'Pengaturan';
+const SHEET_PENGELUARAN = 'Pencatatan_Pengeluaran';
+const SHEET_KEBUTUHAN = 'Pencatatan_Kebutuhan';
 
 // 1. HEADER SHEET ADMIN (6 KOLOM)
 const HEADERS_ADMIN = [
@@ -82,6 +86,31 @@ const HEADERS_JUARA = [
 const HEADERS_PENGATURAN = [
   'Kunci_Pengaturan',
   'Nilai_Pengaturan',
+  'Keterangan'
+];
+
+// 7. HEADER SHEET PENCATATAN PENGELUARAN (8 KOLOM)
+const HEADERS_PENGELUARAN = [
+  'ID_Pengeluaran',
+  'Tanggal',
+  'Nama_Akun',
+  'Satuan',
+  'Harga_Satuan',
+  'Qty',
+  'Total',
+  'Keterangan'
+];
+
+// 8. HEADER SHEET PENCATATAN KEBUTUHAN (9 KOLOM)
+const HEADERS_KEBUTUHAN = [
+  'ID_Kebutuhan',
+  'Nama_Kebutuhan',
+  'Kategori',
+  'Qty',
+  'Satuan',
+  'Target_Hari',
+  'Penanggung_Jawab',
+  'Status',
   'Keterangan'
 ];
 
@@ -177,7 +206,7 @@ const MASTER_PENGATURAN_AWAL = [
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Menu Musabaqah Al-Falah')
-    .addItem('1. Buat / Siapkan Seluruh Lembar Kerja (6 Sheet)', 'inisialisasiEnamLembarKerja')
+    .addItem('1. Buat / Siapkan Seluruh Lembar Kerja (8 Sheet)', 'inisialisasiEnamLembarKerja')
     .addItem('2. Isi Master Data Awal (30 Kelas Diniyah & 24 Ustadz)', 'isiMasterDataAwal')
     .addItem('3. Perbarui Header Tabel Pendaftaran (13 Kolom Rapi)', 'perbaruiHeaderTabelPendaftaran')
     .addItem('4. Rapikan Format Tampilan Semua Sheet', 'formatSeluruhLembarKerja')
@@ -265,13 +294,27 @@ function getSheetByName(sheetName) {
       MASTER_PENGATURAN_AWAL.forEach(r => sheet.appendRow(r));
       sheet.getRange('A2:A').setHorizontalAlignment('center');
     }
+    else if (sheetName === SHEET_PENGELUARAN) {
+      sheet.appendRow(HEADERS_PENGELUARAN);
+      applyHeaderStyle(sheet, HEADERS_PENGELUARAN);
+      sheet.getRange('A2:B').setHorizontalAlignment('center');
+      sheet.getRange('B2:B').setNumberFormat('@');
+      sheet.getRange('E2:G').setNumberFormat('#,##0');
+    }
+    else if (sheetName === SHEET_KEBUTUHAN) {
+      sheet.appendRow(HEADERS_KEBUTUHAN);
+      applyHeaderStyle(sheet, HEADERS_KEBUTUHAN);
+      sheet.getRange('A2:A').setHorizontalAlignment('center');
+      sheet.getRange('D2:D').setHorizontalAlignment('center');
+      sheet.getRange('H2:H').setHorizontalAlignment('center');
+    }
   }
 
   return sheet;
 }
 
 /**
- * Inisialisasi Seluruh 6 Lembar Kerja Sekaligus
+ * Inisialisasi Seluruh 8 Lembar Kerja Sekaligus
  */
 function inisialisasiEnamLembarKerja() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -282,6 +325,8 @@ function inisialisasiEnamLembarKerja() {
   getSheetByName(SHEET_USTADZ);
   getSheetByName(SHEET_JUARA);
   getSheetByName(SHEET_PENGATURAN);
+  getSheetByName(SHEET_PENGELUARAN);
+  getSheetByName(SHEET_KEBUTUHAN);
 
   // Hapus sheet kosong default jika ada
   const sheets = ss.getSheets();
@@ -293,7 +338,7 @@ function inisialisasiEnamLembarKerja() {
   });
 
   formatSeluruhLembarKerja();
-  SpreadsheetApp.getActiveSpreadsheet().toast('Seluruh 6 lembar kerja resmi siap digunakan.', 'Sukses', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Seluruh 8 lembar kerja resmi siap digunakan.', 'Sukses', 5);
 }
 
 /**
@@ -630,17 +675,30 @@ function doGet(e) {
       const sUstadz = getSheetByName(SHEET_USTADZ);
       const sJuara = getSheetByName(SHEET_JUARA);
       const sPengaturan = getSheetByName(SHEET_PENGATURAN);
+      const sPengeluaran = getSheetByName(SHEET_PENGELUARAN);
+      const sKebutuhan = getSheetByName(SHEET_KEBUTUHAN);
 
       return jsonResponse({
         status: 'success',
-        message: 'Koneksi 6 Sheet Aktif 100%',
+        message: 'Koneksi 8 Sheet Aktif 100%',
         spreadsheetName: ss.getName(),
-        sheets: [SHEET_ADMIN, SHEET_PENDAFTARAN, SHEET_TINGKAT_KELAS, SHEET_USTADZ, SHEET_JUARA, SHEET_PENGATURAN],
+        sheets: [
+          SHEET_ADMIN,
+          SHEET_PENDAFTARAN,
+          SHEET_TINGKAT_KELAS,
+          SHEET_USTADZ,
+          SHEET_JUARA,
+          SHEET_PENGATURAN,
+          SHEET_PENGELUARAN,
+          SHEET_KEBUTUHAN
+        ],
         totalSantri: Math.max(0, sPendaftaran.getLastRow() - 1),
         totalKelas: Math.max(0, sKelas.getLastRow() - 1),
         totalUstadz: Math.max(0, sUstadz.getLastRow() - 1),
         totalJuara: Math.max(0, sJuara.getLastRow() - 1),
         totalAdmin: Math.max(0, sAdmin.getLastRow() - 1),
+        totalPengeluaran: Math.max(0, sPengeluaran.getLastRow() - 1),
+        totalKebutuhan: Math.max(0, sKebutuhan.getLastRow() - 1),
         timestamp: new Date().toISOString()
       });
     }
@@ -729,6 +787,63 @@ function doGet(e) {
         settings[String(r[0]).trim()] = String(r[1] || '').trim();
       }
       return jsonResponse({ status: 'success', data: settings });
+    }
+
+    // 5B. Ambil Pencatatan Pengeluaran Panitia
+    if (action === 'get_pengeluaran') {
+      const sheet = getSheetByName(SHEET_PENGELUARAN);
+      const rows = sheet.getDataRange().getValues();
+      const list = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] && !r[2]) continue;
+        let tanggalVal = r[1];
+        if (tanggalVal instanceof Date) {
+          tanggalVal = Utilities.formatDate(tanggalVal, 'Asia/Jakarta', 'yyyy-MM-dd');
+        }
+        const hargaSatuan = Number(r[4]) || 0;
+        const qty = Number(r[5]) || 0;
+        const total = Number(r[6]) || (hargaSatuan * qty);
+
+        list.push({
+          idPengeluaran: String(r[0] || 'OUT-' + i).trim(),
+          tanggal: String(tanggalVal || '').trim(),
+          namaAkun: String(r[2] || '').trim(),
+          satuan: String(r[3] || '').trim(),
+          hargaSatuan: hargaSatuan,
+          qty: qty,
+          total: total,
+          keterangan: String(r[7] || '').trim()
+        });
+      }
+      return jsonResponse({ status: 'success', sheet: SHEET_PENGELUARAN, total: list.length, data: list });
+    }
+
+    // 5C. Ambil Pencatatan Kebutuhan Sebelum Hari-H
+    if (action === 'get_kebutuhan') {
+      const sheet = getSheetByName(SHEET_KEBUTUHAN);
+      const rows = sheet.getDataRange().getValues();
+      const list = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] && !r[1]) continue;
+        let targetVal = r[5];
+        if (targetVal instanceof Date) {
+          targetVal = Utilities.formatDate(targetVal, 'Asia/Jakarta', 'yyyy-MM-dd');
+        }
+        list.push({
+          idKebutuhan: String(r[0] || 'KEB-' + i).trim(),
+          namaKebutuhan: String(r[1] || '').trim(),
+          kategori: String(r[2] || 'Perlengkapan').trim(),
+          qty: Number(r[3]) || 1,
+          satuan: String(r[4] || 'Pcs').trim(),
+          targetTanggal: String(targetVal || '').trim(),
+          penanggungJawab: String(r[6] || '').trim(),
+          status: String(r[7] || 'Belum Siap').trim(),
+          keterangan: String(r[8] || '').trim()
+        });
+      }
+      return jsonResponse({ status: 'success', sheet: SHEET_KEBUTUHAN, total: list.length, data: list });
     }
 
     // 6. Default: Ambil Seluruh Data Santri di Sheet Pendaftaran
@@ -1178,6 +1293,179 @@ function doPost(e) {
       return jsonResponse({
         status: 'success',
         message: 'Pengaturan berhasil diperbarui di Google Sheets.'
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. CRUD PENCATATAN PENGELUARAN (SHEET: Pencatatan_Pengeluaran)
+    // -------------------------------------------------------------------------
+    if (action === 'save_pengeluaran') {
+      const sheet = getSheetByName(SHEET_PENGELUARAN);
+      const entries = Array.isArray(contents.data) ? contents.data : [contents];
+
+      if (contents.isFullSync) {
+        const lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          sheet.deleteRows(2, lastRow - 1);
+        }
+        entries.forEach((item, idx) => {
+          const id = String(item.idPengeluaran || ('OUT-' + (idx + 1))).trim();
+          const hargaSatuan = Number(item.hargaSatuan) || 0;
+          const qty = Number(item.qty) || 0;
+          const total = Number(item.total) || (hargaSatuan * qty);
+          sheet.appendRow([
+            id,
+            String(item.tanggal || '').trim(),
+            String(item.namaAkun || '').trim(),
+            String(item.satuan || '').trim(),
+            hargaSatuan,
+            qty,
+            total,
+            String(item.keterangan || '').trim()
+          ]);
+        });
+      } else {
+        const rows = sheet.getDataRange().getValues();
+        const item = entries[0] || {};
+        const id = String(item.idPengeluaran || ('OUT-' + Date.now())).trim();
+        const hargaSatuan = Number(item.hargaSatuan) || 0;
+        const qty = Number(item.qty) || 0;
+        const total = Number(item.total) || (hargaSatuan * qty);
+
+        let foundRow = -1;
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][0]).trim() === id) {
+            foundRow = i + 1;
+            break;
+          }
+        }
+        const rowData = [
+          id,
+          String(item.tanggal || '').trim(),
+          String(item.namaAkun || '').trim(),
+          String(item.satuan || '').trim(),
+          hargaSatuan,
+          qty,
+          total,
+          String(item.keterangan || '').trim()
+        ];
+        if (foundRow > 0) {
+          sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+        } else {
+          sheet.appendRow(rowData);
+        }
+      }
+
+      sheet.getRange('E2:G').setNumberFormat('#,##0');
+      SpreadsheetApp.flush();
+      return jsonResponse({
+        status: 'success',
+        sheet: SHEET_PENGELUARAN,
+        message: 'Data pengeluaran berhasil disimpan ke Google Sheets.'
+      });
+    }
+
+    if (action === 'delete_pengeluaran') {
+      const sheet = getSheetByName(SHEET_PENGELUARAN);
+      const rows = sheet.getDataRange().getValues();
+      const id = String(contents.idPengeluaran || '').trim();
+      let deleted = false;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]).trim() === id) {
+          sheet.deleteRow(i + 1);
+          deleted = true;
+          break;
+        }
+      }
+      SpreadsheetApp.flush();
+      return jsonResponse({
+        status: deleted ? 'success' : 'not_found',
+        sheet: SHEET_PENGELUARAN,
+        message: deleted ? 'Pengeluaran berhasil dihapus.' : 'Data tidak ditemukan.'
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. CRUD PENCATATAN KEBUTUHAN SEBELUM HARI-H (SHEET: Pencatatan_Kebutuhan)
+    // -------------------------------------------------------------------------
+    if (action === 'save_kebutuhan') {
+      const sheet = getSheetByName(SHEET_KEBUTUHAN);
+      const entries = Array.isArray(contents.data) ? contents.data : [contents];
+
+      if (contents.isFullSync) {
+        const lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          sheet.deleteRows(2, lastRow - 1);
+        }
+        entries.forEach((item, idx) => {
+          const id = String(item.idKebutuhan || ('KEB-' + (idx + 1))).trim();
+          sheet.appendRow([
+            id,
+            String(item.namaKebutuhan || '').trim(),
+            String(item.kategori || 'Perlengkapan').trim(),
+            Number(item.qty) || 1,
+            String(item.satuan || 'Pcs').trim(),
+            String(item.targetTanggal || '').trim(),
+            String(item.penanggungJawab || '').trim(),
+            String(item.status || 'Belum Siap').trim(),
+            String(item.keterangan || '').trim()
+          ]);
+        });
+      } else {
+        const rows = sheet.getDataRange().getValues();
+        const item = entries[0] || {};
+        const id = String(item.idKebutuhan || ('KEB-' + Date.now())).trim();
+
+        let foundRow = -1;
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][0]).trim() === id) {
+            foundRow = i + 1;
+            break;
+          }
+        }
+        const rowData = [
+          id,
+          String(item.namaKebutuhan || '').trim(),
+          String(item.kategori || 'Perlengkapan').trim(),
+          Number(item.qty) || 1,
+          String(item.satuan || 'Pcs').trim(),
+          String(item.targetTanggal || '').trim(),
+          String(item.penanggungJawab || '').trim(),
+          String(item.status || 'Belum Siap').trim(),
+          String(item.keterangan || '').trim()
+        ];
+        if (foundRow > 0) {
+          sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+        } else {
+          sheet.appendRow(rowData);
+        }
+      }
+
+      SpreadsheetApp.flush();
+      return jsonResponse({
+        status: 'success',
+        sheet: SHEET_KEBUTUHAN,
+        message: 'Data kebutuhan berhasil disimpan ke Google Sheets.'
+      });
+    }
+
+    if (action === 'delete_kebutuhan') {
+      const sheet = getSheetByName(SHEET_KEBUTUHAN);
+      const rows = sheet.getDataRange().getValues();
+      const id = String(contents.idKebutuhan || '').trim();
+      let deleted = false;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]).trim() === id) {
+          sheet.deleteRow(i + 1);
+          deleted = true;
+          break;
+        }
+      }
+      SpreadsheetApp.flush();
+      return jsonResponse({
+        status: deleted ? 'success' : 'not_found',
+        sheet: SHEET_KEBUTUHAN,
+        message: deleted ? 'Kebutuhan berhasil dihapus.' : 'Data tidak ditemukan.'
       });
     }
 

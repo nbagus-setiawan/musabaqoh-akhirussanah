@@ -166,9 +166,9 @@ export default function AdminPengaturan({ onRefresh }) {
       if (res.success) {
         setTestResult({
           success: true,
-          message: `Alhamdulillah! Terhubung ke ${res.spreadsheetName ? `"${res.spreadsheetName}"` : 'Google Spreadsheet Panitia'}. Seluruh 6 lembar kerja resmi aktif & tersinkronisasi: Admin, Pendaftaran, Tingkat_dan_Kelas, Ustadz, Juara_Lomba, dan Pengaturan.`
+          message: `Alhamdulillah! Terhubung ke ${res.spreadsheetName ? `"${res.spreadsheetName}"` : 'Google Spreadsheet Panitia'}. Lembar kerja resmi aktif & tersinkronisasi termasuk Pendaftaran, Tingkat_dan_Kelas, Ustadz, Pencatatan_Pengeluaran, Pencatatan_Kebutuhan, dan Pengaturan.`
         });
-        addActivityLog('Tes Koneksi Sheets', 'Koneksi 6 sheet sukses tersambung', 'system');
+        addActivityLog('Tes Koneksi Sheets', 'Koneksi Google Sheets sukses tersambung', 'system');
       } else {
         setTestResult({
           success: false,
@@ -351,6 +351,41 @@ export default function AdminPengaturan({ onRefresh }) {
       ]
     },
     {
+      id: 'Pencatatan_Pengeluaran',
+      title: 'Sheet 7: "Pencatatan_Pengeluaran"',
+      tag: 'Keuangan & Pengeluaran',
+      totalCols: 8,
+      desc: 'Menyimpan pencatatan akun pengeluaran panitia, satuan, harga satuan, qty, total biaya, dan catatan.',
+      columns: [
+        { name: 'ID_Pengeluaran', desc: 'ID Unik Transaksi' },
+        { name: 'Tanggal', desc: 'Tanggal Transaksi (YYYY-MM-DD)' },
+        { name: 'Nama_Akun', desc: 'Nama Akun / Item Pengeluaran' },
+        { name: 'Satuan', desc: 'Satuan Unit (Pcs, Box, Paket, Rim)' },
+        { name: 'Harga_Satuan', desc: 'Harga Satuan dalam Rupiah' },
+        { name: 'Qty', desc: 'Jumlah Kuantitas' },
+        { name: 'Total', desc: 'Total Biaya (Harga Satuan x Qty)' },
+        { name: 'Keterangan', desc: 'Catatan / Nomor Nota' }
+      ]
+    },
+    {
+      id: 'Pencatatan_Kebutuhan',
+      title: 'Sheet 8: "Pencatatan_Kebutuhan"',
+      tag: 'Persiapan Sebelum Hari-H',
+      totalCols: 9,
+      desc: 'Menyimpan daftar perlengkapan & kebutuhan sebelum Hari-H beserta seksi, qty, target waktu, PJ, dan status kesiapan.',
+      columns: [
+        { name: 'ID_Kebutuhan', desc: 'ID Unik Kebutuhan' },
+        { name: 'Nama_Kebutuhan', desc: 'Nama Barang / Perlengkapan' },
+        { name: 'Kategori', desc: 'Seksi Panitia (Perlengkapan, Konsumsi, dll)' },
+        { name: 'Qty', desc: 'Jumlah Dibutuhkan' },
+        { name: 'Satuan', desc: 'Satuan Unit' },
+        { name: 'Target_Hari', desc: 'Target Persiapan Sebelum Hari-H' },
+        { name: 'Penanggung_Jawab', desc: 'Nama PJ / Koordinator Seksi' },
+        { name: 'Status', desc: 'Belum Siap / Dalam Proses / Sudah Siap' },
+        { name: 'Keterangan', desc: 'Catatan Spesifikasi Tambahan' }
+      ]
+    },
+    {
       id: 'Admin',
       title: 'Sheet 1: "Admin"',
       tag: 'Otentikasi & Akun Panitia',
@@ -440,7 +475,7 @@ export default function AdminPengaturan({ onRefresh }) {
           }`}
         >
           <Database className="w-4 h-4" />
-          <span>Koneksi Google Sheets (6 Sheet)</span>
+          <span>Koneksi Google Sheets (8 Sheet)</span>
         </button>
 
         {/* TAB 3: KEAMANAN PIN ADMIN */}
@@ -733,7 +768,7 @@ export default function AdminPengaturan({ onRefresh }) {
                 URL Web App Google Apps Script
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Masukkan URL Web App hasil deployment dari Google Apps Script untuk menghubungkan seluruh 6 lembar kerja.
+                Masukkan URL Web App hasil deployment dari Google Apps Script untuk menghubungkan seluruh 8 lembar kerja.
               </p>
             </div>
 
@@ -763,7 +798,7 @@ export default function AdminPengaturan({ onRefresh }) {
                   className="px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all shadow-2xs flex items-center space-x-1.5 cursor-pointer active:scale-95"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isTesting ? 'animate-spin' : ''}`} />
-                  <span>{isTesting ? 'Menguji Koneksi...' : 'Tes Koneksi 6 Sheet'}</span>
+                  <span>{isTesting ? 'Menguji Koneksi...' : 'Tes Koneksi 8 Sheet'}</span>
                 </button>
 
                 <button
@@ -794,11 +829,11 @@ export default function AdminPengaturan({ onRefresh }) {
             </div>
           </div>
 
-          {/* Struktur 6 Lembar Kerja Resmi */}
+          {/* Struktur 8 Lembar Kerja Resmi */}
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
             <div className="pb-3 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900">
-                Struktur 6 Lembar Kerja Resmi di Google Spreadsheet
+                Struktur 8 Lembar Kerja Resmi di Google Spreadsheet
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Pastikan nama sheet dan kolom di spreadsheet Anda sesuai dengan spesifikasi resmi sistem:
