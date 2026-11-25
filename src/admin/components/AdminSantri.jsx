@@ -637,7 +637,29 @@ export default function AdminSantri({
         return;
       }
 
-      // Kelompokkan data peserta: Per Cabang dan Per Tingkat, urutkan berselang-seling PUTRI lalu PUTRA atau berdasarkan Nomor_Urut resmi
+      // Deteksi cabang lomba beregu (CCM, Syarhil Qur'an, Kreasi Nadzom)
+      const isBereguCabang = (cabangStr = '') => {
+        const c = String(cabangStr || '').toLowerCase().trim();
+        return (
+          c === 'ccm' ||
+          c.includes('cerdas cermat') ||
+          c.includes('syarhil') ||
+          c.includes('kreasi nadzom') ||
+          c.includes('kreasi_nadzom') ||
+          c.includes('regu')
+        );
+      };
+
+      const getTingkatRank = (tingkatStr = '') => {
+        const s = String(tingkatStr || '').toLowerCase();
+        if (s.includes('ula')) return 1;
+        if (s.includes('wustho')) return 2;
+        if (s.includes('ulya')) return 3;
+        if (s.includes('mhq')) return 4;
+        return 5;
+      };
+
+      // Kelompokkan data peserta: Per Cabang dan Per Tingkat
       const groupMap = new Map();
       targetSantri.forEach(item => {
         const key = `${item.Cabang_Lomba || 'Semua Cabang'}___${item.Tingkat || 'Semua Tingkat'}`;
@@ -647,42 +669,125 @@ export default function AdminSantri({
         groupMap.get(key).push({ ...item });
       });
 
-      const finalOrderedSantri = [];
-      groupMap.forEach((itemsInGroup) => {
-        const putriList = [];
-        const putraList = [];
-
-        itemsInGroup.forEach(it => {
-          if (isSantriPutri(it)) {
-            putriList.push(it);
-          } else {
-            putraList.push(it);
-          }
-        });
-
-        const byNomorPeserta = (a, b) => {
-          const na = parseInt(a.Nomor_Urut, 10);
-          const nb = parseInt(b.Nomor_Urut, 10);
-          if (!isNaN(na) && !isNaN(nb)) return na - nb;
-          if (!isNaN(na)) return -1;
-          if (!isNaN(nb)) return 1;
-          return String(a.Nama_Lengkap || '').localeCompare(String(b.Nama_Lengkap || ''));
-        };
-
-        putriList.sort(byNomorPeserta);
-        putraList.sort(byNomorPeserta);
-
-        const interleaved = [];
-        const maxLen = Math.max(putriList.length, putraList.length);
-        for (let i = 0; i < maxLen; i++) {
-          if (i < putriList.length) interleaved.push(putriList[i]);
-          if (i < putraList.length) interleaved.push(putraList[i]);
+      // Urutkan grup agar cabang teratur dan Tingkat Ula selalu sebelum Tingkat Wustho
+      const sortedGroupKeys = Array.from(groupMap.keys()).sort((a, b) => {
+        const [cabangA, tingkatA] = a.split('___');
+        const [cabangB, tingkatB] = b.split('___');
+        if (cabangA !== cabangB) {
+          return cabangA.localeCompare(cabangB);
         }
-
-        finalOrderedSantri.push(...interleaved);
+        return getTingkatRank(tingkatA) - getTingkatRank(tingkatB);
       });
 
-      targetSantri = finalOrderedSantri;
+      const finalOrderedEntries = [];
+      sortedGroupKeys.forEach(groupKey => {
+        const itemsInGroup = groupMap.get(groupKey) || [];
+        if (itemsInGroup.length === 0) return;
+
+        const sampleCabang = itemsInGroup[0].Cabang_Lomba || '';
+        const isRegu = isBereguCabang(sampleCabang);
+
+        if (isRegu) {
+          // ==========================================
+          // CABANG BEREGU: Satukan Anggota per Regu
+          // (1 Baris Tabel = 1 Nomor Peserta & 1 Kelas)
+          // ==========================================
+          const teamMap = new Map();
+          itemsInGroup.forEach(it => {
+            const noUrut = it.Nomor_Urut ? String(it.Nomor_Urut).trim() : '';
+            const kelas = (it.Kelas_Kategori || it.Kelas_Diniyah || it.Tingkat || '-').trim();
+            const reguMatch = (it.Catatan || it.detailCabang || it.kategoriDetail || it.label || '').match(/regu\s*\d+/i);
+            const reguTag = reguMatch ? reguMatch[0].toLowerCase() : '';
+
+            let teamKey;
+            if (noUrut && noUrut !== '-') {
+              teamKey = `${kelas}___no_${noUrut}`;
+            } else if (reguTag) {
+              teamKey = `${kelas}___${reguTag}`;
+            } else {
+              const idPrefix = (it.ID_Pendaftaran || '').split('-').slice(0, 3).join('-');
+              teamKey = `${kelas}___${idPrefix || it.Timestamp || 'regu'}`;
+            }
+
+            if (!teamMap.has(teamKey)) {
+              teamMap.set(teamKey, {
+                isRegu: true,
+                Nomor_Urut: noUrut || '-',
+                Kelas: kelas,
+                Tingkat: it.Tingkat || '-',
+                Cabang_Lomba: it.Cabang_Lomba || sampleCabang,
+                Jenis_Kelamin: it.Jenis_Kelamin || (isSantriPutri(it) ? 'P' : 'L'),
+                members: []
+              });
+            }
+            teamMap.get(teamKey).members.push(it);
+          });
+
+          const putriTeams = [];
+          const putraTeams = [];
+          teamMap.forEach(team => {
+            if (team.Jenis_Kelamin === 'P') {
+              putriTeams.push(team);
+            } else {
+              putraTeams.push(team);
+            }
+          });
+
+          const byNomorUrutTeam = (a, b) => {
+            const na = parseInt(a.Nomor_Urut, 10);
+            const nb = parseInt(b.Nomor_Urut, 10);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            if (!isNaN(na)) return -1;
+            if (!isNaN(nb)) return 1;
+            return String(a.Kelas).localeCompare(String(b.Kelas));
+          };
+
+          putriTeams.sort(byNomorUrutTeam);
+          putraTeams.sort(byNomorUrutTeam);
+
+          if (putriTeams.length > 0 && putraTeams.length > 0) {
+            const maxLen = Math.max(putriTeams.length, putraTeams.length);
+            for (let i = 0; i < maxLen; i++) {
+              if (i < putriTeams.length) finalOrderedEntries.push(putriTeams[i]);
+              if (i < putraTeams.length) finalOrderedEntries.push(putraTeams[i]);
+            }
+          } else {
+            finalOrderedEntries.push(...putriTeams, ...putraTeams);
+          }
+        } else {
+          // ==========================================
+          // CABANG INDIVIDU: Baris Per Santri
+          // ==========================================
+          const putriList = [];
+          const putraList = [];
+
+          itemsInGroup.forEach(it => {
+            if (isSantriPutri(it)) {
+              putriList.push(it);
+            } else {
+              putraList.push(it);
+            }
+          });
+
+          const byNomorPeserta = (a, b) => {
+            const na = parseInt(a.Nomor_Urut, 10);
+            const nb = parseInt(b.Nomor_Urut, 10);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            if (!isNaN(na)) return -1;
+            if (!isNaN(nb)) return 1;
+            return String(a.Nama_Lengkap || '').localeCompare(String(b.Nama_Lengkap || ''));
+          };
+
+          putriList.sort(byNomorPeserta);
+          putraList.sort(byNomorPeserta);
+
+          const maxLen = Math.max(putriList.length, putraList.length);
+          for (let i = 0; i < maxLen; i++) {
+            if (i < putriList.length) finalOrderedEntries.push(putriList[i]);
+            if (i < putraList.length) finalOrderedEntries.push(putraList[i]);
+          }
+        }
+      });
 
       // SweetAlert2 Loading
       Swal.fire({
@@ -731,13 +836,36 @@ export default function AdminSantri({
       }
       doc.text(subtitleText, 105, 54.0, { align: 'center' });
 
-      // 5. Tabel Peserta (Garis tabel sedikit diperjelas / lebih tegas)
-      const tableRows = targetSantri.map((item, idx) => [
-        String(idx + 1),
-        item.Nomor_Urut ? String(item.Nomor_Urut) : '-',
-        item.Kelas_Kategori || item.Tingkat || '-',
-        item.Nama_Lengkap || '-'
-      ]);
+      // 5. Tabel Peserta (Beregu: 1 Baris per Tim, 1 Nomor Peserta & 1 Kelas, Anggota Bernomor Rapi)
+      const tableRows = finalOrderedEntries.map((entry, idx) => {
+        if (entry.isRegu) {
+          const memberListText = entry.members.map((m, mIdx) => {
+            const cleanName = (m.Nama_Lengkap || '').trim();
+            let roleSuffix = '';
+            if (/syarhil/i.test(entry.Cabang_Lomba)) {
+              const cat = String(m.Catatan || m.label || '');
+              if (/pensyarah/i.test(cat)) roleSuffix = ' (Pensyarah)';
+              else if (/tilawah/i.test(cat)) roleSuffix = ' (Tilawah)';
+              else if (/terjemah/i.test(cat)) roleSuffix = ' (Terjemah)';
+            }
+            return `${mIdx + 1}. ${cleanName}${roleSuffix}`;
+          }).join('\n');
+
+          return [
+            String(idx + 1),
+            entry.Nomor_Urut ? String(entry.Nomor_Urut) : '-',
+            entry.Kelas || '-',
+            memberListText || '-'
+          ];
+        }
+
+        return [
+          String(idx + 1),
+          entry.Nomor_Urut ? String(entry.Nomor_Urut) : '-',
+          entry.Kelas_Kategori || entry.Tingkat || '-',
+          entry.Nama_Lengkap || '-'
+        ];
+      });
 
       autoTable(doc, {
         startY: 59.0,
@@ -758,17 +886,17 @@ export default function AdminSantri({
           lineWidth: 0.35
         },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 16, fontStyle: 'normal' },
+          0: { halign: 'center', cellWidth: 16, fontStyle: 'bold' },
           1: { halign: 'center', cellWidth: 34, fontStyle: 'bold' },
-          2: { halign: 'center', cellWidth: 48, fontStyle: 'normal' },
-          3: { halign: 'center', cellWidth: 83, fontStyle: 'bold' }
+          2: { halign: 'center', cellWidth: 48, fontStyle: 'bold' },
+          3: { halign: 'left', cellWidth: 83, fontStyle: 'bold' }
         },
         bodyStyles: {
-          fontSize: 10,
+          fontSize: 9.5,
           textColor: [0, 0, 0],
           valign: 'middle',
-          minCellHeight: 7.5,
-          cellPadding: 2.2,
+          minCellHeight: 8,
+          cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 },
           lineColor: [71, 85, 105], // Garis tabel diperjelas
           lineWidth: 0.35
         },
