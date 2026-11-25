@@ -2400,7 +2400,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
               <p className="font-bold text-slate-800">Ketentuan Resmi Panitia:</p>
               <p className="leading-relaxed">
-                Data yang dikirimkan akan langsung tersimpan ke Google Sheets panitia. Santri yang didaftarkan wajib mematuhi ketentuan tata tertib dan hadir saat pemanggilan nomor urut undian perlombaan.
+                Data yang dikirimkan akan langsung tersimpan ke Google Sheets panitia. Santri yang didaftarkan wajib mematuhi ketentuan tata tertib dan hadir saat pemanggilan nomor peserta perlombaan.
               </p>
             </div>
 

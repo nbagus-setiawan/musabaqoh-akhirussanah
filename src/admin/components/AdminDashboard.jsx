@@ -72,7 +72,7 @@ export default function AdminDashboard({
       'Timestamp': item.Timestamp,
       'Wali Kelas': item.Wali_Kelas,
       'ID Pendaftaran': item.ID_Pendaftaran,
-      'Nomor Urut': item.Nomor_Urut || '-',
+      'Nomor Peserta': item.Nomor_Urut || '-',
       'Nama Santri': item.Nama_Lengkap,
       'Jenis Kelamin': item.Jenis_Kelamin === 'L' ? 'Putra' : 'Putri',
       'Tingkat': item.Tingkat,
@@ -217,7 +217,7 @@ export default function AdminDashboard({
       `Status Kuota Kelas Saat Ini: *${statusDesc}*.\n\n` +
       `Mohon kiranya Ustadz/Ustadzah dapat segera melengkapi data delegasi santri secara mandiri melalui portal resmi pendaftaran berikut:\n` +
       `https://musabaqoh-akhirussanah.vercel.app/\n\n` +
-      `Besar harapan kami agar pendaftaran dapat diselesaikan tepat waktu demi kelancaran pengundian nomor urut dan persiapan jadwal lomba.\n\n` +
+      `Besar harapan kami agar pendaftaran dapat diselesaikan tepat waktu demi kelancaran pengundian nomor peserta dan persiapan jadwal lomba.\n\n` +
       `Atas perhatian, dedikasi, dan kerja sama Ustadz/Ustadzah, kami haturkan terima kasih yang sebesar-besarnya.\n` +
       `Jazakumullah Khairan Katsiran.\n\n` +
       `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
@@ -279,7 +279,7 @@ export default function AdminDashboard({
             Pusat Kendali Administrasi & Verifikasi
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-            Monitoring kepatuhan 24 Kelas Diniyah, verifikasi berkas delegasi santri, dan pengundian nomor urut 3 digit.
+            Monitoring kepatuhan 24 Kelas Diniyah, verifikasi berkas delegasi santri, dan pengundian nomor peserta 3 digit.
           </p>
         </div>
 
@@ -742,7 +742,7 @@ export default function AdminDashboard({
                     <th className="pb-3 font-normal">Nama Santri</th>
                     <th className="pb-3 font-normal">Kelas Diniyah</th>
                     <th className="pb-3 font-normal">Cabang Lomba</th>
-                    <th className="pb-3 font-normal text-center">No. Urut</th>
+                    <th className="pb-3 font-normal text-center">No. Peserta</th>
                     <th className="pb-3 font-normal text-center">Status</th>
                   </tr>
                 </thead>

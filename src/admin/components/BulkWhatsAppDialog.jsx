@@ -22,7 +22,7 @@ const SYSTEM_FOOTER_2026 =
   '_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._';
 
 const DEFAULT_EXTRA_NOTE =
-  'Bagi santri yang telah dinyatakan DITERIMA, mohon segera mengonfirmasikan ke Panitia Musabaqah Akhirussanah 2026 agar Panitia dapat segera mencetak kartu nomor undian resmi.';
+  'Nomor Peserta di atas akan dicetak oleh Panitia Musabaqah Akhirussanah 2026 dan dibagikan kepada Wali Kelas setelah proses pencetakan selesai. Apabila terdapat kesalahan penulisan nama santri maupun cabang perlombaan, dimohon untuk segera mengonfirmasikannya kepada Panitia.';
 
 function formatWaliSection(items) {
   const accepted = items.filter(s => s.Status === 'Terverifikasi');
@@ -35,8 +35,8 @@ function formatWaliSection(items) {
     const lines = accepted.map((s, i) => {
       const nama = s.Nama_Lengkap || s.Nama_Santri || '-';
       const cabang = s.Cabang_Lomba || '-';
-      const urut = s.Nomor_Urut ? `*${s.Nomor_Urut}*` : '_Belum Diundi_';
-      return `${i + 1}. No. Urut: ${urut} | *${nama}* - Cabang: ${cabang}`;
+      const noPeserta = s.Nomor_Urut ? `*${s.Nomor_Urut}*` : '_Belum Diundi_';
+      return `${i + 1}. No. Peserta: ${noPeserta} | *${nama}* - Cabang: ${cabang}`;
     });
     sections.push(`*A. SANTRI DITERIMA / TERVERIFIKASI (${accepted.length} Santri):*\n${lines.join('\n')}`);
   }
@@ -64,7 +64,7 @@ function formatWaliSection(items) {
 
 /**
  * Dialog native <dialog> untuk mengirim WhatsApp massal penerimaan santri.
- * Merangkum seluruh santri binaan per Wali Kelas (Diterima + No. Urut, Pending, Ditolak)
+ * Merangkum seluruh santri binaan per Wali Kelas (Diterima + No. Peserta, Pending, Ditolak)
  * dalam satu pesan terpadu, maupun 1 pesan rekap gabungan untuk dibagikan ke Grup WA.
  */
 export default function BulkWhatsAppDialog({
@@ -171,7 +171,7 @@ export default function BulkWhatsAppDialog({
           `- Kelas Diniyah: ${item.Tingkat || '-'} - ${item.Kelas_Kategori || item.Kelas_Diniyah || '-'}\n` +
           `- Cabang Lomba: ${item.Cabang_Lomba || '-'}\n` +
           `- Status Penerimaan: *${statusText}*\n` +
-          `- Nomor Urut: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n` +
+          `- Nomor Peserta: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n` +
           (extraNote.trim() ? `\n${extraNote.trim()}\n` : '\n') +
           `\nSyukron Katsiron.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n` +
           `*Panitia Musabaqah Akhirussanah 2026 YPPS Al-Falah Putak*\n\n` +
@@ -232,7 +232,7 @@ export default function BulkWhatsAppDialog({
         `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
         `Yth. Bapak/Ibu Ustadz/Ustadzah Wali Kelas Diniyah\n` +
         `Pondok Pesantren YPPS Al-Falah Putak\n\n` +
-        `Berikut kami sampaikan *Rekapitulasi Resmi Penerimaan & Nomor Urut Santri Peserta Musabaqah Akhirussanah 2026* (${scopedRegistrations.length} Santri):\n\n` +
+        `Berikut kami sampaikan *Rekapitulasi Resmi Penerimaan & Nomor Peserta Musabaqah Akhirussanah 2026* (${scopedRegistrations.length} Santri):\n\n` +
         `${blocks.join('\n\n------------------------------\n\n')}\n` +
         (extraNote.trim() ? `\n${extraNote.trim()}\n` : '\n') +
         `\nAtas perhatian dan kerja sama Ustadz/Ustadzah, kami ucapkan Syukron Katsiron.\n` +
@@ -252,7 +252,7 @@ export default function BulkWhatsAppDialog({
       }];
     }
 
-    // Mode WALI_KELAS: 1 pesan terpadu per Wali Kelas merangkum Diterima (+No.Urut), Pending, dan Ditolak
+    // Mode WALI_KELAS: 1 pesan terpadu per Wali Kelas merangkum Diterima (+No.Peserta), Pending, dan Ditolak
     return groupedList.map((grp) => {
       const classLabel = Array.from(grp.classes).join(', ') || '-';
       const { accepted, pending, rejected, sections } = formatWaliSection(grp.items);
@@ -468,7 +468,7 @@ export default function BulkWhatsAppDialog({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <label htmlFor={noteInputId} className="text-xs font-bold text-slate-700">
-                Catatan / Keterangan Nomor Undian
+                Catatan / Keterangan Nomor Peserta
               </label>
               <span className="text-[11px] text-slate-400">
                 Otomatis disisipkan sebelum penutup resmi
@@ -480,7 +480,7 @@ export default function BulkWhatsAppDialog({
               value={extraNote}
               onChange={(e) => setExtraNote(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 bg-white focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 outline-none"
-              placeholder="Tulis keterangan nomor undian atau informasi tambahan dari panitia..."
+              placeholder="Tulis keterangan nomor peserta atau informasi tambahan dari panitia..."
             />
           </div>
 

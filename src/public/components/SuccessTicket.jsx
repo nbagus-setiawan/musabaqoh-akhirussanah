@@ -106,7 +106,7 @@ export default function SuccessTicket({
 
           <div className="text-right">
             <span className="text-[8.5px] font-bold uppercase tracking-wider text-slate-400 block">
-              Nomor Urut Panggilan
+              Nomor Peserta
             </span>
             {registration.Nomor_Urut ? (
               <span className="text-xl font-black text-emerald-800 font-mono tracking-widest block leading-tight">

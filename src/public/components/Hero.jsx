@@ -232,7 +232,7 @@ export default function Hero({ onGoToForm, onGoToGuide, onGoToStatus }) {
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center font-bold">
                 <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D9B45B]" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">Nomor Urut</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">Nomor Peserta</h3>
               <p className="text-[11px] text-slate-500 leading-relaxed">
                 Diundi secara acak dan transparan oleh panitia.
               </p>

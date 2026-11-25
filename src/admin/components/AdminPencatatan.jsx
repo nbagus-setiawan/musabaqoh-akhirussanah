@@ -1569,7 +1569,7 @@ export default function AdminPencatatan({
                   setKebForm(prev => ({ ...prev, namaKebutuhan: e.target.value }));
                   if (kebError) setKebError('');
                 }}
-                placeholder="Contoh: Cetak Kartu Nomor Urut & ID Panitia"
+                placeholder="Contoh: Cetak Kartu Nomor Peserta & ID Panitia"
                 className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 outline-none text-base sm:text-sm font-semibold text-slate-900"
               />
             </div>

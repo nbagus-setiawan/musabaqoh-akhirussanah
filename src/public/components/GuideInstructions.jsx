@@ -633,7 +633,7 @@ export default function GuideInstructions({ onGoToForm, onGoToStatus }) {
           <div className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start space-x-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#075B45] shrink-0 mt-0.5" />
             <p className="text-[11px] sm:text-xs text-slate-700 leading-relaxed">
-              <strong>Cek Status & Nomor Undian:</strong> Pantau menu "Cek Status" untuk melihat verifikasi panitia dan nomor urut undian 3 digit unik setiap peserta.
+              <strong>Cek Status & Nomor Peserta:</strong> Pantau menu "Cek Status" untuk melihat verifikasi panitia dan nomor peserta 3 digit unik setiap peserta.
             </p>
           </div>
         </div>

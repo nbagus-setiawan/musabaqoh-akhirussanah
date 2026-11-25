@@ -484,7 +484,7 @@ export default function AdminSantri({
       Swal.fire({
         icon: 'warning',
         title: 'Belum Ada Santri Terverifikasi',
-        text: 'Hanya santri dengan status "Terverifikasi" yang dapat diundi nomor urutnya. Silakan verifikasi pendaftaran terlebih dahulu.',
+        text: 'Hanya santri dengan status "Terverifikasi" yang dapat diundi nomor pesertanya. Silakan verifikasi pendaftaran terlebih dahulu.',
         confirmButtonColor: '#065f46',
         confirmButtonText: 'Mengerti'
       });
@@ -495,17 +495,17 @@ export default function AdminSantri({
     const defaultStart = 1;
 
     const { value: formValues } = await Swal.fire({
-      title: 'Undi Nomor Urut',
+      title: 'Undi Nomor Peserta',
       html: `
         <div style="text-align: left; font-size: 13px; color: #475569; margin-top: 8px;">
           <p style="margin-bottom: 12px; color: #334155;">
             Pengundian acak untuk santri berstatus <strong>Terverifikasi</strong>.
           </p>
           <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b;">
-            Nomor Urut Dimulai Dari (3 Digit):
+            Nomor Peserta Dimulai Dari (3 Digit):
           </label>
           <input id="swal-start-num" type="text" value="001" placeholder="Contoh: 001 atau 050" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace; font-size: 15px; margin-bottom: 4px;" />
-          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Format 3 digit resmi (misal: 001, 002, dst). Bebas duplikat di seluruh cabang lomba (Lomba beregu: 1 nomor urut per regu).</p>
+          <p style="font-size: 11px; color: #047857; margin-bottom: 14px;">Format 3 digit resmi (misal: 001, 002, dst). Bebas duplikat di seluruh cabang lomba (Lomba beregu: 1 nomor peserta per regu).</p>
           
           <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b;">
             Pilih Cabang Perlombaan:
@@ -538,7 +538,7 @@ export default function AdminSantri({
       try {
         Swal.fire({
           title: 'Sedang Mengundi...',
-          text: 'Mengacak nomor urut pemanggilan santri...',
+          text: 'Mengacak nomor peserta perlombaan santri...',
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
@@ -562,7 +562,7 @@ export default function AdminSantri({
         Swal.fire({
           icon: 'success',
           title: 'Pengundian Selesai!',
-          text: `Berhasil mengundi nomor urut untuk ${result.countAssigned} santri terverifikasi (dimulai dari nomor ${String(formValues.startNumber).padStart(3, '0')}).`,
+          text: `Berhasil mengundi nomor peserta untuk ${result.countAssigned} santri terverifikasi (dimulai dari nomor ${String(formValues.startNumber).padStart(3, '0')}).`,
           confirmButtonColor: '#065f46',
           confirmButtonText: 'Alhamdulillah',
           showConfirmButton: true,
@@ -753,7 +753,7 @@ export default function AdminSantri({
       autoTable(doc, {
         startY: 59.0,
         margin: { left: leftMargin, right: rightMargin },
-        head: [['NO.', 'NO URUT', 'KELAS', 'NAMA SANTRI']],
+        head: [['NO.', 'NO. PESERTA', 'KELAS', 'NAMA SANTRI']],
         body: tableRows,
         theme: 'grid',
         headStyles: {
@@ -928,8 +928,8 @@ export default function AdminSantri({
       `- Cabang Lomba: ${item.Cabang_Lomba}\n` +
       `- Kelas Diniyah: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
       `- Status: ${statusText}\n` +
-      `- Nomor Urut: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n\n` +
-      `Mohon segera mengonfirmasikan ke Panitia Musabaqah Akhirussanah 2026 agar Panitia dapat segera mencetak kartu nomor undian resmi. Syukron Katsiron.\n\n` +
+      `- Nomor Peserta: ${item.Nomor_Urut ? `*${item.Nomor_Urut}*` : '_Belum Diundi_'}\n\n` +
+      `Nomor Peserta di atas akan dicetak oleh Panitia Musabaqah Akhirussanah 2026 dan dibagikan kepada Wali Kelas setelah proses pencetakan selesai. Apabila terdapat kesalahan penulisan nama santri maupun cabang perlombaan, dimohon untuk segera mengonfirmasikannya kepada Panitia. Syukron Katsiron.\n\n` +
       `_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._`;
     window.open(buildWaUrl(item.Nomor_WA, pesan), '_blank', 'noopener,noreferrer');
   };
@@ -998,7 +998,7 @@ export default function AdminSantri({
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola pendaftaran santri, verifikasi berkas, kirim WhatsApp massal penerimaan, dan pengundian nomor urut.
+              Kelola pendaftaran santri, verifikasi berkas, kirim WhatsApp massal penerimaan, dan pengundian nomor peserta.
             </p>
           </div>
         </div>
@@ -1019,10 +1019,10 @@ export default function AdminSantri({
             type="button"
             onClick={handleOpenLotteryModal}
             className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
-            title="Undi nomor urut santri"
+            title="Undi nomor peserta santri"
           >
             <Dices className="w-4 h-4 text-white" aria-hidden="true" />
-            <span>Undi Nomor Urut</span>
+            <span>Undi Nomor Peserta</span>
           </button>
 
           <button
@@ -1085,7 +1085,7 @@ export default function AdminSantri({
               <input
                 type="search"
                 aria-label="Cari santri"
-                placeholder="Cari nama santri, ID, no. urut, cabang, wali kelas, atau 08..."
+                placeholder="Cari nama santri, ID, no. peserta, cabang, wali kelas, atau 08..."
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 className="santri-control w-full pl-9 pr-9 py-2.5 rounded-2xl border border-slate-200/90 text-xs font-medium outline-none focus:border-blue-600 focus:bg-white bg-slate-50/70 transition-all placeholder:text-slate-400"
@@ -1223,7 +1223,7 @@ export default function AdminSantri({
             <thead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100">
               <tr>
                 <th scope="col" className="py-3.5 px-4">Santri & ID</th>
-                <th scope="col" className="py-3.5 px-3 text-center w-28">No. Urut</th>
+                <th scope="col" className="py-3.5 px-3 text-center w-28">No. Peserta</th>
                 <th scope="col" className="py-3.5 px-4">Cabang Perlombaan</th>
                 <th scope="col" className="py-3.5 px-4">Kelas Diniyah</th>
                 <th scope="col" className="py-3.5 px-4">Wali Kelas & WA</th>
@@ -1304,7 +1304,7 @@ export default function AdminSantri({
                       </th>
 
                       {/* Nomor Urut (Format 3 Digit Monospace) */}
-                      <td data-label="No. Urut" className="py-3.5 px-3 text-center align-middle">
+                      <td data-label="No. Peserta" className="py-3.5 px-3 text-center align-middle">
                         {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
                           <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 font-mono font-bold text-xs border border-blue-200/70">
                             {String(item.Nomor_Urut).padStart(3, '0')}
@@ -1574,7 +1574,7 @@ export default function AdminSantri({
                   <span className="font-mono font-bold text-slate-800 text-sm mt-0.5 block">{selectedSantri.ID_Pendaftaran}</span>
                 </div>
                 <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
-                  <span className="text-[10px] text-blue-700 block font-bold uppercase tracking-wider">Nomor Urut</span>
+                  <span className="text-[10px] text-blue-700 block font-bold uppercase tracking-wider">Nomor Peserta</span>
                   <span className="font-mono font-bold text-blue-800 text-sm mt-0.5 block">
                     {selectedSantri.Nomor_Urut || 'Belum Diundi'}
                   </span>
@@ -1835,8 +1835,9 @@ export default function AdminSantri({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nomor Urut Undian (3 Digit)</label>
+                  <label htmlFor="edit-santri-no-peserta" className="font-bold text-slate-700">Nomor Peserta (3 Digit)</label>
                   <input
+                    id="edit-santri-no-peserta"
                     type="text"
                     value={editForm.Nomor_Urut}
                     onChange={(e) => setEditForm(prev => ({ ...prev, Nomor_Urut: e.target.value }))}

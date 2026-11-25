@@ -78,7 +78,7 @@ export default function CheckStatus({ registrations, onViewTicket }) {
               </button>
             </div>
             <p className="text-[11px] text-slate-500">
-              Gunakan nama santri, nomor urut, ID pendaftaran, atau nomor WhatsApp wali kelas yang didaftarkan.
+              Gunakan nama santri, nomor peserta, ID pendaftaran, atau nomor WhatsApp wali kelas yang didaftarkan.
             </p>
           </form>
         </div>
@@ -94,7 +94,7 @@ export default function CheckStatus({ registrations, onViewTicket }) {
               <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <p>
-                  Data pendaftaran berhasil ditemukan. Silakan periksa kembali informasi peserta dan nomor urut pemanggilan yang tercantum.
+                  Data pendaftaran berhasil ditemukan. Silakan periksa kembali informasi peserta dan nomor peserta yang tercantum.
                 </p>
               </div>
 
@@ -125,10 +125,10 @@ export default function CheckStatus({ registrations, onViewTicket }) {
                       </h3>
                     </div>
 
-                    {/* Nomor Urut Pemanggilan */}
+                    {/* Nomor Peserta */}
                     <div className="text-left sm:text-right bg-slate-50 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                       <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Nomor Urut Pemanggilan:
+                        Nomor Peserta:
                       </span>
                       {item.Nomor_Urut ? (
                         <span className="text-xl font-black text-[#075B45] font-mono tracking-wider block">

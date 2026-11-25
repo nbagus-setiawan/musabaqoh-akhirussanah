@@ -102,7 +102,7 @@ export default function AdminLogin({ onLoginSuccess }) {
               Musabaqah Akhirussanah 1447 H / 2026 M
             </p>
             <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-              Otentikasi Khusus Panitia Pelaksana untuk Akses Dashboard & Pengundian Nomor Urut
+              Otentikasi Khusus Panitia Pelaksana untuk Akses Dashboard & Pengundian Nomor Peserta
             </p>
           </div>
 
