@@ -233,7 +233,7 @@ function onOpen() {
     .addItem('3. Perbarui Header Tabel Pendaftaran (13 Kolom Rapi)', 'perbaruiHeaderTabelPendaftaran')
     .addItem('4. Rapikan Format Tampilan Semua Sheet', 'formatSeluruhLembarKerja')
     .addSeparator()
-    .addItem('5. Undi Nomor Urut (Beregu: 1 Nomor Urut Per Regu)', 'undiNomorUrutOtomatis')
+    .addItem('5. Undi Nomor Peserta (Beregu: 1 Nomor Peserta Per Regu)', 'undiNomorUrutOtomatis')
     .addItem('6. Rekapitulasi Poin & Juara Umum', 'hitungRekapJuaraUmum')
     .addItem('7. Perbaiki Format Nomor WA (08...)', 'perbaikiSemuaNomorWA')
     .addToUi();
@@ -545,32 +545,56 @@ function formatSeluruhLembarKerja() {
 }
 
 /**
- * Undi Nomor Urut Seluruh Santri Otomatis di Google Sheets
- * Aturan Mutlak:
- * 1. BEBAS DUPLIKAT DI SELURUH CABANG & DALAM CABANG:
- *    Setiap nomor urut hanya keluar 1 kali di seluruh database perlombaan.
- * 2. LOMBA BEREGU (Syarhil Qur'an, CCM, Cerdas Cermat, Kreasi Nadzom, Nadzom):
- *    Seluruh anggota dalam satu regu/tim yang sama MENDAPATKAN NOMOR URUT YANG SAMA PERSIS.
- *    Nomor regu tersebut unik global, tidak akan pernah dipakai oleh peserta atau regu lain manapun.
- * 3. LOMBA INDIVIDU (MQK, Pidato, MC, Tilawah, Khot, MHQ, Adzan, dll.):
- *    Setiap santri mendapatkan nomor urut individu yang berbeda dan unik secara global.
+ * Mask nomor WA untuk konsumsi publik (menyembunyikan digit tengah)
  */
-function undiNomorUrutOtomatis(optStartNumber) {
+function maskPhonePublic_(rawPhone) {
+  const norm = normalizePhoneLocal08_(rawPhone);
+  if (!norm) return '';
+  if (norm.length <= 6) return norm.slice(0, 2) + '***';
+  return norm.slice(0, 4) + '****' + norm.slice(-3);
+}
+
+/**
+ * Verifikasi PIN Admin langsung terhadap Sheet "Admin"
+ */
+function verifyAdminPin_(pinInput) {
+  const cleanPin = String(pinInput || '').trim();
+  if (!cleanPin) return false;
+  const sheet = getSheetByName(SHEET_ADMIN);
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    const p = String(rows[i][2] || '').trim();
+    const status = String(rows[i][5] || 'Aktif').trim().toLowerCase();
+    if (p && p === cleanPin && status === 'aktif') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Undi Nomor Peserta Seluruh / Per Cabang Santri Terverifikasi Otomatis di Google Sheets
+ * Aturan Mutlak:
+ * 1. Hanya santri berstatus "Terverifikasi" yang diundi.
+ * 2. BEBAS DUPLIKAT DI SELURUH CABANG & DALAM CABANG (tetap menjaga nomor cabang lain bila undi per cabang).
+ * 3. LOMBA BEREGU (Syarhil Qur'an, CCM, Cerdas Cermat, Kreasi Nadzom, Nadzom):
+ *    Seluruh anggota dalam satu regu/tim yang sama MENDAPATKAN NOMOR PESERTA YANG SAMA PERSIS.
+ */
+function undiNomorUrutOtomatis(optStartNumber, optCategory) {
   const sheet = getSheetByName(SHEET_PENDAFTARAN);
   const rows = sheet.getDataRange().getValues();
   if (rows.length <= 1) {
-    SpreadsheetApp.getActiveSpreadsheet().toast('Belum ada data pendaftaran santri.', 'Informasi', 5);
+    try { SpreadsheetApp.getActiveSpreadsheet().toast('Belum ada data pendaftaran santri.', 'Informasi', 5); } catch (e) {}
     return 0;
   }
 
-  // Tentukan nomor awal (Default: 1)
   let startNumber = (typeof optStartNumber === 'number' && optStartNumber > 0) ? optStartNumber : null;
   if (startNumber === null) {
     try {
       const ui = SpreadsheetApp.getUi();
       const response = ui.prompt(
-        'Undi Nomor Urut Musabaqah (Format 3 Digit)',
-        'Masukkan nomor urut awal (Ketik angka, misal: 001 atau 050):',
+        'Undi Nomor Peserta Musabaqah (Format 3 Digit)',
+        'Masukkan nomor peserta awal (Ketik angka, misal: 001 atau 050):',
         ui.ButtonSet.OK_CANCEL
       );
       if (response.getSelectedButton() === ui.Button.CANCEL) {
@@ -583,6 +607,9 @@ function undiNomorUrutOtomatis(optStartNumber) {
     }
   }
 
+  const targetCategory = String(optCategory || 'ALL').trim();
+  const isAllCategories = !targetCategory || targetCategory.toUpperCase() === 'ALL';
+
   const headers = rows[0].map(h => String(h || '').trim());
   const colIndexCabang = headers.findIndex(h => /cabang/i.test(h));
   const colIndexKelas = headers.findIndex(h => /kelas/i.test(h));
@@ -593,30 +620,33 @@ function undiNomorUrutOtomatis(optStartNumber) {
   const colIndexStatus = headers.findIndex(h => /status/i.test(h));
 
   if (colIndexCabang === -1 || colIndexNoUrut === -1) {
-    SpreadsheetApp.getActiveSpreadsheet().toast('Kolom Cabang_Lomba atau Nomor_Urut tidak ditemukan.', 'Error', 5);
+    try { SpreadsheetApp.getActiveSpreadsheet().toast('Kolom Cabang_Lomba atau Nomor_Urut tidak ditemukan.', 'Error', 5); } catch (e) {}
     return 0;
   }
 
-  // Daftar Kata Kunci Cabang Lomba Beregu Resmi
   const cabangBeregu = ["syarhil", "ccm", "cerdas cermat", "kreasi nadzom", "nadzom"];
-
-  // Kumpulkan Unit Undian Global
-  // 1 Unit = 1 Tim Beregu (semua anggotanya) ATAU 1 Peserta Individu
   const units = [];
-  const teamMap = {}; // teamKey -> index di array units
+  const teamMap = {};
+  const preservedUsedNumbers = {};
 
   for (let i = 1; i < rows.length; i++) {
-    const rowIndex = i + 1; // 1-indexed row di Google Sheets
+    const rowIndex = i + 1;
     const row = rows[i];
 
     const nama = colIndexNama !== -1 ? String(row[colIndexNama] || '').trim() : 'Santri';
     const cabang = String(row[colIndexCabang] || '').trim();
     if (!cabang || !nama) continue;
 
-    // Lewati baris jika status secara eksplisit Ditolak atau Batal
-    if (colIndexStatus !== -1) {
-      const status = String(row[colIndexStatus] || '').trim().toLowerCase();
-      if (status === 'ditolak' || status === 'batal') continue;
+    const status = colIndexStatus !== -1 ? String(row[colIndexStatus] || '').trim().toLowerCase() : 'terverifikasi';
+    const matchesCategory = isAllCategories || cabang.toLowerCase() === targetCategory.toLowerCase();
+
+    // Catat nomor peserta yang tetap dipertahankan pada cabang lain / di luar target agar bebas duplikat global
+    if (!matchesCategory || status !== 'terverifikasi') {
+      const existingNo = String(row[colIndexNoUrut] || '').trim();
+      if (existingNo && !isNaN(existingNo) && Number(existingNo) > 0) {
+        preservedUsedNumbers[String(Number(existingNo)).padStart(3, '0')] = true;
+      }
+      continue;
     }
 
     const kelas = colIndexKelas !== -1 ? String(row[colIndexKelas] || '').trim() : '';
@@ -626,25 +656,19 @@ function undiNomorUrutOtomatis(optStartNumber) {
     const isBeregu = cabangBeregu.some(cb => cabang.toLowerCase().includes(cb));
 
     if (isBeregu) {
-      // Ekstrak label Regu dari detail, catatan, atau kelas (misal: "Regu 1", "Regu 2", dst.)
       const combinedText = `${detail} ${catatan} ${kelas}`;
       const matchRegu = combinedText.match(/(regu\s*[a-z0-9]+|tim\s*[a-z0-9]+)/i);
       const reguLabel = matchRegu ? matchRegu[0].toUpperCase() : 'REGU 1';
-
-      // Bersihkan nama kelas dari embel-embel regu/bahasa
       const kelasClean = kelas
         .replace(/\s*\([^)]*regu[^)]*\)/gi, '')
         .replace(/\s*\([^)]*bahasa[^)]*\)/gi, '')
         .trim();
 
-      // Kunci Tim Unik: Cabang + Kelas + Regu
       const teamKey = `${cabang.toLowerCase().trim()}___${kelasClean.toLowerCase().trim()}___${reguLabel.toLowerCase().trim()}`;
 
       if (teamMap[teamKey] !== undefined) {
-        // Anggota berikutnya dalam regu yang sama
         units[teamMap[teamKey]].rows.push(rowIndex);
       } else {
-        // Regu baru
         teamMap[teamKey] = units.length;
         units.push({
           type: 'team',
@@ -654,7 +678,6 @@ function undiNomorUrutOtomatis(optStartNumber) {
         });
       }
     } else {
-      // Individu: 1 baris santri = 1 unit undian tersendiri
       units.push({
         type: 'individual',
         key: 'indiv_' + rowIndex,
@@ -665,18 +688,21 @@ function undiNomorUrutOtomatis(optStartNumber) {
   }
 
   if (units.length === 0) {
-    SpreadsheetApp.getActiveSpreadsheet().toast('Tidak ada peserta aktif untuk diundi.', 'Informasi', 5);
+    try { SpreadsheetApp.getActiveSpreadsheet().toast('Tidak ada peserta Terverifikasi yang sesuai untuk diundi.', 'Informasi', 5); } catch (e) {}
     return 0;
   }
 
-  // Buat pool nomor urut unik global dari startNumber s/d (startNumber + total unit - 1)
-  // TIDAK ADA ANGKA YANG SAMA / DUPLIKAT DI SELURUH DATABASE
+  // Buat pool nomor peserta unik global melewati nomor yang masih terpakai di cabang lain
   const numbersPool = [];
-  for (let n = 0; n < units.length; n++) {
-    numbersPool.push(startNumber + n);
+  let candidate = startNumber;
+  while (numbersPool.length < units.length) {
+    const formattedCandidate = String(candidate).padStart(3, '0');
+    if (!preservedUsedNumbers[formattedCandidate]) {
+      numbersPool.push(candidate);
+    }
+    candidate++;
   }
 
-  // Acak pool nomor urut dengan Fisher-Yates shuffle
   for (let j = numbersPool.length - 1; j > 0; j--) {
     const k = Math.floor(Math.random() * (j + 1));
     const temp = numbersPool[j];
@@ -684,31 +710,26 @@ function undiNomorUrutOtomatis(optStartNumber) {
     numbersPool[k] = temp;
   }
 
-  // Baca seluruh nilai kolom nomor urut saat ini untuk di-update secara batch (Atomic & Instan)
   const noUrutRange = sheet.getRange(2, colIndexNoUrut + 1, rows.length - 1, 1);
   const noUrutValues = noUrutRange.getValues();
 
-  // Kunci Utama: Tetapkan format kolom ke Plain Text '@' dan Rata Tengah agar 3 digit (001, 002, 010) tidak terpotong
   noUrutRange.setNumberFormat('@');
   noUrutRange.setHorizontalAlignment('center');
 
   let totalRowsAssigned = 0;
   units.forEach((unit, idx) => {
     const rawNum = numbersPool[idx];
-    // Format wajib 3 digit string (misal: 1 -> "001", 10 -> "010", 50 -> "050")
     const nomorUndian3Digit = String(rawNum).padStart(3, '0');
     unit.rows.forEach(rIdx => {
-      // rIdx adalah baris 1-indexed di sheet, sehingga di noUrutValues index = rIdx - 2
       noUrutValues[rIdx - 2][0] = nomorUndian3Digit;
       totalRowsAssigned++;
     });
   });
 
-  // Tulis nomor undian 3 digit sekaligus ke Google Sheets dalam 1 panggilan cepat
   noUrutRange.setValues(noUrutValues);
 
-  const pesanSukses = 'Pengundian selesai! Total ' + units.length + ' undian unik (' + totalRowsAssigned + ' baris santri, format 3 digit) tanpa duplikat di seluruh cabang lomba.';
-  SpreadsheetApp.getActiveSpreadsheet().toast(pesanSukses, 'Sukses', 5);
+  const pesanSukses = 'Pengundian selesai! Total ' + units.length + ' nomor peserta unik (' + totalRowsAssigned + ' baris santri Terverifikasi).';
+  try { SpreadsheetApp.getActiveSpreadsheet().toast(pesanSukses, 'Sukses', 5); } catch (e) {}
   return units.length;
 }
 
@@ -782,6 +803,10 @@ function doGet(e) {
     }
 
     if (action === 'repair_wa') {
+      const adminPinParam = (e && e.parameter && e.parameter.adminPin) ? e.parameter.adminPin : '';
+      if (!verifyAdminPin_(adminPinParam)) {
+        return jsonResponse({ status: 'error', code: 'UNAUTHORIZED', message: 'Akses ditolak: PIN Admin tidak valid.' });
+      }
       const fixedCount = perbaikiSemuaNomorWA();
       return jsonResponse({
         status: 'success',
@@ -876,8 +901,12 @@ function doGet(e) {
       return jsonResponse({ status: 'success', data: settings });
     }
 
-    // 5B. Ambil Pencatatan Pengeluaran Panitia
+    // 5B. Ambil Pencatatan Pengeluaran Panitia (Khusus Admin)
     if (action === 'get_pengeluaran') {
+      const adminPinParam = (e && e.parameter && e.parameter.adminPin) ? e.parameter.adminPin : '';
+      if (!verifyAdminPin_(adminPinParam)) {
+        return jsonResponse({ status: 'error', code: 'UNAUTHORIZED', message: 'Akses ditolak: PIN Admin tidak valid.' });
+      }
       const sheet = getSheetByName(SHEET_PENGELUARAN);
       const rows = sheet.getDataRange().getValues();
       const list = [];
@@ -906,8 +935,12 @@ function doGet(e) {
       return jsonResponse({ status: 'success', sheet: SHEET_PENGELUARAN, total: list.length, data: list });
     }
 
-    // 5C. Ambil Pencatatan Kebutuhan Sebelum Hari-H
+    // 5C. Ambil Pencatatan Kebutuhan Sebelum Hari-H (Khusus Admin)
     if (action === 'get_kebutuhan') {
+      const adminPinParam = (e && e.parameter && e.parameter.adminPin) ? e.parameter.adminPin : '';
+      if (!verifyAdminPin_(adminPinParam)) {
+        return jsonResponse({ status: 'error', code: 'UNAUTHORIZED', message: 'Akses ditolak: PIN Admin tidak valid.' });
+      }
       const sheet = getSheetByName(SHEET_KEBUTUHAN);
       const rows = sheet.getDataRange().getValues();
       const list = [];
@@ -933,7 +966,61 @@ function doGet(e) {
       return jsonResponse({ status: 'success', sheet: SHEET_KEBUTUHAN, total: list.length, data: list });
     }
 
+    // 5D. Pencarian Status Publik Aman (Hanya kembalikan baris yang cocok & mask Nomor_WA)
+    if (action === 'search_status') {
+      const rawQuery = (e && e.parameter && e.parameter.q) ? String(e.parameter.q).trim() : '';
+      if (rawQuery.length < 3) {
+        return jsonResponse({ status: 'success', total: 0, data: [] });
+      }
+      const qLower = rawQuery.toLowerCase();
+      const qNormPhone = normalizePhoneLocal08_(rawQuery);
+      const sheet = getSheetByName(SHEET_PENDAFTARAN);
+      const rows = sheet.getDataRange().getValues();
+      const headers = rows[0];
+      const results = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row[0] && !row[2] && !row[4]) continue;
+        const item = { rowIndex: i + 1 };
+        headers.forEach(function(header, idx) {
+          let val = row[idx];
+          if (val instanceof Date) {
+            val = Utilities.formatDate(val, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
+          }
+          val = val !== undefined && val !== null ? String(val).trim() : '';
+          if (header === 'Nomor_Urut' && val && !isNaN(val) && Number(val) > 0) {
+            val = String(val).padStart(3, '0');
+          }
+          if (header === 'Nomor_WA' && val) {
+            val = normalizePhoneLocal08_(val);
+          }
+          item[header] = val;
+        });
+
+        if (!item.Nama_Lengkap && item.Nama_Santri) item.Nama_Lengkap = item.Nama_Santri;
+        if (!item.Nama_Santri && item.Nama_Lengkap) item.Nama_Santri = item.Nama_Lengkap;
+        if (!item.Kelas_Diniyah && item.Kelas_Kategori) item.Kelas_Diniyah = item.Kelas_Kategori;
+        if (!item.Kelas_Kategori && item.Kelas_Diniyah) item.Kelas_Kategori = item.Kelas_Diniyah;
+
+        const matchId = String(item.ID_Pendaftaran || '').toLowerCase().includes(qLower);
+        const matchUrut = String(item.Nomor_Urut || '').toLowerCase().includes(qLower);
+        const matchNama = String(item.Nama_Lengkap || '').toLowerCase().includes(qLower);
+        const matchWa = qNormPhone.length >= 6 && String(item.Nomor_WA || '').includes(qNormPhone);
+
+        if (matchId || matchUrut || matchNama || matchWa) {
+          item.Nomor_WA = maskPhonePublic_(item.Nomor_WA);
+          results.push(item);
+        }
+      }
+
+      return jsonResponse({ status: 'success', total: results.length, data: results });
+    }
+
     // 6. Default: Ambil Seluruh Data Santri di Sheet Pendaftaran
+    const adminPinParam = (e && e.parameter && e.parameter.adminPin) ? e.parameter.adminPin : '';
+    const isAdminAuthorized = verifyAdminPin_(adminPinParam);
+
     const sheet = getSheetByName(SHEET_PENDAFTARAN);
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
@@ -956,7 +1043,8 @@ function doGet(e) {
           val = String(val).padStart(3, '0');
         }
         if (header === 'Nomor_WA' && val) {
-          val = normalizePhoneLocal08_(val);
+          const normWa = normalizePhoneLocal08_(val);
+          val = isAdminAuthorized ? normWa : maskPhonePublic_(normWa);
         }
 
         item[header] = val;
@@ -1003,7 +1091,7 @@ function doPost(e) {
     const action = contents.action || 'register';
 
     // -------------------------------------------------------------------------
-    // 1. AUTENTIKASI ADMIN (LOGIN PIN & USERNAME)
+    // 1. AUTENTIKASI ADMIN (LOGIN PIN & USERNAME TANPA BACKDOOR)
     // -------------------------------------------------------------------------
     if (action === 'login_admin') {
       const sheet = getSheetByName(SHEET_ADMIN);
@@ -1011,12 +1099,17 @@ function doPost(e) {
       const usernameInput = String(contents.username || '').trim().toLowerCase();
       const pinInput = String(contents.pin || contents.password || '').trim();
 
+      if (!pinInput) {
+        return jsonResponse({ status: 'error', message: 'PIN Admin wajib diisi.' });
+      }
+
       for (let i = 1; i < rows.length; i++) {
         const u = String(rows[i][1] || '').trim().toLowerCase();
         const p = String(rows[i][2] || '').trim();
-        const status = String(rows[i][5] || 'Aktif').trim();
+        const status = String(rows[i][5] || 'Aktif').trim().toLowerCase();
 
-        if (u === usernameInput && p === pinInput && status.toLowerCase() === 'aktif') {
+        const userMatch = !usernameInput || u === usernameInput;
+        if (userMatch && p && p === pinInput && status === 'aktif') {
           return jsonResponse({
             status: 'success',
             message: 'Login berhasil.',
@@ -1030,29 +1123,69 @@ function doPost(e) {
         }
       }
 
-      if (pinInput === 'admin123') {
-        return jsonResponse({
-          status: 'success',
-          message: 'Login default berhasil.',
-          admin: {
-            id: 'ADM-001',
-            username: 'admin',
-            nama: 'Ustadz Admin Panitia',
-            role: 'Super Admin'
-          }
-        });
-      }
-
       return jsonResponse({
         status: 'error',
-        message: 'Username atau PIN Admin tidak valid.'
+        message: 'PIN Admin tidak valid.'
       });
+    }
+
+    // -------------------------------------------------------------------------
+    // 1B. UBAH PIN ADMIN LANGSUNG KE SHEET "Admin"
+    // -------------------------------------------------------------------------
+    if (action === 'change_admin_pin') {
+      const oldPin = String(contents.oldPin || contents.adminPin || '').trim();
+      const newPin = String(contents.newPin || '').trim();
+
+      if (!verifyAdminPin_(oldPin)) {
+        return jsonResponse({ status: 'error', code: 'UNAUTHORIZED', message: 'PIN Admin saat ini tidak valid.' });
+      }
+      if (!newPin || newPin.length < 4) {
+        return jsonResponse({ status: 'error', message: 'PIN baru minimal harus 4 karakter / angka.' });
+      }
+
+      const sheet = getSheetByName(SHEET_ADMIN);
+      const rows = sheet.getDataRange().getValues();
+      let updated = false;
+      for (let i = 1; i < rows.length; i++) {
+        const p = String(rows[i][2] || '').trim();
+        const status = String(rows[i][5] || 'Aktif').trim().toLowerCase();
+        if (p === oldPin && status === 'aktif') {
+          sheet.getRange(i + 1, 3).setNumberFormat('@').setValue(newPin);
+          updated = true;
+          break;
+        }
+      }
+
+      if (!updated) {
+        return jsonResponse({ status: 'error', message: 'Akun admin aktif tidak ditemukan.' });
+      }
+      SpreadsheetApp.flush();
+      return jsonResponse({ status: 'success', message: 'PIN Admin berhasil diperbarui di Google Sheets.' });
     }
 
     // -------------------------------------------------------------------------
     // 2. PENDAFTARAN SANTRI (SINGLE & BATCH MULTI-STEP - 13 KOLOM)
     // -------------------------------------------------------------------------
     if (action === 'register' || action === 'batch_register') {
+      // Validasi STATUS_PENDAFTARAN dari Sheet Pengaturan
+      try {
+        const sPengaturan = getSheetByName(SHEET_PENGATURAN);
+        const pRows = sPengaturan.getDataRange().getValues();
+        for (let i = 1; i < pRows.length; i++) {
+          if (String(pRows[i][0] || '').trim() === 'STATUS_PENDAFTARAN') {
+            const st = String(pRows[i][1] || 'Buka').trim().toLowerCase();
+            if (st === 'tutup') {
+              return jsonResponse({
+                status: 'error',
+                code: 'REGISTRATION_CLOSED',
+                message: 'Pendaftaran peserta saat ini sedang ditutup oleh Panitia.'
+              });
+            }
+            break;
+          }
+        }
+      } catch (errCheck) {}
+
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const entries = Array.isArray(contents.entries) ? contents.entries : [contents];
       const now = new Date();
@@ -1087,7 +1220,6 @@ function doPost(e) {
 
         const waNormalized = normalizePhoneLocal08_(item.Nomor_WA || contents.Nomor_WA || '');
 
-        // Susunan 13 Kolom Rapi Sesuai HEADERS_PENDAFTARAN
         const rowData = [
           item.Timestamp || formattedTimestamp,
           item.Wali_Kelas || contents.Wali_Kelas || '',
@@ -1116,6 +1248,17 @@ function doPost(e) {
         message: 'Berhasil mendaftarkan ' + added.length + ' santri.',
         total: added.length,
         ids: added
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // GUARD KEAMANAN: Semua aksi modifikasi setelah titik ini wajib PIN Admin
+    // -------------------------------------------------------------------------
+    if (!verifyAdminPin_(contents.adminPin)) {
+      return jsonResponse({
+        status: 'error',
+        code: 'UNAUTHORIZED',
+        message: 'Akses ditolak: PIN Admin tidak valid atau sesi telah berakhir.'
       });
     }
 
@@ -1152,7 +1295,7 @@ function doPost(e) {
           }
           return;
         }
-        const skipKeys = { action: 1, rowindex: 1, match_nama: 1, match_cabang: 1 };
+        const skipKeys = { action: 1, rowindex: 1, match_nama: 1, match_cabang: 1, adminpin: 1 };
         Object.keys(contents).forEach(key => {
           const lk = key.toLowerCase();
           if (skipKeys[lk]) return;
@@ -1214,27 +1357,66 @@ function doPost(e) {
       });
     }
 
-    // 3B. BATCH UPDATE STATUS SANTRI (VERIFIKASI MASSAL CEPAT)
+    // 3B. BATCH UPDATE STATUS SANTRI (VERIFIKASI MASSAL CEPAT & AKURAT BERBASIS BARIS)
     if (action === 'batch_update_status') {
       const sheet = getSheetByName(SHEET_PENDAFTARAN);
       const rows = sheet.getDataRange().getValues();
       const headers = rows[0].map(h => String(h).trim());
+      const items = Array.isArray(contents.items) ? contents.items : [];
       const ids = Array.isArray(contents.ids) ? contents.ids.map(id => String(id).trim()) : [];
       const newStatus = String(contents.status || 'Terverifikasi').trim();
       let count = 0;
 
       const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
+      const colNama = headers.findIndex(h => h.toLowerCase() === 'nama_santri' || h.toLowerCase() === 'nama_lengkap');
       const colStatus = headers.findIndex(h => h.toLowerCase() === 'status');
 
-      if (colId !== -1 && colStatus !== -1 && ids.length > 0) {
-        const idSet = {};
-        ids.forEach(id => { idSet[id] = true; });
+      if (colStatus !== -1) {
+        const updatedRows = {};
+        if (items.length > 0) {
+          items.forEach(meta => {
+            const targetRowIdx = meta && meta.rowIndex ? parseInt(meta.rowIndex, 10) : 0;
+            const targetId = String(meta?.ID_Pendaftaran || '').trim();
+            const hintNama = String(meta?.Nama_Santri || meta?.Nama_Lengkap || '').trim().toUpperCase();
+            let hit = false;
 
-        for (let i = 1; i < rows.length; i++) {
-          const rowId = String(rows[i][colId]).trim();
-          if (idSet[rowId]) {
-            sheet.getRange(i + 1, colStatus + 1).setValue(newStatus);
-            count++;
+            if (targetRowIdx >= 2 && targetRowIdx <= rows.length && !updatedRows[targetRowIdx]) {
+              const r = rows[targetRowIdx - 1];
+              const rowId = colId !== -1 ? String(r[colId] || '').trim() : '';
+              const rowNama = colNama !== -1 ? String(r[colNama] || '').trim().toUpperCase() : '';
+              if ((targetId && rowId === targetId) || (hintNama && rowNama === hintNama)) {
+                sheet.getRange(targetRowIdx, colStatus + 1).setValue(newStatus);
+                updatedRows[targetRowIdx] = true;
+                count++;
+                hit = true;
+              }
+            }
+
+            if (!hit && colId !== -1 && targetId) {
+              for (let i = 1; i < rows.length; i++) {
+                const rIdx = i + 1;
+                if (updatedRows[rIdx]) continue;
+                if (String(rows[i][colId]).trim() === targetId) {
+                  const rowNama = colNama !== -1 ? String(rows[i][colNama] || '').trim().toUpperCase() : '';
+                  if (!hintNama || !rowNama || rowNama === hintNama) {
+                    sheet.getRange(rIdx, colStatus + 1).setValue(newStatus);
+                    updatedRows[rIdx] = true;
+                    count++;
+                    break;
+                  }
+                }
+              }
+            }
+          });
+        } else if (colId !== -1 && ids.length > 0) {
+          const idSet = {};
+          ids.forEach(id => { idSet[id] = true; });
+          for (let i = 1; i < rows.length; i++) {
+            const rowId = String(rows[i][colId]).trim();
+            if (idSet[rowId]) {
+              sheet.getRange(i + 1, colStatus + 1).setValue(newStatus);
+              count++;
+            }
           }
         }
       }
@@ -1292,15 +1474,16 @@ function doPost(e) {
     }
 
     // -------------------------------------------------------------------------
-    // 5. UNDI NOMOR URUT
+    // 5. UNDI NOMOR PESERTA
     // -------------------------------------------------------------------------
     if (action === 'undi_nomor') {
       const startNum = contents.startNumber ? parseInt(contents.startNumber, 10) : 1;
-      const count = undiNomorUrutOtomatis(startNum);
+      const category = contents.category ? String(contents.category).trim() : 'ALL';
+      const count = undiNomorUrutOtomatis(startNum, category);
       return jsonResponse({
         status: 'success',
         countAssigned: count,
-        message: 'Pengundian nomor urut selesai (' + count + ' undian unik, tanpa duplikat di seluruh cabang).'
+        message: 'Pengundian nomor peserta selesai (' + count + ' undian unik, tanpa duplikat di seluruh cabang).'
       });
     }
 
@@ -1416,12 +1599,54 @@ function doPost(e) {
       });
     }
 
-    // Reset ke 30 Kelas Diniyah Resmi
-    if (action === 'sync_all_kelas' || action === 'reset_30_kelas') {
+    // Sinkronkan Kelas Diniyah custom atau Reset ke 30 Kelas Diniyah Resmi
+    if (action === 'sync_all_kelas') {
+      if (contents.data && typeof contents.data === 'object' && !Array.isArray(contents.data)) {
+        const sheet = getSheetByName(SHEET_TINGKAT_KELAS);
+        const lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          sheet.deleteRows(2, lastRow - 1);
+        }
+        const labelMap = {
+          ula: 'Tingkat Ula',
+          wustho: 'Tingkat Wustho',
+          ulya: 'Tingkat Ulya',
+          mhq_juz: 'Tingkat Hifdzil Qur\'an (MHQ)'
+        };
+        let totalWritten = 0;
+        Object.keys(contents.data).forEach(tKey => {
+          const tingkatId = String(tKey || '').trim().toLowerCase();
+          const list = Array.isArray(contents.data[tKey]) ? contents.data[tKey] : [];
+          const namaTingkat = labelMap[tingkatId] || ('Tingkat ' + tingkatId.toUpperCase());
+          list.forEach(namaKelas => {
+            const cleanName = String(namaKelas || '').trim();
+            if (!cleanName) return;
+            const ket = tingkatId === 'mhq_juz'
+              ? 'Khusus Cabang MHQ Berdasarkan Juz'
+              : namaTingkat + (cleanName.toLowerCase().includes('putri') ? ' (Santri Putri)' : ' (Santri Putra)');
+            sheet.appendRow([tingkatId, namaTingkat, cleanName, ket]);
+            totalWritten++;
+          });
+        });
+        SpreadsheetApp.flush();
+        return jsonResponse({
+          status: 'success',
+          total: totalWritten,
+          message: 'Seluruh ' + totalWritten + ' Kelas Diniyah berhasil disinkronkan ke Google Sheets.'
+        });
+      }
       isiMasterDataAwal();
       return jsonResponse({
         status: 'success',
         message: 'Seluruh 30 Kelas Diniyah dan 24 Ustadz resmi berhasil disinkronkan ke Google Sheets.'
+      });
+    }
+
+    if (action === 'reset_30_kelas') {
+      isiMasterDataAwal();
+      return jsonResponse({
+        status: 'success',
+        message: 'Seluruh 30 Kelas Diniyah dan 24 Ustadz resmi berhasil dipulihkan ke Google Sheets.'
       });
     }
 

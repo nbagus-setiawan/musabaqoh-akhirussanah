@@ -1,41 +1,177 @@
-// Layanan Integrasi Database Google Sheets via Code.gs (Direct API & .env)
+// Layanan Integrasi Database Google Sheets via Code.gs (Langsung ke Apps Script, tanpa localStorage)
 // Musabaqah Akhirussanah YPPS Pondok Pesantren Al-Falah Putak
 
-import { 
-  MASTER_WALI_KELAS, 
-  TINGKAT_LIST, 
+import {
+  MASTER_WALI_KELAS,
+  TINGKAT_LIST,
   SUB_KELAS_BY_TINGKAT,
   SKEMA_POIN_JUARA,
   getGenderFromKelas
 } from '../data/competitions';
 import { normalizePhoneLocal08, toSheetPlainTextPhone } from '../utils/phone';
 
-// Kunci penyimpanan sesi
-const STORAGE_KEY = 'akhirusanah_registrations_v2';
-const WALI_KELAS_KEY = 'akhirusanah_ustadz_v2';
-const SUB_KELAS_KEY = 'akhirusanah_kelas_v2';
-const ACTIVITY_LOGS_KEY = 'akhirusanah_activity_logs_v2';
-const JUARA_KEY = 'akhirusanah_juara_v2';
-const PENGELUARAN_KEY = 'akhirusanah_pengeluaran_v2';
-const KEBUTUHAN_KEY = 'akhirusanah_kebutuhan_v2';
-
 // URL Google Apps Script dari .env (VITE_GAS_URL)
 export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyg6odSPbv_pqXFD2qPTUROwooyWWmZ9N4Y4SZRAtfiBDb7FlKcy7cuIwVqiSFpXJSt/exec';
 
+const ADMIN_SESSION_AUTH_KEY = 'admin_session_auth';
+const ADMIN_SESSION_PIN_KEY = 'admin_session_pin';
+
+// Penyimpanan memori sementara (in-memory) untuk sesi tab aktif agar sinkron dengan Google Apps Script
+const memoryStore = {
+  gasUrl: '',
+  adminPin: '',
+  registrations: [],
+  registrationsLoaded: false,
+  registrationsAuthMode: null,
+  waliKelas: null,
+  subKelas: null,
+  juara: [],
+  pengaturan: null,
+  pengeluaran: [],
+  kebutuhan: [],
+  activityLogs: []
+};
+
 export const getStoredGasUrl = () => {
-  return import.meta.env.VITE_GAS_URL || localStorage.getItem('akhirusanah_gas_url') || DEFAULT_GAS_URL;
+  return memoryStore.gasUrl || import.meta.env.VITE_GAS_URL || DEFAULT_GAS_URL;
 };
 
 export const setStoredGasUrl = (url) => {
-  localStorage.setItem('akhirusanah_gas_url', url ? url.trim() : DEFAULT_GAS_URL);
+  memoryStore.gasUrl = url ? url.trim() : '';
+};
+
+export const getSessionAdminPin = () => {
+  try {
+    return sessionStorage.getItem(ADMIN_SESSION_PIN_KEY) || memoryStore.adminPin || '';
+  } catch (e) {
+    return memoryStore.adminPin || '';
+  }
+};
+
+export const setSessionAdminPin = (pin) => {
+  const clean = pin ? String(pin).trim() : '';
+  memoryStore.adminPin = clean;
+  try {
+    if (clean) {
+      sessionStorage.setItem(ADMIN_SESSION_PIN_KEY, clean);
+    } else {
+      sessionStorage.removeItem(ADMIN_SESSION_PIN_KEY);
+    }
+  } catch (e) {}
 };
 
 export const getAdminPin = () => {
-  return localStorage.getItem('akhirusanah_admin_pin') || 'admin123';
+  return getSessionAdminPin();
 };
 
 export const setAdminPin = (pin) => {
-  localStorage.setItem('akhirusanah_admin_pin', pin);
+  setSessionAdminPin(pin);
+};
+
+export const clearAdminSession = () => {
+  memoryStore.adminPin = '';
+  memoryStore.registrationsLoaded = false;
+  memoryStore.registrationsAuthMode = null;
+  try {
+    sessionStorage.removeItem(ADMIN_SESSION_AUTH_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_PIN_KEY);
+  } catch (e) {}
+};
+
+const getActiveAdminPinForRequests = () => {
+  return getSessionAdminPin();
+};
+
+const hasActiveAdminSession = () => {
+  try {
+    return Boolean(
+      getSessionAdminPin() &&
+      sessionStorage.getItem(ADMIN_SESSION_AUTH_KEY) === 'true'
+    );
+  } catch (e) {
+    return false;
+  }
+};
+
+const buildGasUrl = (action, params = {}) => {
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return '';
+  const query = new URLSearchParams({ action, ...params });
+  return gasUrl.includes('?') ? `${gasUrl}&${query.toString()}` : `${gasUrl}?${query.toString()}`;
+};
+
+const postGas = async (payload, { includeAdminPin = true, requireSuccess = false } = {}) => {
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) return { skipped: true, status: 'local' };
+
+  const bodyPayload = includeAdminPin
+    ? { adminPin: getActiveAdminPinForRequests(), ...payload }
+    : payload;
+
+  const resp = await fetch(gasUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(bodyPayload)
+  });
+
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status}: Gagal menghubungi Google Sheets.`);
+  }
+
+  let data = null;
+  try {
+    data = await resp.json();
+  } catch (e) {
+    data = null;
+  }
+
+  if (requireSuccess && data && data.status === 'error') {
+    throw new Error(data.message || 'Operasi ditolak oleh Google Sheets.');
+  }
+
+  return data || { status: 'success' };
+};
+
+export const verifyAdminLogin = async (pinInput) => {
+  const cleanPin = String(pinInput || '').trim();
+  if (!cleanPin) {
+    return { success: false, message: 'Harap masukkan PIN Panitia terlebih dahulu.' };
+  }
+
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) {
+    return { success: false, message: 'URL Google Apps Script belum dikonfigurasi.' };
+  }
+
+  try {
+    const res = await postGas(
+      { action: 'login_admin', username: 'admin', pin: cleanPin },
+      { includeAdminPin: false, requireSuccess: false }
+    );
+    if (res && res.status === 'success') {
+      setSessionAdminPin(cleanPin);
+      return { success: true, admin: res.admin || null };
+    }
+    return { success: false, message: (res && res.message) || 'PIN Panitia tidak valid.' };
+  } catch (err) {
+    return { success: false, message: 'Gagal terhubung ke server Google Apps Script untuk memverifikasi PIN.' };
+  }
+};
+
+export const changeAdminPin = async (newPin) => {
+  const cleanNewPin = String(newPin || '').trim();
+  if (!cleanNewPin || cleanNewPin.length < 4) {
+    throw new Error('PIN baru minimal harus 4 karakter / angka.');
+  }
+
+  const oldPin = getActiveAdminPinForRequests();
+  const res = await postGas(
+    { action: 'change_admin_pin', oldPin, newPin: cleanNewPin },
+    { includeAdminPin: false, requireSuccess: true }
+  );
+
+  setSessionAdminPin(cleanNewPin);
+  return { success: true, syncedToSheets: Boolean(res && res.status === 'success') };
 };
 
 // =========================================================================
@@ -91,56 +227,79 @@ export const subscribeDataChanged = (callback) => {
 // =========================================================================
 
 export const getLocalRegistrations = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.map(item => ({
-          ...item,
-          Nomor_WA: item.Nomor_WA ? normalizePhoneLocal08(item.Nomor_WA) : ''
-        }))
-      : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(memoryStore.registrations) ? memoryStore.registrations : [];
+};
+
+const normalizeRemoteRegistrations = (data = []) => {
+  return data.map(item => {
+    const next = { ...item };
+    if (next.Nomor_Urut && !isNaN(next.Nomor_Urut) && Number(next.Nomor_Urut) > 0) {
+      next.Nomor_Urut = String(next.Nomor_Urut).padStart(3, '0');
+    }
+    if (next.Nomor_WA) {
+      next.Nomor_WA = normalizePhoneLocal08(next.Nomor_WA);
+    }
+    return next;
+  });
 };
 
 /**
  * Mengambil seluruh data santri langsung dari Google Sheets tab Pendaftaran
  */
 export const fetchRegistrations = async (forceRemote = false) => {
-  if (!forceRemote) {
-    const local = getLocalRegistrations();
-    if (local && local.length > 0) return local;
+  const isAdminMode = hasActiveAdminSession();
+  if (
+    !forceRemote &&
+    memoryStore.registrationsLoaded &&
+    memoryStore.registrationsAuthMode === isAdminMode &&
+    memoryStore.registrations.length > 0
+  ) {
+    return memoryStore.registrations;
   }
+
   const gasUrl = getStoredGasUrl();
   if (!gasUrl) return getLocalRegistrations();
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
+    const params = isAdminMode ? { adminPin: getActiveAdminPinForRequests() } : {};
+    const url = buildGasUrl('get_all', params);
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
-        const formatted = result.data.map(item => {
-          if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
-            item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
-          }
-          if (item.Nomor_WA) {
-            item.Nomor_WA = normalizePhoneLocal08(item.Nomor_WA);
-          }
-          return item;
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
+        const formatted = normalizeRemoteRegistrations(result.data);
+        memoryStore.registrations = formatted;
+        memoryStore.registrationsLoaded = true;
+        memoryStore.registrationsAuthMode = isAdminMode;
         return formatted;
       }
     }
   } catch (err) {
-    console.warn('Koneksi Google Sheets gagal saat fetchRegistrations, menggunakan cadangan lokal:', err);
+    console.warn('Koneksi Google Sheets gagal saat fetchRegistrations:', err);
   }
 
   return getLocalRegistrations();
+};
+
+export const searchRegistrationStatus = async (query) => {
+  const clean = String(query || '').trim();
+  if (clean.length < 3) return [];
+
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    try {
+      const url = buildGasUrl('search_status', { q: clean });
+      const resp = await fetch(url, { method: 'GET' });
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.status === 'success' && Array.isArray(result.data)) {
+          return normalizeRemoteRegistrations(result.data);
+        }
+      }
+    } catch (e) {}
+  }
+
+  return null;
 };
 
 let activeRegistrationMutations = 0;
@@ -155,7 +314,9 @@ export const syncRemoteRegistrationsSilently = async () => {
 
   try {
     const reqStartedAt = Date.now();
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
+    const isAdminMode = hasActiveAdminSession();
+    const params = isAdminMode ? { adminPin: getActiveAdminPinForRequests() } : {};
+    const url = buildGasUrl('get_all', params);
     const resp = await fetch(url, { method: 'GET' });
     if (activeRegistrationMutations > 0 || lastRegistrationMutationAt >= reqStartedAt) {
       return;
@@ -163,19 +324,16 @@ export const syncRemoteRegistrationsSilently = async () => {
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
-        const formatted = result.data.map(item => {
-          if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
-            item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
-          }
-          if (item.Nomor_WA) {
-            item.Nomor_WA = normalizePhoneLocal08(item.Nomor_WA);
-          }
-          return item;
-        });
-        const local = getLocalRegistrations();
-        if (JSON.stringify(formatted) !== JSON.stringify(local)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
-          notifyDataChanged('registrations', result.data);
+        const formatted = normalizeRemoteRegistrations(result.data);
+        const current = getLocalRegistrations();
+        if (
+          memoryStore.registrationsAuthMode !== isAdminMode ||
+          JSON.stringify(formatted) !== JSON.stringify(current)
+        ) {
+          memoryStore.registrations = formatted;
+          memoryStore.registrationsLoaded = true;
+          memoryStore.registrationsAuthMode = isAdminMode;
+          notifyDataChanged('registrations', formatted);
         }
       }
     }
@@ -189,7 +347,7 @@ export const saveRegistration = async (formData) => {
   const currentList = getLocalRegistrations();
   const nextNum = currentList.length + 1;
   const idPendaftaran = `AKH-${String(nextNum).padStart(3, '0')}`;
-  
+
   const now = new Date();
   const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
@@ -208,8 +366,20 @@ export const saveRegistration = async (formData) => {
     Catatan: formData.catatan || ''
   };
 
-  const updatedList = [newEntry, ...currentList];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+  const res = await postGas(
+    {
+      action: 'register',
+      ...newEntry,
+      Nomor_WA: toSheetPlainTextPhone(newEntry.Nomor_WA)
+    },
+    { includeAdminPin: false, requireSuccess: true }
+  );
+
+  if (Array.isArray(res?.ids) && res.ids[0]) {
+    newEntry.ID_Pendaftaran = res.ids[0];
+  }
+
+  memoryStore.registrations = [newEntry, ...currentList];
   notifyDataChanged('registrations', newEntry);
 
   addActivityLog(
@@ -217,23 +387,6 @@ export const saveRegistration = async (formData) => {
     `Santri ${formData.namaSantri} didaftarkan oleh ${formData.waliKelas} (${formData.tingkat} - ${formData.cabangLomba})`,
     'registration'
   );
-
-  const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'register',
-          ...newEntry,
-          Nomor_WA: toSheetPlainTextPhone(newEntry.Nomor_WA)
-        })
-      });
-    } catch (e) {
-      console.warn('Gagal kirim ke Google Sheets:', e);
-    }
-  }
 
   return newEntry;
 };
@@ -282,8 +435,32 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
     };
   });
 
-  const updatedList = [...newEntries, ...currentList];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+  const gasUrl = getStoredGasUrl();
+  if (gasUrl) {
+    const res = await postGas(
+      {
+        action: 'batch_register',
+        Wali_Kelas: metadata.waliKelas || '',
+        Nomor_WA: toSheetPlainTextPhone(normalizedMetaWA),
+        Tingkat: metadata.tingkatName || metadata.tingkat || '',
+        Kelas_Kategori: metadata.kelasDiniyah || '',
+        entries: newEntries.map(entry => ({
+          ...entry,
+          Nomor_WA: toSheetPlainTextPhone(entry.Nomor_WA)
+        }))
+      },
+      { includeAdminPin: false, requireSuccess: true }
+    );
+    if (Array.isArray(res?.ids) && res.ids.length === newEntries.length) {
+      res.ids.forEach((assignedId, idx) => {
+        if (assignedId) {
+          newEntries[idx].ID_Pendaftaran = assignedId;
+        }
+      });
+    }
+  }
+
+  memoryStore.registrations = [...newEntries, ...currentList];
   notifyDataChanged('registrations', newEntries);
 
   addActivityLog(
@@ -291,29 +468,6 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
     `${newEntries.length} santri delegasi didaftarkan oleh ${metadata.waliKelas} (${metadata.kelasDiniyah || 'Kelas Diniyah'})`,
     'registration'
   );
-
-  const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'batch_register',
-          Wali_Kelas: metadata.waliKelas || '',
-          Nomor_WA: toSheetPlainTextPhone(normalizedMetaWA),
-          Tingkat: metadata.tingkatName || metadata.tingkat || '',
-          Kelas_Kategori: metadata.kelasDiniyah || '',
-          entries: newEntries.map(entry => ({
-            ...entry,
-            Nomor_WA: toSheetPlainTextPhone(entry.Nomor_WA)
-          }))
-        })
-      });
-    } catch (e) {
-      console.warn('Sync batch ke Google Sheets gagal:', e);
-    }
-  }
 
   return {
     success: true,
@@ -340,7 +494,7 @@ export const updateStatus = async (idPendaftaran, newStatus, itemMeta = null) =>
     return item;
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  memoryStore.registrations = updated;
   notifyDataChanged('registrations', { idPendaftaran: cleanId, rowIndex: targetRowIdx, newStatus });
 
   addActivityLog(
@@ -353,20 +507,17 @@ export const updateStatus = async (idPendaftaran, newStatus, itemMeta = null) =>
   if (gasUrl) {
     activeRegistrationMutations++;
     try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
+      await postGas(
+        {
           action: 'update_single',
           ID_Pendaftaran: cleanId,
           Status: newStatus,
           rowIndex: targetRowIdx || '',
           Nama_Santri: itemMeta?.Nama_Lengkap || itemMeta?.Nama_Santri || '',
           Cabang_Lomba: itemMeta?.Cabang_Lomba || ''
-        })
-      });
-    } catch (e) {
-      console.warn('Update status ke GAS gagal:', e);
+        },
+        { includeAdminPin: true, requireSuccess: true }
+      );
     } finally {
       activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
       lastRegistrationMutationAt = Date.now();
@@ -377,25 +528,44 @@ export const updateStatus = async (idPendaftaran, newStatus, itemMeta = null) =>
 };
 
 /**
- * Batch Update Status Santri Sekaligus (Verifikasi Massal)
+ * Batch Update Status Santri Sekaligus (Verifikasi Massal Berbasis Baris)
  */
-export const batchUpdateStatus = async (idList = [], newStatus) => {
-  if (!Array.isArray(idList) || idList.length === 0) return [];
-  const cleanIds = new Set(idList.map(id => String(id || '').trim()));
+export const batchUpdateStatus = async (itemsOrIds = [], newStatus) => {
+  if (!Array.isArray(itemsOrIds) || itemsOrIds.length === 0) return [];
+
+  const metaItems = itemsOrIds.map(entry =>
+    typeof entry === 'object' && entry !== null
+      ? {
+          rowIndex: entry.rowIndex ? Number(entry.rowIndex) : null,
+          ID_Pendaftaran: String(entry.ID_Pendaftaran || '').trim(),
+          Nama_Santri: String(entry.Nama_Santri || entry.Nama_Lengkap || '').trim().toUpperCase()
+        }
+      : {
+          rowIndex: null,
+          ID_Pendaftaran: String(entry || '').trim(),
+          Nama_Santri: ''
+        }
+  );
+
+  const rowIndexSet = new Set(metaItems.filter(m => m.rowIndex).map(m => m.rowIndex));
+  const idSet = new Set(metaItems.filter(m => !m.rowIndex && m.ID_Pendaftaran).map(m => m.ID_Pendaftaran));
+
   const currentList = getLocalRegistrations();
   const updated = currentList.map(item => {
-    if (cleanIds.has(String(item.ID_Pendaftaran || '').trim())) {
+    const byRow = item.rowIndex && rowIndexSet.has(Number(item.rowIndex));
+    const byId = !rowIndexSet.size && idSet.has(String(item.ID_Pendaftaran || '').trim());
+    if (byRow || byId) {
       return { ...item, Status: newStatus };
     }
     return item;
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  notifyDataChanged('registrations', { updatedIds: Array.from(cleanIds), newStatus });
+  memoryStore.registrations = updated;
+  notifyDataChanged('registrations', { updatedCount: metaItems.length, newStatus });
 
   addActivityLog(
     'Verifikasi Massal Santri',
-    `${cleanIds.size} santri diubah statusnya menjadi "${newStatus}"`,
+    `${metaItems.length} santri diubah statusnya menjadi "${newStatus}"`,
     'status'
   );
 
@@ -403,17 +573,15 @@ export const batchUpdateStatus = async (idList = [], newStatus) => {
   if (gasUrl) {
     activeRegistrationMutations++;
     try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
+      await postGas(
+        {
           action: 'batch_update_status',
-          ids: Array.from(cleanIds),
+          items: metaItems,
+          ids: metaItems.map(m => m.ID_Pendaftaran).filter(Boolean),
           status: newStatus
-        })
-      });
-    } catch (e) {
-      console.warn('Batch update status ke GAS gagal:', e);
+        },
+        { includeAdminPin: true, requireSuccess: true }
+      );
     } finally {
       activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
       lastRegistrationMutationAt = Date.now();
@@ -465,7 +633,7 @@ export const updateRegistration = async (idPendaftaran, updatedFields, rowMeta =
     return item;
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  memoryStore.registrations = updated;
   notifyDataChanged('registrations', { idPendaftaran, updatedFields: sanitizedFields });
 
   addActivityLog(
@@ -485,26 +653,17 @@ export const updateRegistration = async (idPendaftaran, updatedFields, rowMeta =
       if (remoteFields.Nomor_Urut !== undefined && String(remoteFields.Nomor_Urut).trim() !== '') {
         remoteFields.Nomor_Urut = `'${String(remoteFields.Nomor_Urut).trim()}`;
       }
-      const resp = await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
+      await postGas(
+        {
           action: 'edit_santri',
           ID_Pendaftaran: idPendaftaran,
           ...(targetRowIndex ? { rowIndex: targetRowIndex } : {}),
           ...(matchNama ? { Match_Nama: matchNama } : {}),
           ...(matchCabang ? { Match_Cabang: matchCabang } : {}),
           ...remoteFields
-        })
-      });
-      if (resp.ok) {
-        const resJson = await resp.json().catch(() => null);
-        if (resJson && resJson.status !== 'success') {
-          console.warn('Google Sheets edit_santri warning:', resJson.message);
-        }
-      }
-    } catch (e) {
-      console.warn('Update santri ke Google Sheets gagal:', e);
+        },
+        { includeAdminPin: true, requireSuccess: true }
+      );
     } finally {
       activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
       lastRegistrationMutationAt = Date.now();
@@ -532,7 +691,7 @@ export const deleteRegistration = async (idPendaftaran, rowMeta = {}) => {
     return false;
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  memoryStore.registrations = filtered;
   notifyDataChanged('registrations', { deletedId: idPendaftaran });
 
   addActivityLog('Hapus Santri', `Santri ${idPendaftaran} dihapus dari pendaftaran`, 'delete');
@@ -541,18 +700,15 @@ export const deleteRegistration = async (idPendaftaran, rowMeta = {}) => {
   if (gasUrl) {
     activeRegistrationMutations++;
     try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
+      await postGas(
+        {
           action: 'delete_santri',
           ID_Pendaftaran: idPendaftaran,
           ...(targetRowIndex ? { rowIndex: targetRowIndex } : {}),
           ...(matchNama ? { Match_Nama: matchNama } : {})
-        })
-      });
-    } catch (e) {
-      console.warn('Hapus santri di Google Sheets gagal:', e);
+        },
+        { includeAdminPin: true, requireSuccess: true }
+      );
     } finally {
       activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
       lastRegistrationMutationAt = Date.now();
@@ -563,37 +719,38 @@ export const deleteRegistration = async (idPendaftaran, rowMeta = {}) => {
 };
 
 /**
- * Undi Nomor Urut Seluruh Santri di Google Sheets
+ * Undi Nomor Peserta Seluruh / Per Cabang Santri di Google Sheets
  */
 export const generateRandomQueueNumbers = async (category = 'ALL', startNumber = 1) => {
   const gasUrl = getStoredGasUrl();
-  if (gasUrl) {
-    try {
-      const resp = await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'undi_nomor',
-          category: category || 'ALL',
-          startNumber: Number(startNumber) || 1
-        })
-      });
-      if (resp.ok) {
-        const json = await resp.json();
-        // Ambil data terbaru hasil pengundian langsung dari spreadsheet
-        const fresh = await fetchRegistrations(true);
-        return {
-          success: true,
-          count: fresh.length,
-          countAssigned: (json && json.countAssigned) ? json.countAssigned : fresh.length
-        };
-      }
-    } catch (e) {
-      console.warn('Undi nomor via Google Sheets gagal:', e);
-    }
+  if (!gasUrl) {
+    return { success: false, message: 'URL Google Apps Script belum dikonfigurasi.' };
   }
 
-  return { success: false, message: 'Gagal menghubungi Google Sheets.' };
+  try {
+    activeRegistrationMutations++;
+    const json = await postGas(
+      {
+        action: 'undi_nomor',
+        category: category || 'ALL',
+        startNumber: Number(startNumber) || 1
+      },
+      { includeAdminPin: true, requireSuccess: true }
+    );
+    const fresh = await fetchRegistrations(true);
+    notifyDataChanged('registrations', fresh);
+    return {
+      success: true,
+      count: fresh.length,
+      countAssigned: (json && typeof json.countAssigned === 'number') ? json.countAssigned : fresh.length
+    };
+  } catch (e) {
+    console.warn('Undi nomor via Google Sheets gagal:', e);
+    return { success: false, message: e.message || 'Gagal menghubungi Google Sheets.' };
+  } finally {
+    activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
+    lastRegistrationMutationAt = Date.now();
+  }
 };
 
 export const isSantriPutri = (item) => {
@@ -609,15 +766,10 @@ export const isSantriPutri = (item) => {
 // =========================================================================
 
 export const getWaliKelasList = () => {
-  try {
-    const raw = localStorage.getItem(WALI_KELAS_KEY);
-    const list = raw ? JSON.parse(raw) : MASTER_WALI_KELAS;
-    return Array.isArray(list)
-      ? list.map(u => ({ ...u, kontak: u.kontak ? normalizePhoneLocal08(u.kontak) : '' }))
-      : MASTER_WALI_KELAS;
-  } catch (e) {
-    return MASTER_WALI_KELAS;
-  }
+  const list = Array.isArray(memoryStore.waliKelas) && memoryStore.waliKelas.length > 0
+    ? memoryStore.waliKelas
+    : MASTER_WALI_KELAS;
+  return list.map(u => ({ ...u, kontak: u.kontak ? normalizePhoneLocal08(u.kontak) : '' }));
 };
 
 /**
@@ -628,7 +780,7 @@ export const fetchWaliKelas = async () => {
   if (!gasUrl) return getWaliKelasList();
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_ustadz` : `${gasUrl}?action=get_ustadz`;
+    const url = buildGasUrl('get_ustadz');
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
@@ -637,12 +789,12 @@ export const fetchWaliKelas = async () => {
           ...u,
           kontak: u.kontak ? normalizePhoneLocal08(u.kontak) : ''
         }));
-        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(normalized));
+        memoryStore.waliKelas = normalized;
         return normalized;
       }
     }
   } catch (err) {
-    console.warn('Gagal ambil data Ustadz dari Google Sheets, menggunakan master lokal:', err);
+    console.warn('Gagal ambil data Ustadz dari Google Sheets, menggunakan master bawaan:', err);
   }
 
   return getWaliKelasList();
@@ -666,24 +818,19 @@ export const saveWaliKelas = async (ustadzData) => {
     updatedList = [...list, newItem];
   }
 
-  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(updatedList));
+  memoryStore.waliKelas = updatedList;
   notifyDataChanged('wali_kelas', newItem);
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'save_ustadz',
-          ...newItem,
-          kontak: toSheetPlainTextPhone(newItem.kontak)
-        })
-      });
-    } catch (e) {
-      console.warn('Simpan Ustadz ke Google Sheets gagal:', e);
-    }
+    await postGas(
+      {
+        action: 'save_ustadz',
+        ...newItem,
+        kontak: toSheetPlainTextPhone(newItem.kontak)
+      },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return updatedList;
@@ -693,20 +840,15 @@ export const deleteWaliKelas = async (id) => {
   const list = getWaliKelasList();
   const filtered = list.filter(u => u.id !== id);
 
-  localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(filtered));
+  memoryStore.waliKelas = filtered;
   notifyDataChanged('wali_kelas', { deletedId: id });
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete_ustadz', id })
-      });
-    } catch (e) {
-      console.warn('Hapus Ustadz di Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'delete_ustadz', id },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return filtered;
@@ -718,11 +860,14 @@ export const syncAllWaliKelasToGas = async () => {
   if (!gasUrl) throw new Error('URL Google Apps Script belum dikonfigurasi.');
 
   for (const item of list) {
-    await fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'save_ustadz', ...item })
-    });
+    await postGas(
+      {
+        action: 'save_ustadz',
+        ...item,
+        kontak: toSheetPlainTextPhone(item.kontak || '')
+      },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return { success: true, count: list.length };
@@ -735,29 +880,23 @@ export const syncAllWaliKelasToGas = async () => {
 export const getTingkatList = () => TINGKAT_LIST;
 
 export const getSubKelasByTingkat = () => {
-  try {
-    const raw = localStorage.getItem(SUB_KELAS_KEY);
-    return raw ? JSON.parse(raw) : SUB_KELAS_BY_TINGKAT;
-  } catch (e) {
-    return SUB_KELAS_BY_TINGKAT;
-  }
+  return memoryStore.subKelas || SUB_KELAS_BY_TINGKAT;
 };
 
 /**
- * Mengambil daftar 30 Kelas Diniyah langsung dari Google Sheets
+ * Mengambil daftar Kelas Diniyah langsung dari Google Sheets
  */
 export const fetchTingkatKelas = async () => {
   const gasUrl = getStoredGasUrl();
   if (!gasUrl) return getSubKelasByTingkat();
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_tingkat_kelas` : `${gasUrl}?action=get_tingkat_kelas`;
+    const url = buildGasUrl('get_tingkat_kelas');
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data) && result.data.length > 0) {
-        // Kelompokkan kelas berdasarkan kode tingkat (ula, wustho, mhq_juz)
-        const grouped = { ula: [], wustho: [], mhq_juz: [] };
+        const grouped = { ula: [], wustho: [], ulya: [], mhq_juz: [] };
         result.data.forEach(item => {
           const tId = String(item.kodeTingkat || 'ula').toLowerCase().trim();
           if (!grouped[tId]) grouped[tId] = [];
@@ -766,120 +905,112 @@ export const fetchTingkatKelas = async () => {
           }
         });
 
-        localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+        memoryStore.subKelas = grouped;
         return grouped;
       }
     }
   } catch (err) {
-    console.warn('Gagal ambil data Kelas Diniyah dari Google Sheets, menggunakan master lokal:', err);
+    console.warn('Gagal ambil data Kelas Diniyah dari Google Sheets, menggunakan master bawaan:', err);
   }
 
   return getSubKelasByTingkat();
 };
 
 export const addKelasToTingkat = async (tingkatId, namaKelas, keterangan = '') => {
-  const grouped = getSubKelasByTingkat();
-  if (!grouped[tingkatId]) grouped[tingkatId] = [];
+  const current = getSubKelasByTingkat();
+  const grouped = { ...current, [tingkatId]: [...(current[tingkatId] || [])] };
   if (!grouped[tingkatId].includes(namaKelas)) {
     grouped[tingkatId].push(namaKelas);
   }
 
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  memoryStore.subKelas = grouped;
   notifyDataChanged('sub_kelas', { tingkatId, namaKelas });
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_kelas', tingkatId, namaKelas, keterangan })
-      });
-    } catch (e) {
-      console.warn('Simpan kelas ke Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'save_kelas', tingkatId, namaKelas, keterangan },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return grouped;
 };
 
 export const updateKelasInTingkat = async (tingkatId, oldName, newName, keterangan = '') => {
-  const grouped = getSubKelasByTingkat();
-  if (grouped[tingkatId]) {
-    grouped[tingkatId] = grouped[tingkatId].map(n => (n === oldName ? newName : n));
-  }
+  const current = getSubKelasByTingkat();
+  const grouped = {
+    ...current,
+    [tingkatId]: (current[tingkatId] || []).map(n => (n === oldName ? newName : n))
+  };
 
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  memoryStore.subKelas = grouped;
   notifyDataChanged('sub_kelas', { tingkatId, oldName, newName });
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete_kelas', namaKelas: oldName })
-      });
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_kelas', tingkatId, namaKelas: newName, keterangan })
-      });
-    } catch (e) {
-      console.warn('Update kelas di Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'delete_kelas', namaKelas: oldName },
+      { includeAdminPin: true, requireSuccess: false }
+    );
+    await postGas(
+      { action: 'save_kelas', tingkatId, namaKelas: newName, keterangan },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return grouped;
 };
 
 export const deleteKelasFromTingkat = async (tingkatId, namaKelas) => {
-  const grouped = getSubKelasByTingkat();
-  if (grouped[tingkatId]) {
-    grouped[tingkatId] = grouped[tingkatId].filter(n => n !== namaKelas);
-  }
+  const current = getSubKelasByTingkat();
+  const grouped = {
+    ...current,
+    [tingkatId]: (current[tingkatId] || []).filter(n => n !== namaKelas)
+  };
 
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(grouped));
+  memoryStore.subKelas = grouped;
   notifyDataChanged('sub_kelas', { tingkatId, deletedKelas: namaKelas });
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete_kelas', namaKelas })
-      });
-    } catch (e) {
-      console.warn('Hapus kelas di Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'delete_kelas', namaKelas },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return grouped;
 };
 
 export const resetTingkatKelasToMaster = async () => {
-  localStorage.setItem(SUB_KELAS_KEY, JSON.stringify(SUB_KELAS_BY_TINGKAT));
+  memoryStore.subKelas = SUB_KELAS_BY_TINGKAT;
   notifyDataChanged('sub_kelas', SUB_KELAS_BY_TINGKAT);
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'sync_all_kelas' })
-      });
-    } catch (e) {
-      console.warn('Reset kelas ke Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'reset_30_kelas' },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return SUB_KELAS_BY_TINGKAT;
 };
 
-export const syncAllTingkatKelasToGas = async () => {
-  return resetTingkatKelasToMaster();
+export const syncAllTingkatKelasToGas = async (customData = null) => {
+  const dataToSync = customData && typeof customData === 'object' ? customData : getSubKelasByTingkat();
+  memoryStore.subKelas = dataToSync;
+  notifyDataChanged('sub_kelas', dataToSync);
+
+  const gasUrl = getStoredGasUrl();
+  if (!gasUrl) throw new Error('URL Google Apps Script belum dikonfigurasi.');
+
+  const res = await postGas(
+    { action: 'sync_all_kelas', data: dataToSync },
+    { includeAdminPin: true, requireSuccess: true }
+  );
+  return { success: true, message: res?.message };
 };
 
 // =========================================================================
@@ -887,12 +1018,7 @@ export const syncAllTingkatKelasToGas = async () => {
 // =========================================================================
 
 export const getJuaraList = () => {
-  try {
-    const raw = localStorage.getItem(JUARA_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(memoryStore.juara) ? memoryStore.juara : [];
 };
 
 export const fetchJuaraLomba = async () => {
@@ -900,12 +1026,12 @@ export const fetchJuaraLomba = async () => {
   if (!gasUrl) return getJuaraList();
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_juara` : `${gasUrl}?action=get_juara`;
+    const url = buildGasUrl('get_juara');
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
-        localStorage.setItem(JUARA_KEY, JSON.stringify(result.data));
+        memoryStore.juara = result.data;
         return result.data;
       }
     }
@@ -916,18 +1042,59 @@ export const fetchJuaraLomba = async () => {
   return getJuaraList();
 };
 
-export const saveJuara = async (juaraItem) => {
+export const saveJuara = async (cabangKeyOrItem, optionalPayload = null) => {
   const list = getJuaraList();
+  let updatedList;
+
+  if (typeof cabangKeyOrItem === 'string' && optionalPayload && typeof optionalPayload === 'object') {
+    const cabangLomba = optionalPayload.cabangLomba || cabangKeyOrItem.split('__')[0] || '';
+    const kategoriTingkat = optionalPayload.tingkat || optionalPayload.kategoriTingkat || cabangKeyOrItem.split('__')[1] || '';
+    const matchKey = `${cabangLomba}__${kategoriTingkat}`.toLowerCase();
+
+    const remaining = list.filter(j => {
+      const rowKey = `${j.cabangLomba || ''}__${j.kategoriTingkat || j.tingkat || ''}`.toLowerCase();
+      return rowKey !== matchKey;
+    });
+
+    const newRows = [];
+    [1, 2, 3].forEach(rank => {
+      const detail = optionalPayload[`juara${rank}`];
+      if (!detail || !detail.nama) return;
+      const poin = SKEMA_POIN_JUARA[rank] ? SKEMA_POIN_JUARA[rank].poin : 1;
+      newRows.push({
+        idJuara: `JUR-${Date.now()}-${rank}`,
+        cabangLomba,
+        kategoriTingkat,
+        juaraKe: `Juara ${rank}`,
+        namaSantri: detail.nama,
+        kelasDiniyah: detail.kelas || '',
+        poin,
+        santriId: detail.santriId || '',
+        jenisKelamin: detail.jenisKelamin || ''
+      });
+    });
+
+    updatedList = [...remaining, ...newRows];
+    memoryStore.juara = updatedList;
+    notifyDataChanged('juara', newRows);
+
+    const gasUrl = getStoredGasUrl();
+    if (gasUrl) {
+      await postGas(
+        { action: 'save_juara', isFullSync: true, data: updatedList },
+        { includeAdminPin: true, requireSuccess: true }
+      );
+    }
+    return updatedList;
+  }
+
+  const juaraItem = typeof cabangKeyOrItem === 'object' && cabangKeyOrItem !== null ? cabangKeyOrItem : {};
   const idJuara = juaraItem.idJuara || `JUR-${Date.now()}`;
   const newItem = { ...juaraItem, idJuara };
-
-  // Hitung poin sesuai peringkat juara (Juara 1: 5, Juara 2: 3, Juara 3: 1)
-  const rank = parseInt(newItem.juaraKe, 10) || 1;
-  const poin = SKEMA_POIN_JUARA[rank] ? SKEMA_POIN_JUARA[rank].poin : 1;
-  newItem.poin = poin;
+  const rank = parseInt(String(newItem.juaraKe || '').replace(/\D/g, ''), 10) || 1;
+  newItem.poin = SKEMA_POIN_JUARA[rank] ? SKEMA_POIN_JUARA[rank].poin : 1;
 
   const existingIdx = list.findIndex(j => j.idJuara === idJuara);
-  let updatedList;
   if (existingIdx >= 0) {
     updatedList = [...list];
     updatedList[existingIdx] = newItem;
@@ -935,43 +1102,38 @@ export const saveJuara = async (juaraItem) => {
     updatedList = [...list, newItem];
   }
 
-  localStorage.setItem(JUARA_KEY, JSON.stringify(updatedList));
+  memoryStore.juara = updatedList;
   notifyDataChanged('juara', newItem);
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_juara', ...newItem })
-      });
-    } catch (e) {
-      console.warn('Simpan juara ke Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'save_juara', ...newItem },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return updatedList;
 };
 
-export const deleteJuara = async (idJuara) => {
+export const deleteJuara = async (idOrCabangKey) => {
   const list = getJuaraList();
-  const filtered = list.filter(j => j.idJuara !== idJuara);
+  const keyLower = String(idOrCabangKey || '').toLowerCase();
+  const filtered = list.filter(j => {
+    if (j.idJuara === idOrCabangKey) return false;
+    const rowKey = `${j.cabangLomba || ''}__${j.kategoriTingkat || j.tingkat || ''}`.toLowerCase();
+    return rowKey !== keyLower;
+  });
 
-  localStorage.setItem(JUARA_KEY, JSON.stringify(filtered));
-  notifyDataChanged('juara', { deletedId: idJuara });
+  memoryStore.juara = filtered;
+  notifyDataChanged('juara', { deletedId: idOrCabangKey });
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_juara', isFullSync: true, data: filtered })
-      });
-    } catch (e) {
-      console.warn('Hapus juara di Google Sheets gagal:', e);
-    }
+    await postGas(
+      { action: 'save_juara', isFullSync: true, data: filtered },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return filtered;
@@ -992,23 +1154,18 @@ export const calculateKlasemenJuara = (juaraList = []) => {
 };
 
 // =========================================================================
-// 5. RIWAYAT LOG AKTIVITAS & PENGATURAN SISTEM (SHEET: Pengaturan)
+// 5. RIWAYAT LOG AKTIVITAS (IN-MEMORY) & KONEKSI SISTEM
 // =========================================================================
 
 export const getActivityLogs = () => {
-  try {
-    const raw = localStorage.getItem(ACTIVITY_LOGS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(memoryStore.activityLogs) ? memoryStore.activityLogs : [];
 };
 
 export const addActivityLog = (action, detail, type = 'info') => {
   const current = getActivityLogs();
   const now = new Date();
   const time = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
+
   const newLog = {
     id: `log-${Date.now()}`,
     action,
@@ -1017,13 +1174,12 @@ export const addActivityLog = (action, detail, type = 'info') => {
     time
   };
 
-  const updated = [newLog, ...current].slice(0, 100);
-  localStorage.setItem(ACTIVITY_LOGS_KEY, JSON.stringify(updated));
+  memoryStore.activityLogs = [newLog, ...current].slice(0, 100);
   return newLog;
 };
 
 export const clearActivityLogs = () => {
-  localStorage.removeItem(ACTIVITY_LOGS_KEY);
+  memoryStore.activityLogs = [];
   return [];
 };
 
@@ -1060,8 +1216,6 @@ export const testGasConnection = async (testUrl) => {
 // 6. INTEGRASI PENGATURAN MUSABAQAH LANGSUNG DARI SHEET "Pengaturan"
 // =========================================================================
 
-const PENGATURAN_STORAGE_KEY = 'alfalah_pengaturan';
-
 export const DEFAULT_PENGATURAN = {
   NAMA_KEGIATAN: 'Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak',
   TAHUN_AJARAN: '1447 H / 2026 M',
@@ -1072,12 +1226,7 @@ export const DEFAULT_PENGATURAN = {
 };
 
 export const getLocalPengaturan = () => {
-  try {
-    const raw = localStorage.getItem(PENGATURAN_STORAGE_KEY);
-    return raw ? { ...DEFAULT_PENGATURAN, ...JSON.parse(raw) } : { ...DEFAULT_PENGATURAN };
-  } catch (e) {
-    return { ...DEFAULT_PENGATURAN };
-  }
+  return memoryStore.pengaturan ? { ...DEFAULT_PENGATURAN, ...memoryStore.pengaturan } : { ...DEFAULT_PENGATURAN };
 };
 
 export const fetchPengaturan = async () => {
@@ -1086,13 +1235,13 @@ export const fetchPengaturan = async () => {
   if (!gasUrl) return local;
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_pengaturan` : `${gasUrl}?action=get_pengaturan`;
+    const url = buildGasUrl('get_pengaturan');
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && result.data && typeof result.data === 'object') {
-        const merged = { ...local, ...result.data };
-        localStorage.setItem(PENGATURAN_STORAGE_KEY, JSON.stringify(merged));
+        const merged = { ...DEFAULT_PENGATURAN, ...result.data };
+        memoryStore.pengaturan = merged;
         return merged;
       }
     }
@@ -1105,7 +1254,7 @@ export const fetchPengaturan = async () => {
 
 export const savePengaturan = async (settings) => {
   const merged = { ...getLocalPengaturan(), ...settings };
-  localStorage.setItem(PENGATURAN_STORAGE_KEY, JSON.stringify(merged));
+  memoryStore.pengaturan = merged;
   notifyDataChanged('pengaturan', merged);
 
   addActivityLog(
@@ -1116,16 +1265,13 @@ export const savePengaturan = async (settings) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
+    await postGas(
+      {
         action: 'save_pengaturan',
         settings: merged
-      })
-    }).catch(e => {
-      console.warn('Simpan pengaturan ke GAS gagal:', e);
-    });
+      },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return merged;
@@ -1136,13 +1282,7 @@ export const savePengaturan = async (settings) => {
 // =========================================================================
 
 export const getPengeluaranList = () => {
-  try {
-    const raw = localStorage.getItem(PENGELUARAN_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(memoryStore.pengeluaran) ? memoryStore.pengeluaran : [];
 };
 
 export const fetchPengeluaran = async () => {
@@ -1151,7 +1291,7 @@ export const fetchPengeluaran = async () => {
   if (!gasUrl) return local;
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_pengeluaran` : `${gasUrl}?action=get_pengeluaran`;
+    const url = buildGasUrl('get_pengeluaran', { adminPin: getActiveAdminPinForRequests() });
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
@@ -1160,12 +1300,12 @@ export const fetchPengeluaran = async () => {
         result.sheet === 'Pencatatan_Pengeluaran' &&
         Array.isArray(result.data)
       ) {
-        localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(result.data));
+        memoryStore.pengeluaran = result.data;
         return result.data;
       }
     }
   } catch (err) {
-    console.warn('Gagal mengambil data Pengeluaran dari Google Sheets, memakai data lokal:', err);
+    console.warn('Gagal mengambil data Pengeluaran dari Google Sheets:', err);
   }
 
   return local;
@@ -1200,7 +1340,7 @@ export const savePengeluaran = async (itemData) => {
     updatedList = [entry, ...list];
   }
 
-  localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(updatedList));
+  memoryStore.pengeluaran = updatedList;
   notifyDataChanged('pengeluaran', entry);
   addActivityLog(
     existingIdx >= 0 ? 'Perbarui Pengeluaran' : 'Catat Pengeluaran',
@@ -1210,15 +1350,10 @@ export const savePengeluaran = async (itemData) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_pengeluaran', ...entry })
-      });
-    } catch (e) {
-      console.warn('Simpan pengeluaran ke GAS gagal:', e);
-    }
+    await postGas(
+      { action: 'save_pengeluaran', ...entry },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return updatedList;
@@ -1229,7 +1364,7 @@ export const deletePengeluaran = async (idPengeluaran) => {
   const target = list.find(x => x.idPengeluaran === idPengeluaran);
   const filtered = list.filter(x => x.idPengeluaran !== idPengeluaran);
 
-  localStorage.setItem(PENGELUARAN_KEY, JSON.stringify(filtered));
+  memoryStore.pengeluaran = filtered;
   notifyDataChanged('pengeluaran', { deletedId: idPengeluaran });
   if (target) {
     addActivityLog('Hapus Pengeluaran', `${target.namaAkun} dihapus dari pencatatan`, 'delete');
@@ -1237,28 +1372,17 @@ export const deletePengeluaran = async (idPengeluaran) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete_pengeluaran', idPengeluaran })
-      });
-    } catch (e) {
-      console.warn('Hapus pengeluaran di GAS gagal:', e);
-    }
+    await postGas(
+      { action: 'delete_pengeluaran', idPengeluaran },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return filtered;
 };
 
 export const getKebutuhanList = () => {
-  try {
-    const raw = localStorage.getItem(KEBUTUHAN_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
+  return Array.isArray(memoryStore.kebutuhan) ? memoryStore.kebutuhan : [];
 };
 
 export const fetchKebutuhan = async () => {
@@ -1267,7 +1391,7 @@ export const fetchKebutuhan = async () => {
   if (!gasUrl) return local;
 
   try {
-    const url = gasUrl.includes('?') ? `${gasUrl}&action=get_kebutuhan` : `${gasUrl}?action=get_kebutuhan`;
+    const url = buildGasUrl('get_kebutuhan', { adminPin: getActiveAdminPinForRequests() });
     const resp = await fetch(url, { method: 'GET' });
     if (resp.ok) {
       const result = await resp.json();
@@ -1276,12 +1400,12 @@ export const fetchKebutuhan = async () => {
         result.sheet === 'Pencatatan_Kebutuhan' &&
         Array.isArray(result.data)
       ) {
-        localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(result.data));
+        memoryStore.kebutuhan = result.data;
         return result.data;
       }
     }
   } catch (err) {
-    console.warn('Gagal mengambil data Kebutuhan dari Google Sheets, memakai data lokal:', err);
+    console.warn('Gagal mengambil data Kebutuhan dari Google Sheets:', err);
   }
 
   return local;
@@ -1314,7 +1438,7 @@ export const saveKebutuhan = async (itemData) => {
     updatedList = [entry, ...list];
   }
 
-  localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(updatedList));
+  memoryStore.kebutuhan = updatedList;
   notifyDataChanged('kebutuhan', entry);
   addActivityLog(
     existingIdx >= 0 ? 'Perbarui Kebutuhan' : 'Catat Kebutuhan',
@@ -1324,15 +1448,10 @@ export const saveKebutuhan = async (itemData) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_kebutuhan', ...entry })
-      });
-    } catch (e) {
-      console.warn('Simpan kebutuhan ke GAS gagal:', e);
-    }
+    await postGas(
+      { action: 'save_kebutuhan', ...entry },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return updatedList;
@@ -1343,7 +1462,7 @@ export const deleteKebutuhan = async (idKebutuhan) => {
   const target = list.find(x => x.idKebutuhan === idKebutuhan);
   const filtered = list.filter(x => x.idKebutuhan !== idKebutuhan);
 
-  localStorage.setItem(KEBUTUHAN_KEY, JSON.stringify(filtered));
+  memoryStore.kebutuhan = filtered;
   notifyDataChanged('kebutuhan', { deletedId: idKebutuhan });
   if (target) {
     addActivityLog('Hapus Kebutuhan', `${target.namaKebutuhan} dihapus dari daftar`, 'delete');
@@ -1351,17 +1470,11 @@ export const deleteKebutuhan = async (idKebutuhan) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    try {
-      await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete_kebutuhan', idKebutuhan })
-      });
-    } catch (e) {
-      console.warn('Hapus kebutuhan di GAS gagal:', e);
-    }
+    await postGas(
+      { action: 'delete_kebutuhan', idKebutuhan },
+      { includeAdminPin: true, requireSuccess: true }
+    );
   }
 
   return filtered;
 };
-

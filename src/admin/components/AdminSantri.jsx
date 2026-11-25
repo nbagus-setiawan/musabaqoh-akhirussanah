@@ -40,6 +40,7 @@ import { CABANG_LOMBA_LIST } from '../../shared/data/competitions';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 import { drawOfficialKop } from '../../shared/utils/pdfKop';
 import { buildWaUrl, normalizePhoneLocal08 } from '../../shared/utils/phone';
+import { escapeHtml } from '../../shared/utils/sanitize';
 import BulkWhatsAppDialog from './BulkWhatsAppDialog';
 
 export default function AdminSantri({ 
@@ -158,7 +159,7 @@ export default function AdminSantri({
   const handleDeleteSantri = async (item) => {
     const result = await Swal.fire({
       title: 'Hapus Santri?',
-      html: `Apakah Anda yakin ingin menghapus santri <strong>${item.Nama_Lengkap}</strong> (${item.ID_Pendaftaran})?<br/><span class="text-xs text-rose-600">Data juga akan terhapus dari Google Sheets.</span>`,
+      html: `Apakah Anda yakin ingin menghapus santri <strong>${escapeHtml(item.Nama_Lengkap)}</strong> (${escapeHtml(item.ID_Pendaftaran)})?<br/><span class="text-xs text-rose-600">Data juga akan terhapus dari Google Sheets.</span>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e11d48',
@@ -363,45 +364,49 @@ export default function AdminSantri({
     }
   };
 
-  // Bulk Action Handlers
+  // Bulk Action Handlers (Menggunakan RowKey Unik + RowMeta Akurat)
+  const getSelectedRegistrations = () => {
+    return registrations.filter(item => selectedIds.has(getRowKey(item)));
+  };
+
   const handleToggleSelectAllVisible = () => {
-    const visibleIds = paginatedData.map(d => d.ID_Pendaftaran).filter(Boolean);
-    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+    const visibleKeys = paginatedData.map(d => getRowKey(d)).filter(Boolean);
+    const allSelected = visibleKeys.length > 0 && visibleKeys.every(k => selectedIds.has(k));
     
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (allSelected) {
-        visibleIds.forEach(id => next.delete(id));
+        visibleKeys.forEach(k => next.delete(k));
       } else {
-        visibleIds.forEach(id => next.add(id));
+        visibleKeys.forEach(k => next.add(k));
       }
       return next;
     });
   };
 
-  const handleToggleSelectOne = (id) => {
+  const handleToggleSelectOne = (rowKey) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(rowKey)) {
+        next.delete(rowKey);
       } else {
-        next.add(id);
+        next.add(rowKey);
       }
       return next;
     });
   };
 
   const handleBulkVerify = async () => {
-    if (selectedIds.size === 0) return;
+    const selectedItems = getSelectedRegistrations();
+    if (selectedItems.length === 0) return;
     setIsBulkProcessing(true);
     try {
-      const ids = Array.from(selectedIds);
-      await batchUpdateStatus(ids, 'Terverifikasi');
+      await batchUpdateStatus(selectedItems, 'Terverifikasi');
       setSelectedIds(new Set());
       Swal.fire({
         icon: 'success',
         title: 'Verifikasi Berhasil!',
-        text: `${ids.length} santri berhasil diverifikasi serentak.`,
+        text: `${selectedItems.length} santri berhasil diverifikasi serentak.`,
         timer: 2000,
         showConfirmButton: false
       });
@@ -414,16 +419,16 @@ export default function AdminSantri({
   };
 
   const handleBulkPending = async () => {
-    if (selectedIds.size === 0) return;
+    const selectedItems = getSelectedRegistrations();
+    if (selectedItems.length === 0) return;
     setIsBulkProcessing(true);
     try {
-      const ids = Array.from(selectedIds);
-      await batchUpdateStatus(ids, 'Pending');
+      await batchUpdateStatus(selectedItems, 'Pending');
       setSelectedIds(new Set());
       Swal.fire({
         icon: 'success',
         title: 'Status Diperbarui!',
-        text: `${ids.length} santri dikembalikan ke status Pending.`,
+        text: `${selectedItems.length} santri dikembalikan ke status Pending.`,
         timer: 2000,
         showConfirmButton: false
       });
@@ -436,10 +441,11 @@ export default function AdminSantri({
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    const selectedItems = getSelectedRegistrations();
+    if (selectedItems.length === 0) return;
     const confirm = await Swal.fire({
-      title: `Hapus ${selectedIds.size} Santri Terpilih?`,
-      html: `Apakah Anda yakin ingin menghapus <strong>${selectedIds.size} santri</strong> terpilih?<br/><span class="text-xs text-rose-600">Data akan dihapus permanen dari sistem dan Google Sheets.</span>`,
+      title: `Hapus ${selectedItems.length} Santri Terpilih?`,
+      html: `Apakah Anda yakin ingin menghapus <strong>${selectedItems.length} santri</strong> terpilih?<br/><span class="text-xs text-rose-600">Data akan dihapus permanen dari sistem dan Google Sheets.</span>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e11d48',
@@ -451,10 +457,12 @@ export default function AdminSantri({
     if (confirm.isConfirmed) {
       setIsBulkProcessing(true);
       try {
-        const ids = Array.from(selectedIds);
         let count = 0;
-        for (const id of ids) {
-          await deleteRegistration(id);
+        for (const item of selectedItems) {
+          await deleteRegistration(item.ID_Pendaftaran, {
+            rowIndex: item.rowIndex,
+            Nama_Santri: item.Nama_Lengkap || item.Nama_Santri
+          });
           count++;
         }
         setSelectedIds(new Set());
@@ -546,6 +554,9 @@ export default function AdminSantri({
         });
 
         const result = await generateRandomQueueNumbers(formValues.category, formValues.startNumber);
+        if (!result || !result.success) {
+          throw new Error(result?.message || 'Gagal mengundi nomor peserta di Google Sheets.');
+        }
         if (onRefresh) onRefresh();
 
         Swal.hideLoading();
@@ -571,10 +582,11 @@ export default function AdminSantri({
           }
         });
       } catch (err) {
+        Swal.hideLoading();
         Swal.fire({
           icon: 'error',
           title: 'Gagal Mengundi',
-          text: err.message,
+          text: err.message || 'Gagal mengundi nomor peserta.',
           confirmButtonColor: '#dc2626'
         });
       }
@@ -586,8 +598,8 @@ export default function AdminSantri({
   // ==========================================
   const generateAndDownloadPdf = async (selectedTingkat = 'ALL', selectedCabang = 'ALL') => {
     try {
-      // Filter Data Berdasarkan Tingkat & Cabang yang Dipilih
-      let targetSantri = [...registrations];
+      // Hanya cetak santri resmi berstatus Terverifikasi
+      let targetSantri = registrations.filter(item => item.Status === 'Terverifikasi');
       if (selectedTingkat && selectedTingkat !== 'ALL') {
         const tLower = selectedTingkat.toLowerCase();
         targetSantri = targetSantri.filter(item => 
@@ -607,15 +619,14 @@ export default function AdminSantri({
       if (targetSantri.length === 0) {
         Swal.fire({
           icon: 'info',
-          title: 'Tidak Ada Data',
-          text: `Belum ada santri terdaftar pada filter yang dipilih (${selectedTingkat !== 'ALL' ? selectedTingkat : 'Semua Tingkat'}${selectedCabang !== 'ALL' ? ` - ${selectedCabang}` : ''}).`,
+          title: 'Tidak Ada Data Terverifikasi',
+          text: `Belum ada santri berstatus Terverifikasi pada filter yang dipilih (${selectedTingkat !== 'ALL' ? selectedTingkat : 'Semua Tingkat'}${selectedCabang !== 'ALL' ? ` - ${selectedCabang}` : ''}).`,
           confirmButtonColor: '#065f46'
         });
         return;
       }
 
-      // Kelompokkan data peserta: Per Cabang dan Per Tingkat
-      // Di dalam setiap kelompok: urutkan secara acak berselang-seling dimulai dari PUTRI lalu PUTRA
+      // Kelompokkan data peserta: Per Cabang dan Per Tingkat, urutkan berselang-seling PUTRI lalu PUTRA atau berdasarkan Nomor_Urut resmi
       const groupMap = new Map();
       targetSantri.forEach(item => {
         const key = `${item.Cabang_Lomba || 'Semua Cabang'}___${item.Tingkat || 'Semua Tingkat'}`;
@@ -625,18 +636,8 @@ export default function AdminSantri({
         groupMap.get(key).push({ ...item });
       });
 
-      // Kumpulkan nomor urut yang sudah terpakai agar tidak ada nomor ganda sama sekali
-      const existingUsedNumbers = new Set(
-        registrations
-          .map(it => it.Nomor_Urut && String(it.Nomor_Urut).trim())
-          .filter(Boolean)
-      );
-
-      let finalOrderedSantri = [];
-      let runningStartNumber = 50;
-
+      const finalOrderedSantri = [];
       groupMap.forEach((itemsInGroup) => {
-        // Pisahkan Putri dan Putra
         const putriList = [];
         const putraList = [];
 
@@ -648,51 +649,24 @@ export default function AdminSantri({
           }
         });
 
-        // Acak urutan masing-masing grup secara independen dengan algoritma Fisher-Yates
-        for (let i = putriList.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [putriList[i], putriList[j]] = [putriList[j], putriList[i]];
-        }
-        for (let i = putraList.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [putraList[i], putraList[j]] = [putraList[j], putraList[i]];
-        }
+        const byNomorPeserta = (a, b) => {
+          const na = parseInt(a.Nomor_Urut, 10);
+          const nb = parseInt(b.Nomor_Urut, 10);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          if (!isNaN(na)) return -1;
+          if (!isNaN(nb)) return 1;
+          return String(a.Nama_Lengkap || '').localeCompare(String(b.Nama_Lengkap || ''));
+        };
 
-        // Gabungkan berselang-seling: Dimulai dari PUTRI, lalu PUTRA, lalu PUTRI, dst.
+        putriList.sort(byNomorPeserta);
+        putraList.sort(byNomorPeserta);
+
         const interleaved = [];
         const maxLen = Math.max(putriList.length, putraList.length);
         for (let i = 0; i < maxLen; i++) {
           if (i < putriList.length) interleaved.push(putriList[i]);
           if (i < putraList.length) interleaved.push(putraList[i]);
         }
-
-        // Hitung berapa peserta yang belum punya nomor urut
-        const unassignedCount = interleaved.filter(it => !it.Nomor_Urut || String(it.Nomor_Urut).trim() === '').length;
-
-        // Siapkan pool nomor urut acak yang belum terpakai oleh peserta manapun
-        const poolNumbers = [];
-        while (poolNumbers.length < unassignedCount) {
-          const formatted = String(runningStartNumber).padStart(3, '0');
-          if (!existingUsedNumbers.has(formatted)) {
-            poolNumbers.push(formatted);
-          }
-          runningStartNumber++;
-        }
-
-        // Acak pool nomor urut dengan Fisher-Yates agar nomor undian tidak berurutan
-        for (let i = poolNumbers.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [poolNumbers[i], poolNumbers[j]] = [poolNumbers[j], poolNumbers[i]];
-        }
-
-        // Tetapkan nomor urut acak untuk tabel PDF jika belum memiliki nomor urut resmi
-        let poolIdx = 0;
-        interleaved.forEach((it) => {
-          if (!it.Nomor_Urut || String(it.Nomor_Urut).trim() === '') {
-            it.Nomor_Urut = poolNumbers[poolIdx++];
-            existingUsedNumbers.add(it.Nomor_Urut);
-          }
-        });
 
         finalOrderedSantri.push(...interleaved);
       });
@@ -878,9 +852,9 @@ export default function AdminSantri({
     ).sort((a, b) => a.localeCompare(b, 'id'));
   }, [registrations]);
 
-  // Preview hitung jumlah santri yang match secara real-time
+  // Preview hitung jumlah santri Terverifikasi yang match secara real-time (sesuai isi PDF)
   const downloadPreviewStats = useMemo(() => {
-    let filtered = [...registrations];
+    let filtered = registrations.filter(item => item.Status === 'Terverifikasi');
     if (downloadTingkat !== 'ALL') {
       const tLower = downloadTingkat.toLowerCase();
       filtered = filtered.filter(item =>
@@ -1188,7 +1162,7 @@ export default function AdminSantri({
             <label className="santri-control inline-flex items-center gap-2 cursor-pointer text-slate-600 font-semibold select-none">
               <input
                 type="checkbox"
-                checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(d.ID_Pendaftaran))}
+                checked={paginatedData.length > 0 && paginatedData.every(d => selectedIds.has(getRowKey(d)))}
                 onChange={handleToggleSelectAllVisible}
                 disabled={paginatedData.length === 0}
                 className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
@@ -1261,7 +1235,7 @@ export default function AdminSantri({
               ) : (
                 paginatedData.map((item, idx) => {
                   const rowKey = getRowKey(item);
-                  const isChecked = selectedIds.has(item.ID_Pendaftaran);
+                  const isChecked = selectedIds.has(rowKey);
                   const wa08 = normalizePhoneLocal08(item.Nomor_WA);
 
                   return (
@@ -1280,7 +1254,7 @@ export default function AdminSantri({
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={() => handleToggleSelectOne(item.ID_Pendaftaran)}
+                              onChange={() => handleToggleSelectOne(rowKey)}
                               aria-label={`Pilih ${item.Nama_Lengkap}`}
                               className="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                             />

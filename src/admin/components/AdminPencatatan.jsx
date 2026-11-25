@@ -483,8 +483,12 @@ export default function AdminPencatatan({
   const handleCycleStatusKebutuhan = async (item) => {
     const idx = STATUS_KEBUTUHAN_OPTIONS.indexOf(item.status);
     const nextStatus = STATUS_KEBUTUHAN_OPTIONS[(idx + 1) % STATUS_KEBUTUHAN_OPTIONS.length];
-    const updated = await saveKebutuhan({ ...item, status: nextStatus });
-    setKebutuhanList(updated);
+    try {
+      const updated = await saveKebutuhan({ ...item, status: nextStatus });
+      setKebutuhanList(updated);
+    } catch (err) {
+      Swal.fire('Gagal Memperbarui Status', err.message || 'Gagal menyinkronkan status kebutuhan ke Google Sheets.', 'error');
+    }
   };
 
   // =========================================================
@@ -516,6 +520,9 @@ export default function AdminPencatatan({
         icon: 'success',
         title: 'Data berhasil dihapus'
       });
+    } catch (err) {
+      Swal.fire('Gagal Menghapus Data', err.message || 'Terjadi kendala saat menghapus data dari Google Sheets.', 'error');
+      setDeleteTarget(null);
     } finally {
       setIsDeleting(false);
     }
@@ -531,7 +538,7 @@ export default function AdminPencatatan({
     titleKeb: 'DAFTAR KEBUTUHAN & PERSIAPAN SEBELUM HARI-H',
     signerRoleOut: 'Bendahara Panitia',
     signerRoleKeb: 'Koordinator Perlengkapan',
-    signerName: localStorage.getItem('alfalah_pdf_signer_name') || '',
+    signerName: '',
     includeTerbilang: true,
     useActiveFilter: true
   }));
@@ -552,12 +559,6 @@ export default function AdminPencatatan({
         confirmButtonColor: '#075B45'
       });
       return;
-    }
-
-    if (pdfConfig.signerName.trim()) {
-      try {
-        localStorage.setItem('alfalah_pdf_signer_name', pdfConfig.signerName.trim());
-      } catch (err) {}
     }
 
     setIsGeneratingPdf(true);

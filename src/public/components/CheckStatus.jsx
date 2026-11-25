@@ -1,22 +1,49 @@
 import React, { useState } from 'react';
 import { Search, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { normalizePhoneLocal08 } from '../../shared/utils/phone';
+import { searchRegistrationStatus } from '../../shared/services/api';
 
 export default function CheckStatus({ registrations, onViewTicket }) {
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [remoteResults, setRemoteResults] = useState(null);
 
   const clean = query.trim().toLowerCase();
+  const cleanNormWa = normalizePhoneLocal08(query);
 
-  const searchResults = clean ? registrations.filter(item => {
+  const localResults = clean.length >= 3 ? registrations.filter(item => {
     const wa = (item.Nomor_WA || '').toLowerCase();
     const id = (item.ID_Pendaftaran || '').toLowerCase();
-    const nama = (item.Nama_Lengkap || '').toLowerCase();
-    return wa.includes(clean) || id.includes(clean) || nama.includes(clean);
+    const noUrut = (item.Nomor_Urut || '').toLowerCase();
+    const nama = (item.Nama_Lengkap || item.Nama_Santri || '').toLowerCase();
+    const matchWa = cleanNormWa.length >= 6 && !wa.includes('*') && wa.includes(cleanNormWa);
+    return matchWa || id.includes(clean) || noUrut.includes(clean) || nama.includes(clean);
   }) : [];
 
-  const handleSearch = (e) => {
+  const searchResults = remoteResults !== null ? remoteResults : localResults;
+
+  const handleSearch = async (e) => {
     e.preventDefault();
-    setHasSearched(true);
+    if (clean.length < 3) {
+      setRemoteResults([]);
+      setHasSearched(true);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const remote = await searchRegistrationStatus(query.trim());
+      if (Array.isArray(remote)) {
+        setRemoteResults(remote);
+      } else {
+        setRemoteResults(null);
+      }
+    } catch (err) {
+      setRemoteResults(null);
+    } finally {
+      setIsSearching(false);
+      setHasSearched(true);
+    }
   };
 
   return (
@@ -60,25 +87,27 @@ export default function CheckStatus({ registrations, onViewTicket }) {
                 </div>
                 <input
                   type="text"
-                  placeholder="Ketik nama santri, no WA wali kelas, atau ID..."
+                  placeholder="Ketik nama santri, no. peserta, no WA, atau ID..."
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setHasSearched(false);
+                    setRemoteResults(null);
                   }}
                   className="w-full pl-9 pr-3 py-2 outline-none text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 font-medium bg-transparent"
                 />
               </div>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer active:scale-95 flex items-center space-x-1.5"
+                disabled={isSearching}
+                className="px-4 py-2 rounded-lg bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer active:scale-95 flex items-center space-x-1.5 disabled:opacity-60"
               >
-                <span>Cari</span>
+                <span>{isSearching ? 'Mencari...' : 'Cari'}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#D9B45B]" />
               </button>
             </div>
             <p className="text-[11px] text-slate-500">
-              Gunakan nama santri, nomor peserta, ID pendaftaran, atau nomor WhatsApp wali kelas yang didaftarkan.
+              Masukkan minimal 3 karakter: nama santri, nomor peserta, ID pendaftaran, atau nomor WhatsApp wali kelas yang didaftarkan.
             </p>
           </form>
         </div>
@@ -87,8 +116,16 @@ export default function CheckStatus({ registrations, onViewTicket }) {
       {/* Hasil Pencarian */}
       {hasSearched && (
         <div className="space-y-3">
-          
-          {searchResults.length > 0 ? (
+          {clean.length < 3 ? (
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 text-center space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 mx-auto flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <p className="text-xs text-slate-700 max-w-md mx-auto leading-relaxed">
+                Masukkan minimal 3 huruf/angka untuk mencari status pendaftaran peserta.
+              </p>
+            </div>
+          ) : searchResults.length > 0 ? (
             <>
               {/* Pesan Apabila Data Ditemukan */}
               <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start space-x-2">

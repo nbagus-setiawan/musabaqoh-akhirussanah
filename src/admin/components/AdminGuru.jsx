@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Swal from 'sweetalert2';
 import { 
   UserCheck, 
   Plus, 
@@ -118,8 +119,8 @@ export default function AdminGuru({
     setKelasGuru(classes[0] || '');
   };
 
-  const handleSubmitForm = (e) => {
-    e.preventDefault();
+  const handleSubmitForm = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setFormError('');
 
     if (!namaGuru.trim()) {
@@ -144,23 +145,32 @@ export default function AdminGuru({
       payload.id = editingId;
     }
 
-    const updated = saveWaliKelas(payload);
-    setGuruList(updated);
-    setShowModal(false);
-    if (onRefresh) onRefresh();
+    try {
+      const updated = await saveWaliKelas(payload);
+      setGuruList(Array.isArray(updated) ? updated : getWaliKelasList());
+      setShowModal(false);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setFormError(err.message || 'Gagal menyimpan data wali kelas ke Google Sheets.');
+    }
   };
 
-  const handleDeleteGuru = () => {
+  const handleDeleteGuru = async () => {
     if (!deleteTarget) return;
-    const updated = deleteWaliKelas(deleteTarget.id);
-    setGuruList(updated);
-    setDeleteTarget(null);
-    if (onRefresh) onRefresh();
+    try {
+      const updated = await deleteWaliKelas(deleteTarget.id);
+      setGuruList(Array.isArray(updated) ? updated : getWaliKelasList());
+      setDeleteTarget(null);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      Swal.fire('Gagal Menghapus', err.message || 'Gagal menghapus data wali kelas dari Google Sheets.', 'error');
+      setDeleteTarget(null);
+    }
   };
 
   const handleSendWA = (guru) => {
     if (!guru.kontak) {
-      alert(`Nomor WhatsApp untuk ${guru.nama} belum terdaftar.`);
+      Swal.fire('Nomor WA Kosong', `Nomor WhatsApp untuk ${guru.nama} belum terdaftar.`, 'warning');
       return;
     }
     const pesan =

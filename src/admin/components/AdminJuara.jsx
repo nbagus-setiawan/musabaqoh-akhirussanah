@@ -88,18 +88,42 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
     setCurrentPage(1);
   }, [filterTingkat, filterGender, searchQuery, viewMode]);
 
+  // Peta juara per cabang+tingkat dari array baris atau objek
+  const juaraMap = useMemo(() => {
+    const map = {};
+    if (Array.isArray(juaraData)) {
+      juaraData.forEach(item => {
+        if (!item) return;
+        const cabang = item.cabangLomba || '';
+        const tingkat = item.kategoriTingkat || item.tingkat || '';
+        const key = item.key || `${cabang}__${tingkat}`;
+        if (item.juara1 || item.juara2 || item.juara3) {
+          map[key] = item;
+          return;
+        }
+        if (!map[key]) {
+          map[key] = { cabangLomba: cabang, tingkat, juara1: null, juara2: null, juara3: null };
+        }
+        const rankNum = parseInt(String(item.juaraKe || '').replace(/\D/g, ''), 10);
+        const slot = rankNum === 1 ? 'juara1' : rankNum === 2 ? 'juara2' : rankNum === 3 ? 'juara3' : null;
+        if (slot && item.namaSantri) {
+          map[key][slot] = {
+            santriId: item.santriId || item.idJuara || '',
+            nama: item.namaSantri,
+            kelas: item.kelasDiniyah || '',
+            jenisKelamin: item.jenisKelamin || ''
+          };
+        }
+      });
+    } else if (juaraData && typeof juaraData === 'object') {
+      Object.assign(map, juaraData);
+    }
+    return map;
+  }, [juaraData]);
+
   // Daftar seluruh kombinasi cabang lomba & tingkat yang dibuka
   const daftarKompetisi = useMemo(() => {
     const list = [];
-    const juaraMap = {};
-    if (Array.isArray(juaraData)) {
-      juaraData.forEach(item => {
-        const key = item.key || `${item.cabangLomba}__${item.tingkat}`;
-        juaraMap[key] = item;
-      });
-    } else if (juaraData && typeof juaraData === 'object') {
-      Object.assign(juaraMap, juaraData);
-    }
 
     (CABANG_LOMBA_LIST || []).forEach(c => {
       (c.tingkatAllowed || ['ula', 'wustho', 'ulya']).forEach(tId => {
@@ -117,7 +141,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
       });
     });
     return list;
-  }, [juaraData]);
+  }, [juaraMap]);
 
   // Hitung Klasemen Juara Umum Real-Time (Aman dari TypeError)
   const rawKlasemen = useMemo(() => {
@@ -144,6 +168,16 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
         });
       });
     }
+    // Ambil kelas Ulya
+    if (filterTingkat === 'ALL' || filterTingkat === 'ulya') {
+      (sub.ulya || []).forEach(kName => {
+        classesList.push({
+          namaKelas: kName,
+          tingkat: 'ulya',
+          gender: getGenderFromKelas(kName)
+        });
+      });
+    }
 
     // Inisialisasi map perolehan poin per kelas
     const pointsMap = {};
@@ -157,27 +191,40 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
       };
     });
 
+    const ensureClass = (kelasName, tingkatHint) => {
+      if (kelasName && !pointsMap[kelasName]) {
+        pointsMap[kelasName] = {
+          namaKelas: kelasName,
+          tingkat: tingkatHint || 'ula',
+          gender: getGenderFromKelas(kelasName),
+          totalPoin: 0,
+          juara1Count: 0,
+          juara2Count: 0,
+          juara3Count: 0
+        };
+      }
+    };
+
     const processJuaraEntry = (entry) => {
       if (!entry) return;
-      if (entry.juara1?.kelas && pointsMap[entry.juara1.kelas]) {
+      if (entry.juara1?.kelas) {
+        ensureClass(entry.juara1.kelas, entry.tingkat);
         pointsMap[entry.juara1.kelas].totalPoin += 5;
         pointsMap[entry.juara1.kelas].juara1Count += 1;
       }
-      if (entry.juara2?.kelas && pointsMap[entry.juara2.kelas]) {
+      if (entry.juara2?.kelas) {
+        ensureClass(entry.juara2.kelas, entry.tingkat);
         pointsMap[entry.juara2.kelas].totalPoin += 3;
         pointsMap[entry.juara2.kelas].juara2Count += 1;
       }
-      if (entry.juara3?.kelas && pointsMap[entry.juara3.kelas]) {
+      if (entry.juara3?.kelas) {
+        ensureClass(entry.juara3.kelas, entry.tingkat);
         pointsMap[entry.juara3.kelas].totalPoin += 1;
         pointsMap[entry.juara3.kelas].juara3Count += 1;
       }
     };
 
-    if (Array.isArray(juaraData)) {
-      juaraData.forEach(processJuaraEntry);
-    } else if (juaraData && typeof juaraData === 'object') {
-      Object.values(juaraData).forEach(processJuaraEntry);
-    }
+    Object.values(juaraMap).forEach(processJuaraEntry);
 
     const sorted = Object.values(pointsMap).sort((a, b) => {
       if (b.totalPoin !== a.totalPoin) return b.totalPoin - a.totalPoin;
@@ -263,7 +310,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
     setSelectedTingkat(kompetisi.tingkatId);
     setModalError('');
 
-    const existing = juaraData[kompetisi.key];
+    const existing = juaraMap[kompetisi.key];
     if (existing) {
       setJ1SantriId(existing.juara1?.santriId || '');
       setJ2SantriId(existing.juara2?.santriId || '');
@@ -277,7 +324,7 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
   };
 
   // Simpan Penetapan Juara
-  const handleSaveModal = (e) => {
+  const handleSaveModal = async (e) => {
     e.preventDefault();
     setModalError('');
 
@@ -313,17 +360,26 @@ export default function AdminJuara({ registrations = [], onRefresh }) {
       juara3: getSantriDetail(j3SantriId)
     };
 
-    saveJuara(selectedCabangKey, payload);
-    loadData();
-    setShowModal(false);
+    try {
+      await saveJuara(selectedCabangKey, payload);
+      await loadData();
+      setShowModal(false);
+    } catch (err) {
+      setModalError(err.message || 'Gagal menyimpan penetapan juara ke Google Sheets.');
+    }
   };
 
   // Hapus Juara
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deleteTargetKey) {
-      deleteJuara(deleteTargetKey);
-      setDeleteTargetKey(null);
-      loadData();
+      try {
+        await deleteJuara(deleteTargetKey);
+        setDeleteTargetKey(null);
+        await loadData();
+      } catch (err) {
+        setModalError(err.message || 'Gagal menghapus data juara.');
+        setDeleteTargetKey(null);
+      }
     }
   };
 

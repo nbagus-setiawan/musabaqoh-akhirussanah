@@ -143,7 +143,8 @@ export default function BulkWhatsAppDialog({
   const scopedRegistrations = useMemo(() => {
     return registrations.filter((item) => {
       if (scope === 'SELECTED') {
-        if (!selectedIds.has(item.ID_Pendaftaran)) return false;
+        const rowKey = item.rowIndex ? `row-${item.rowIndex}` : String(item.ID_Pendaftaran || '').trim();
+        if (!selectedIds.has(rowKey) && !selectedIds.has(item.ID_Pendaftaran)) return false;
       } else if (scope !== 'ALL') {
         if ((item.Status || 'Pending') !== scope) return false;
       }
@@ -306,10 +307,29 @@ export default function BulkWhatsAppDialog({
     [validRecipients, sentKeys]
   );
 
-  const handleOpenWhatsApp = (recipient) => {
+  const WA_SAFE_URL_MAX = 2000;
+
+  const isUrlTooLong = (rec) => {
+    if (!rec?.message) return false;
+    const url = buildWaUrl(rec.isBroadcast ? '' : rec.phone08, rec.message);
+    return url.length > WA_SAFE_URL_MAX;
+  };
+
+  const handleOpenWhatsApp = async (recipient) => {
     if (!recipient || (!recipient.isBroadcast && !recipient.phone08)) return;
     const url = buildWaUrl(recipient.isBroadcast ? '' : recipient.phone08, recipient.message);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (url.length > WA_SAFE_URL_MAX) {
+      try {
+        await navigator.clipboard.writeText(recipient.message);
+        setCopiedKey(recipient.key);
+        setTimeout(() => setCopiedKey(k => (k === recipient.key ? '' : k)), 3000);
+      } catch {}
+      // Tetap buka chat tujuan/WhatsApp Web tanpa query ?text= raksasa agar tidak terpotong URL browser
+      const fallbackUrl = buildWaUrl(recipient.isBroadcast ? '' : recipient.phone08, '');
+      window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
     setSentKeys(prev => {
       const next = new Set(prev);
       next.add(recipient.key);
@@ -658,6 +678,11 @@ export default function BulkWhatsAppDialog({
                   <pre className="text-[11px] leading-relaxed font-sans whitespace-pre-wrap text-slate-700 bg-white p-3 rounded-xl border border-slate-200 max-h-[250px] overflow-y-auto">
                     {activePreviewRecipient?.message || ''}
                   </pre>
+                  {activePreviewRecipient && isUrlTooLong(activePreviewRecipient) && (
+                    <p className="text-[10.5px] leading-relaxed text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-2">
+                      Pesan gabungan cukup panjang ({activePreviewRecipient.message.length} karakter). Saat tombol WA diklik, teks akan otomatis disalin ke clipboard agar Anda tinggal tempel (Paste) di WhatsApp tanpa terpotong.
+                    </p>
+                  )}
                 </div>
 
                 {activePreviewRecipient && (

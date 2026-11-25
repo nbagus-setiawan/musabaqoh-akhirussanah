@@ -14,15 +14,16 @@ import {
   fetchTingkatKelas, 
   subscribeDataChanged,
   syncRemoteRegistrationsSilently,
-  getLocalRegistrations
+  getLocalRegistrations,
+  clearAdminSession,
+  getSessionAdminPin
 } from '../shared/services/api';
 
 export default function AdminApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('auth') === 'admin123') return true;
-      return sessionStorage.getItem('admin_session_auth') === 'true' || localStorage.getItem('admin_session_auth') === 'true';
+      const hasAuth = sessionStorage.getItem('admin_session_auth') === 'true';
+      return Boolean(hasAuth && getSessionAdminPin());
     } catch (e) {
       return false;
     }
@@ -77,8 +78,8 @@ export default function AdminApp() {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    // 1. Pemuatan instan dari cache lokal
-    loadData(false);
+    // 1. Tarik data terbaru langsung dari Google Apps Script agar selalu terautentikasi & bebas cache lama
+    loadData(true);
 
     // 2. Langganan event perubahan data real-time: otomatis update seketika (<1ms) tanpa refresh
     const unsubscribe = subscribeDataChanged((event) => {
@@ -109,9 +110,8 @@ export default function AdminApp() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    sessionStorage.removeItem('admin_session_auth');
-    localStorage.removeItem('admin_session_auth');
-    window.location.hash = '';
+    clearAdminSession();
+    window.history.replaceState({}, '', window.location.pathname);
   };
 
   if (!isLoggedIn) {

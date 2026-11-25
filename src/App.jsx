@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
-import HomePage from './pages/HomePage';
 import SyaratKetentuanPage from './pages/SyaratKetentuanPage';
 import FormulirPage from './pages/FormulirPage';
 import CekStatusPage from './pages/CekStatusPage';

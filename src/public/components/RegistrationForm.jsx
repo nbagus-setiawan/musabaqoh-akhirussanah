@@ -34,7 +34,9 @@ import {
   getTingkatList, 
   fetchTingkatKelas,
   getSubKelasByTingkat,
-  saveBatchRegistrations
+  saveBatchRegistrations,
+  fetchPengaturan,
+  getLocalPengaturan
 } from '../../shared/services/api';
 import { 
   CABANG_LOMBA_LIST, 
@@ -50,7 +52,10 @@ import Swal from 'sweetalert2';
 const STORAGE_DRAFT_KEY = 'alfalah_multistep_registration_draft_v3';
 
 export default function RegistrationForm({ onSubmitSuccess }) {
-  // State Master Data
+  // State Master Data & Pengaturan
+  const [pengaturan, setPengaturan] = useState(() => getLocalPengaturan());
+  const isRegistrationClosed = String(pengaturan?.STATUS_PENDAFTARAN || 'Buka').trim().toLowerCase() === 'tutup';
+
   const [waliList, setWaliList] = useState(() => {
     const list = getWaliKelasList();
     return (Array.isArray(list) && list.length > 0) ? list : MASTER_WALI_KELAS;
@@ -130,8 +135,12 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     catatan: ''
   });
 
-  // 1. Muat Data Guru & Kelas Diniyah dari Google Sheets jika tersedia
+  // 1. Muat Data Guru, Kelas Diniyah & Pengaturan dari Google Sheets jika tersedia
   useEffect(() => {
+    fetchPengaturan().then(cfg => {
+      if (cfg && typeof cfg === 'object') setPengaturan(cfg);
+    }).catch(() => {});
+
     fetchWaliKelas().then(list => {
       if (Array.isArray(list) && list.length > 0) setWaliList(list);
     }).catch(() => {});
@@ -156,13 +165,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     };
   }, []);
 
-  // 3. Muat draft tersimpan (dari localStorage / fallback sessionStorage) saat pertama kali buka
+  // 3. Muat draft sementara sesi tab saat ini jika masih aktif
   useEffect(() => {
     try {
-      let savedDraft = localStorage.getItem(STORAGE_DRAFT_KEY);
-      if (!savedDraft) {
-        savedDraft = sessionStorage.getItem('alfalah_multistep_draft_v2') || sessionStorage.getItem(STORAGE_DRAFT_KEY);
-      }
+      const savedDraft = sessionStorage.getItem(STORAGE_DRAFT_KEY) || sessionStorage.getItem('alfalah_multistep_draft_v2');
       if (savedDraft) {
         const d = JSON.parse(savedDraft);
         if (d.waliInput) setWaliInput(d.waliInput);
@@ -191,7 +197,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     } catch (e) {}
   }, []);
 
-  // 4. Autosave draft ke localStorage setiap ada perubahan data
+  // 4. Simpan sementara draft pada tab aktif saja (tanpa localStorage)
   useEffect(() => {
     try {
       const draftObj = {
@@ -216,7 +222,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         formStage,
         activeBranchId
       };
-      localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(draftObj));
+      sessionStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(draftObj));
     } catch (e) {}
   }, [
     waliInput, selectedWaliId, tingkat, tingkatName, kelasDiniyah, jenisKelamin, nomorWA,
@@ -1004,6 +1010,10 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
   // Pengiriman Kolektif Langsung ke Google Sheets
   const handleSubmitAll = async () => {
+    if (isRegistrationClosed) {
+      setFormError('Mohon maaf, pendaftaran Musabaqah Akhirussanah saat ini sedang ditutup oleh Panitia.');
+      return;
+    }
     if (allDelegates.length === 0) {
       setFormError('Belum ada delegasi yang didaftarkan. Harap isi minimal 1 santri.');
       return;
@@ -1039,8 +1049,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
       const result = await saveBatchRegistrations(santriPayloadList, metadata);
 
-      // Hapus draft lokal setelah sukses
-      localStorage.removeItem(STORAGE_DRAFT_KEY);
+      // Hapus draft sementara setelah sukses
       sessionStorage.removeItem(STORAGE_DRAFT_KEY);
       sessionStorage.removeItem('alfalah_multistep_draft_v2');
 
@@ -1048,7 +1057,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         await onSubmitSuccess(result);
       }
     } catch (err) {
-      setFormError('Terjadi kendala saat menyimpan data ke database. Silakan periksa koneksi dan coba lagi.');
+      setFormError(err?.message || 'Terjadi kendala saat menyimpan data ke database. Silakan periksa koneksi dan coba lagi.');
       setIsSubmitting(false);
     }
   };
@@ -1072,6 +1081,31 @@ export default function RegistrationForm({ onSubmitSuccess }) {
   };
 
   const activeBranchObj = CABANG_LOMBA_LIST.find(c => c.id === activeBranchId) || CABANG_LOMBA_LIST[0];
+
+  if (isRegistrationClosed) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 font-sans">
+        <div className="bg-white rounded-3xl border border-amber-200 shadow-sm overflow-hidden">
+          <div className="bg-[#075B45] text-white p-5 sm:p-6 border-b border-[#054736]">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight">
+              Pendaftaran Musabaqah Akhirussanah Ditutup Sementara
+            </h1>
+            <p className="text-xs text-emerald-100 mt-1">
+              {pengaturan?.NAMA_KEGIATAN || 'Musabaqah Akhirussanah Pondok Pesantren Al-Falah Putak'} • {pengaturan?.TAHUN_AJARAN || '1447 H / 2026 M'}
+            </p>
+          </div>
+          <div className="p-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 mx-auto flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed max-w-lg mx-auto">
+              Mohon maaf Ustadz/Ustadzah, formulir pendaftaran delegasi santri saat ini sedang ditutup oleh Panitia Pelaksana. Silakan cek status delegasi yang sudah terdaftar pada menu Cek Status atau hubungi panitia untuk konfirmasi.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-3.5 sm:px-6 pt-2 sm:pt-4 pb-20 sm:pb-28 select-none font-sans space-y-4">

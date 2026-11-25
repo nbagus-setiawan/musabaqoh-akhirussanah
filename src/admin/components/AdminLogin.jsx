@@ -10,7 +10,7 @@ import {
   EyeOff, 
   Database
 } from 'lucide-react';
-import { getAdminPin } from '../../shared/services/api';
+import { verifyAdminLogin } from '../../shared/services/api';
 
 export default function AdminLogin({ onLoginSuccess }) {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function AdminLogin({ onLoginSuccess }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!pin.trim()) {
       setError('Harap masukkan PIN Panitia terlebih dahulu.');
@@ -27,22 +27,20 @@ export default function AdminLogin({ onLoginSuccess }) {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      const correctPin = getAdminPin();
-      if (pin === correctPin || pin === 'admin123') {
+    setError('');
+    try {
+      const res = await verifyAdminLogin(pin.trim());
+      if (res.success) {
         onLoginSuccess();
-        setError('');
         setPin('');
       } else {
-        setError('PIN Panitia salah! Masukkan PIN yang sesuai atau gunakan default PIN (admin123).');
-        setIsLoading(false);
+        setError(res.message || 'PIN Panitia salah! Silakan periksa kembali kode PIN Anda.');
       }
-    }, 250);
-  };
-
-  const handleUseDefaultPin = () => {
-    setPin('admin123');
-    setError('');
+    } catch (err) {
+      setError('Gagal memverifikasi PIN. Periksa koneksi dan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackToPublic = () => {
@@ -114,14 +112,6 @@ export default function AdminLogin({ onLoginSuccess }) {
                   <KeyRound className="w-3.5 h-3.5 text-[#075B45]" />
                   <span>Kode PIN Panitia</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={handleUseDefaultPin}
-                  className="text-[10.5px] font-semibold text-[#075B45] hover:text-[#054736] underline cursor-pointer"
-                  title="Klik untuk mengisi otomatis PIN bawaan"
-                >
-                  Gunakan PIN Default
-                </button>
               </div>
 
               <div className="relative">
@@ -151,9 +141,9 @@ export default function AdminLogin({ onLoginSuccess }) {
 
               <div className="flex items-center justify-between mt-2 px-1">
                 <p className="text-[11px] text-slate-400">
-                  Default PIN sistem: <strong className="font-mono text-emerald-800 font-bold">admin123</strong>
+                  Masukkan PIN resmi Panitia Pelaksana.
                 </p>
-                <span className="text-[10px] text-slate-400 font-medium">Tersinkron Sheet</span>
+                <span className="text-[10px] text-slate-400 font-medium">Tersinkron Google Sheets</span>
               </div>
             </div>
 

@@ -140,16 +140,26 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
     }
   };
 
-  const handleResetToMaster = () => {
-    const restored = resetTingkatKelasToMaster();
-    setSubKelasData(restored);
-    setTingkatList(getTingkatList());
-    setSyncMessage({
-      type: 'success',
-      text: 'Alhamdulillah! Seluruh kelas diniyah resmi Al-Falah Putak (Putra & Putri terpisah) berhasil dipulihkan.'
-    });
-    if (onRefresh) onRefresh();
-    setTimeout(() => setSyncMessage(null), 5000);
+  const handleResetToMaster = async () => {
+    setIsSyncingSheets(true);
+    try {
+      const restored = await resetTingkatKelasToMaster();
+      setSubKelasData(restored || getSubKelasByTingkat());
+      setTingkatList(getTingkatList());
+      setSyncMessage({
+        type: 'success',
+        text: 'Alhamdulillah! Seluruh kelas diniyah resmi Al-Falah Putak (Putra & Putri terpisah) berhasil dipulihkan.'
+      });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setSyncMessage({
+        type: 'error',
+        text: 'Gagal memulihkan data kelas: ' + (err.message || 'Cek koneksi Google Sheets.')
+      });
+    } finally {
+      setIsSyncingSheets(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
   };
 
   useEffect(() => {
@@ -347,7 +357,7 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
   };
 
   // Simpan / Edit Kelas Diniyah
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
 
@@ -369,29 +379,33 @@ export default function AdminTingkatKelas({ registrations = [], onRefresh }) {
 
     try {
       if (modalMode === 'add') {
-        const updated = addKelasToTingkat(selectedTingkat, trimmed);
-        setSubKelasData(updated);
+        const updated = await addKelasToTingkat(selectedTingkat, trimmed);
+        setSubKelasData(updated || getSubKelasByTingkat());
       } else {
-        const updated = updateKelasInTingkat(selectedTingkat, oldKelasName, trimmed);
-        setSubKelasData(updated);
+        const updated = await updateKelasInTingkat(selectedTingkat, oldKelasName, trimmed);
+        setSubKelasData(updated || getSubKelasByTingkat());
       }
       setShowModal(false);
       if (onRefresh) onRefresh();
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.message || 'Gagal menyimpan perubahan kelas.');
     }
   };
 
   // Hapus Kelas Diniyah
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const updated = deleteKelasFromTingkat(deleteTarget.tingkatId, deleteTarget.namaKelas);
-      setSubKelasData(updated);
+      const updated = await deleteKelasFromTingkat(deleteTarget.tingkatId, deleteTarget.namaKelas);
+      setSubKelasData(updated || getSubKelasByTingkat());
       setDeleteTarget(null);
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      setSyncMessage({
+        type: 'error',
+        text: err.message || 'Gagal menghapus kelas diniyah.'
+      });
+      setDeleteTarget(null);
     }
   };
 

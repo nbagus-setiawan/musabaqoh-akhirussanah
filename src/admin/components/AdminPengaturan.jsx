@@ -30,7 +30,7 @@ import {
   getStoredGasUrl, 
   setStoredGasUrl, 
   getAdminPin, 
-  setAdminPin,
+  changeAdminPin,
   addActivityLog,
   fetchRegistrations,
   getActivityLogs,
@@ -40,7 +40,6 @@ import {
   DEFAULT_PENGATURAN,
   testGasConnection
 } from '../../shared/services/api';
-import rawScriptCode from '../../../google-apps-script/Code.gs?raw';
 
 export default function AdminPengaturan({ onRefresh }) {
   // Navigation Tabs: Default adalah 'musabaqah' (Sheet Pengaturan)
@@ -193,7 +192,7 @@ export default function AdminPengaturan({ onRefresh }) {
   const [confirmPin, setConfirmPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleUpdatePin = (e) => {
+  const handleUpdatePin = async (e) => {
     e.preventDefault();
     const trimmedNew = newPin.trim();
     const trimmedConfirm = confirmPin.trim();
@@ -208,18 +207,24 @@ export default function AdminPengaturan({ onRefresh }) {
       return;
     }
 
-    setAdminPin(trimmedNew);
-    setCurrentPin(trimmedNew);
-    setNewPin('');
-    setConfirmPin('');
-    Swal.fire({
-      icon: 'success',
-      title: 'PIN Berhasil Diperbarui',
-      text: 'PIN Akses Admin berhasil diperbarui.',
-      timer: 2000,
-      showConfirmButton: false
-    });
-    addActivityLog('Keamanan Admin', 'PIN Akses Admin berhasil diubah oleh panitia', 'security');
+    try {
+      const result = await changeAdminPin(trimmedNew);
+      setCurrentPin(trimmedNew);
+      setNewPin('');
+      setConfirmPin('');
+      Swal.fire({
+        icon: 'success',
+        title: 'PIN Berhasil Diperbarui',
+        text: result.syncedToSheets
+          ? 'PIN Akses Admin berhasil diperbarui dan disinkronkan ke Sheet Admin Google Sheets.'
+          : 'PIN Akses Admin berhasil diperbarui secara lokal.',
+        timer: 2200,
+        showConfirmButton: false
+      });
+      addActivityLog('Keamanan Admin', 'PIN Akses Admin berhasil diubah oleh panitia', 'security');
+    } catch (err) {
+      Swal.fire('Gagal Memperbarui PIN', err.message || 'Gagal menyinkronkan PIN ke Google Sheets.', 'error');
+    }
   };
 
   // =========================================================
@@ -265,10 +270,15 @@ export default function AdminPengaturan({ onRefresh }) {
     }
   };
 
-  const copyScript = () => {
-    navigator.clipboard.writeText(rawScriptCode);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+  const copyScript = async () => {
+    try {
+      const { default: rawScriptCode } = await import('../../../google-apps-script/Code.gs?raw');
+      await navigator.clipboard.writeText(rawScriptCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch (e) {
+      Swal.fire('Gagal Menyalin', 'Tidak dapat menyalin file Code.gs secara otomatis.', 'error');
+    }
   };
 
   // 6 Lembar Kerja Resmi di Google Spreadsheet

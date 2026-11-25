@@ -34,7 +34,9 @@ import {
 import { 
   getActivityLogs, 
   clearActivityLogs,
-  getWaliKelasList
+  getWaliKelasList,
+  fetchPengaturan,
+  getLocalPengaturan
 } from '../../shared/services/api';
 import { MASTER_WALI_KELAS } from '../../shared/data/competitions';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
@@ -48,6 +50,14 @@ export default function AdminDashboard({
 }) {
   const [logs, setLogs] = useState(() => getActivityLogs());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [targetKuota, setTargetKuota] = useState(() => Math.max(1, parseInt(getLocalPengaturan()?.TARGET_KUOTA_KELAS, 10) || 10));
+
+  useEffect(() => {
+    fetchPengaturan().then(cfg => {
+      const parsed = parseInt(cfg?.TARGET_KUOTA_KELAS, 10);
+      if (!isNaN(parsed) && parsed > 0) setTargetKuota(parsed);
+    }).catch(() => {});
+  }, []);
 
   // State Paginasi & Filter Matriks Kepatuhan 24 Kelas Diniyah
   // Ditampilkan bertahap (8 kelas per halaman) dengan tombol Lanjutkan / Sebelumnya
@@ -62,6 +72,10 @@ export default function AdminDashboard({
   const handleRefresh = () => {
     setIsRefreshing(true);
     setLogs(getActivityLogs());
+    fetchPengaturan().then(cfg => {
+      const parsed = parseInt(cfg?.TARGET_KUOTA_KELAS, 10);
+      if (!isNaN(parsed) && parsed > 0) setTargetKuota(parsed);
+    }).catch(() => {});
     if (onRefresh) onRefresh(true);
     setTimeout(() => setIsRefreshing(false), 600);
   };
@@ -130,7 +144,7 @@ export default function AdminDashboard({
       const diundiCount = santriList.filter(r => r.Nomor_Urut && String(r.Nomor_Urut).trim() !== '').length;
 
       let status = 'BELUM';
-      if (totalCount >= 10) {
+      if (totalCount >= targetKuota) {
         status = 'LENGKAP';
       } else if (totalCount > 0) {
         status = 'SEBAGIAN';
@@ -146,7 +160,7 @@ export default function AdminDashboard({
         santriList
       };
     });
-  }, [waliList, registrations]);
+  }, [waliList, registrations, targetKuota]);
 
   const countLengkap = complianceMatrix.filter(m => m.status === 'LENGKAP').length;
   const countSebagian = complianceMatrix.filter(m => m.status === 'SEBAGIAN').length;
@@ -205,8 +219,8 @@ export default function AdminDashboard({
 
   const handleSendReminderWA = (item) => {
     const statusDesc = item.totalCount === 0 
-      ? 'Belum ada santri yang didaftarkan (0/10 Kuota)' 
-      : `Baru terdaftar ${item.totalCount}/10 santri`;
+      ? `Belum ada santri yang didaftarkan (0/${targetKuota} Kuota)` 
+      : `Baru terdaftar ${item.totalCount}/${targetKuota} santri`;
     const msg =
       `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `Kepada Yth. *${item.nama}*\n` +
@@ -472,11 +486,11 @@ export default function AdminDashboard({
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-            <span>{countLengkap} Kelas Lengkap (Kuota 10 Terpenuhi)</span>
+            <span>{countLengkap} Kelas Lengkap (Kuota {targetKuota} Terpenuhi)</span>
           </div>
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/70 font-semibold">
             <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-            <span>{countSebagian} Kelas Terisi Sebagian (1 - 9 Santri)</span>
+            <span>{countSebagian} Kelas Terisi Sebagian (1 - {Math.max(1, targetKuota - 1)} Santri)</span>
           </div>
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-rose-50 text-rose-800 border border-rose-200/70 font-semibold">
             <span className="w-2 h-2 rounded-full bg-rose-500"></span>
@@ -488,7 +502,7 @@ export default function AdminDashboard({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
           {pagedCompliance.map((item) => {
             const isUla = (item.tingkat || '').toLowerCase().includes('ula');
-            const pctFill = Math.min(100, Math.round((item.totalCount / 10) * 100));
+            const pctFill = Math.min(100, Math.round((item.totalCount / targetKuota) * 100));
 
             return (
               <div 
@@ -518,14 +532,14 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                {/* Progress Kuota 10 Delegasi */}
+                {/* Progress Kuota Delegasi */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-semibold text-slate-600">
                       Kuota Terdaftar
                     </span>
                     <span className="font-bold text-slate-900 font-mono">
-                      {item.totalCount} / 10
+                      {item.totalCount} / {targetKuota}
                     </span>
                   </div>
 

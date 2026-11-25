@@ -18,7 +18,11 @@
  */
 export function normalizePhoneLocal08(rawPhone) {
   if (rawPhone === undefined || rawPhone === null) return '';
-  let digits = String(rawPhone).replace(/\D/g, '');
+  const str = String(rawPhone).trim();
+  if (!str) return '';
+  if (str.includes('*')) return str;
+
+  let digits = str.replace(/\D/g, '');
   if (!digits) return '';
 
   // Hapus prefix 0062... -> 0...
@@ -53,8 +57,9 @@ export function normalizePhoneLocal08(rawPhone) {
  * @returns {string}
  */
 export function normalizePhoneWa62(rawPhone) {
+  if (rawPhone && String(rawPhone).includes('*')) return '';
   const local = normalizePhoneLocal08(rawPhone);
-  if (!local) return '';
+  if (!local || local.includes('*')) return '';
 
   if (local.startsWith('0')) {
     return `62${local.slice(1)}`;
@@ -83,6 +88,7 @@ export function buildWaUrl(rawPhone, message = '') {
  * @returns {string}
  */
 export function toSheetPlainTextPhone(rawPhone) {
+  if (rawPhone && String(rawPhone).includes('*')) return '';
   const local = normalizePhoneLocal08(rawPhone);
-  return local ? `'${local}` : '';
+  return local && !local.includes('*') ? `'${local}` : '';
 }

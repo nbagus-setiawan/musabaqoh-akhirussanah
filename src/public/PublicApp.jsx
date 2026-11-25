@@ -56,7 +56,6 @@ export default function PublicApp() {
     setSavedWaliData(waliMeta);
     try {
       sessionStorage.setItem('alfalah_saved_wali', JSON.stringify(waliMeta));
-      localStorage.setItem('alfalah_saved_wali', JSON.stringify(waliMeta));
     } catch (e) {}
 
     await loadData();
