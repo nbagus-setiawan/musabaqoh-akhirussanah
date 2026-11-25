@@ -1525,32 +1525,41 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         <div className="space-y-4 animate-fadeIn">
           
           {/* Header Info Kelas & Ringkasan Partisipasi */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kelas Diniyah:</span>
-                <span className="text-xs sm:text-sm font-black text-[#075B45]">{kelasDiniyah}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  isPutriClass ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'
-                }`}>
-                  {isPutriClass ? 'Putri' : 'Putra'}
-                </span>
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-xs">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1.5 min-w-0">
+                {/* Baris kelas: label + nama kelas + badge */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Kelas Diniyah:</span>
+                  <span className="text-xs font-black text-[#075B45]">{kelasDiniyah}</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${
+                    isPutriClass ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}>
+                    {isPutriClass ? 'Putri' : 'Putra'}
+                  </span>
+                </div>
+                {/* Baris wali kelas */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-400 shrink-0">Wali Kelas:</span>
+                  <span className="text-xs font-bold text-slate-800 truncate">{waliInput}</span>
+                </div>
+                {/* Baris no WA */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-400 shrink-0">No. WA:</span>
+                  <span className="text-xs text-slate-700">{nomorWA}</span>
+                </div>
               </div>
-              <p className="text-xs text-slate-500">
-                Wali Kelas: <strong>{waliInput}</strong> • No. WA: {nomorWA}
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormError('');
+                  setFormStage('identity');
+                }}
+                className="text-[11px] font-bold text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              >
+                Ubah Kelas
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setFormError('');
-                setFormStage('identity');
-              }}
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
-            >
-              Ubah Data Kelas
-            </button>
           </div>
 
           {/* Baris Status Progress Partisipasi Cabang */}
