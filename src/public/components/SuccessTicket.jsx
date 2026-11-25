@@ -12,6 +12,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
+import { normalizePhoneLocal08 } from '../../shared/utils/phone';
 
 export default function SuccessTicket({ 
   registration, 
@@ -189,7 +190,7 @@ export default function SuccessTicket({
                 <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
                 <span className="text-slate-400 text-[10px]">Nomor WhatsApp:</span>
                 <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                  {registration.Nomor_WA}
+                  {normalizePhoneLocal08(registration.Nomor_WA)}
                 </span>
               </div>
             )}

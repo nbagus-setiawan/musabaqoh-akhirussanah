@@ -8,6 +8,7 @@ import {
   SKEMA_POIN_JUARA,
   getGenderFromKelas
 } from '../data/competitions';
+import { normalizePhoneLocal08 } from '../utils/phone';
 
 // Kunci penyimpanan sesi
 const STORAGE_KEY = 'akhirusanah_registrations_v2';
@@ -92,7 +93,14 @@ export const subscribeDataChanged = (callback) => {
 export const getLocalRegistrations = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map(item => ({
+          ...item,
+          Nomor_WA: item.Nomor_WA ? normalizePhoneLocal08(item.Nomor_WA) : ''
+        }))
+      : [];
   } catch (e) {
     return [];
   }
@@ -118,6 +126,9 @@ export const fetchRegistrations = async (forceRemote = false) => {
         const formatted = result.data.map(item => {
           if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
             item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
+          }
+          if (item.Nomor_WA) {
+            item.Nomor_WA = normalizePhoneLocal08(item.Nomor_WA);
           }
           return item;
         });
@@ -156,6 +167,9 @@ export const syncRemoteRegistrationsSilently = async () => {
           if (item.Nomor_Urut && !isNaN(item.Nomor_Urut) && Number(item.Nomor_Urut) > 0) {
             item.Nomor_Urut = String(item.Nomor_Urut).padStart(3, '0');
           }
+          if (item.Nomor_WA) {
+            item.Nomor_WA = normalizePhoneLocal08(item.Nomor_WA);
+          }
           return item;
         });
         const local = getLocalRegistrations();
@@ -189,7 +203,7 @@ export const saveRegistration = async (formData) => {
     Tingkat: formData.tingkat || '',
     Kelas_Kategori: formData.kelasKategori || '',
     Cabang_Lomba: formData.cabangLomba || '',
-    Nomor_WA: formData.nomorWA || '',
+    Nomor_WA: normalizePhoneLocal08(formData.nomorWA || ''),
     Status: 'Pending',
     Catatan: formData.catatan || ''
   };
@@ -239,6 +253,7 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
 
   const now = new Date();
   const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const normalizedMetaWA = normalizePhoneLocal08(metadata.nomorWA || '');
 
   const newEntries = santriList.map((item) => {
     const idPendaftaran = `AKH-${String(nextNum).padStart(3, '0')}`;
@@ -247,7 +262,7 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
     return {
       Timestamp: timestamp,
       Wali_Kelas: metadata.waliKelas || item.waliKelas || '',
-      Nomor_WA: metadata.nomorWA || item.nomorWA || '',
+      Nomor_WA: normalizedMetaWA || normalizePhoneLocal08(item.nomorWA || ''),
       ID_Pendaftaran: idPendaftaran,
       Nomor_Urut: '',
       Nama_Santri: String(item.namaSantri || item.Nama_Santri || item.Nama_Lengkap || '').trim().toUpperCase(),
@@ -282,7 +297,7 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
         body: JSON.stringify({
           action: 'batch_register',
           Wali_Kelas: metadata.waliKelas || '',
-          Nomor_WA: metadata.nomorWA || '',
+          Nomor_WA: normalizedMetaWA,
           Tingkat: metadata.tingkatName || metadata.tingkat || '',
           Kelas_Kategori: metadata.kelasDiniyah || '',
           entries: newEntries
@@ -405,16 +420,21 @@ export const batchUpdateStatus = async (idList = [], newStatus) => {
  * Edit Santri Lengkap Langsung ke Google Sheets
  */
 export const updateRegistration = async (idPendaftaran, updatedFields) => {
+  const sanitizedFields = { ...updatedFields };
+  if (sanitizedFields.Nomor_WA !== undefined) {
+    sanitizedFields.Nomor_WA = normalizePhoneLocal08(sanitizedFields.Nomor_WA);
+  }
+
   const currentList = getLocalRegistrations();
   const updated = currentList.map(item => {
     if (item.ID_Pendaftaran === idPendaftaran) {
-      return { ...item, ...updatedFields };
+      return { ...item, ...sanitizedFields };
     }
     return item;
   });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  notifyDataChanged('registrations', { idPendaftaran, updatedFields });
+  notifyDataChanged('registrations', { idPendaftaran, updatedFields: sanitizedFields });
 
   addActivityLog(
     'Update Data Santri',
@@ -424,6 +444,7 @@ export const updateRegistration = async (idPendaftaran, updatedFields) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
+    activeRegistrationMutations++;
     try {
       await fetch(gasUrl, {
         method: 'POST',
@@ -431,11 +452,14 @@ export const updateRegistration = async (idPendaftaran, updatedFields) => {
         body: JSON.stringify({
           action: 'edit_santri',
           ID_Pendaftaran: idPendaftaran,
-          ...updatedFields
+          ...sanitizedFields
         })
       });
     } catch (e) {
       console.warn('Update santri ke Google Sheets gagal:', e);
+    } finally {
+      activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
+      lastRegistrationMutationAt = Date.now();
     }
   }
 
@@ -522,7 +546,10 @@ export const isSantriPutri = (item) => {
 export const getWaliKelasList = () => {
   try {
     const raw = localStorage.getItem(WALI_KELAS_KEY);
-    return raw ? JSON.parse(raw) : MASTER_WALI_KELAS;
+    const list = raw ? JSON.parse(raw) : MASTER_WALI_KELAS;
+    return Array.isArray(list)
+      ? list.map(u => ({ ...u, kontak: u.kontak ? normalizePhoneLocal08(u.kontak) : '' }))
+      : MASTER_WALI_KELAS;
   } catch (e) {
     return MASTER_WALI_KELAS;
   }
@@ -541,8 +568,12 @@ export const fetchWaliKelas = async () => {
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data) && result.data.length > 0) {
-        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(result.data));
-        return result.data;
+        const normalized = result.data.map(u => ({
+          ...u,
+          kontak: u.kontak ? normalizePhoneLocal08(u.kontak) : ''
+        }));
+        localStorage.setItem(WALI_KELAS_KEY, JSON.stringify(normalized));
+        return normalized;
       }
     }
   } catch (err) {
@@ -555,7 +586,11 @@ export const fetchWaliKelas = async () => {
 export const saveWaliKelas = async (ustadzData) => {
   const list = getWaliKelasList();
   const id = ustadzData.id || `ust-${Date.now()}`;
-  const newItem = { ...ustadzData, id };
+  const newItem = {
+    ...ustadzData,
+    id,
+    kontak: ustadzData.kontak ? normalizePhoneLocal08(ustadzData.kontak) : ''
+  };
   const existingIdx = list.findIndex(u => u.id === id);
 
   let updatedList;

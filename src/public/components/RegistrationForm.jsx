@@ -43,6 +43,7 @@ import {
   getGenderFromKelas,
   MASTER_WALI_KELAS 
 } from '../../shared/data/competitions';
+import { normalizePhoneLocal08 } from '../../shared/utils/phone';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 import Swal from 'sweetalert2';
 
@@ -259,7 +260,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
     if (autoGender) setJenisKelamin(autoGender);
 
     if (guru.kontak && !nomorWA) {
-      setNomorWA(guru.kontak);
+      setNomorWA(normalizePhoneLocal08(guru.kontak));
     }
     setShowSuggestions(false);
     setFormError('');
@@ -888,10 +889,13 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       setFormError('Harap pilih nama Ustadz / Ustadzah dari daftar saran agar Kelas Diniyah tervalidasi.');
       return;
     }
-    const cleanWA = nomorWA.replace(/\D/g, '');
-    if (!cleanWA || cleanWA.length < 9) {
+    const normalizedWA = normalizePhoneLocal08(nomorWA);
+    if (!normalizedWA || normalizedWA.length < 9) {
       setFormError('Nomor WhatsApp Wali Kelas wajib diisi minimal 9 digit.');
       return;
+    }
+    if (normalizedWA !== nomorWA) {
+      setNomorWA(normalizedWA);
     }
 
     setFormStage('hub');
@@ -1019,7 +1023,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         tingkat: tingkat,
         tingkatName: tingkatName,
         kelasDiniyah: kelasDiniyah,
-        nomorWA: nomorWA.trim(),
+        nomorWA: normalizePhoneLocal08(nomorWA),
         jenisKelamin: jenisKelamin
       };
 
@@ -1363,7 +1367,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
             {/* Input Nomor WhatsApp Wali Kelas */}
             <div className="space-y-1.5">
-              <label className="text-xs sm:text-[13px] font-bold text-slate-800 inline-flex items-center gap-1">
+              <label htmlFor="reg-nomor-wa" className="text-xs sm:text-[13px] font-bold text-slate-800 inline-flex items-center gap-1">
                 <span>Nomor WhatsApp</span>
                 <span className="whitespace-nowrap">Wali Kelas <span className="text-rose-500 font-bold">*</span></span>
               </label>
@@ -1372,15 +1376,27 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   <WhatsAppIcon variant="brand" className="w-4 h-4 shrink-0" />
                 </div>
                 <input
+                  id="reg-nomor-wa"
+                  name="nomorWA"
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-describedby="reg-wa-help"
                   placeholder="Contoh: 081234567890"
                   value={nomorWA}
                   onChange={(e) => setNomorWA(e.target.value)}
+                  onBlur={(e) => {
+                    const norm = normalizePhoneLocal08(e.target.value);
+                    if (norm && norm !== e.target.value) setNomorWA(norm);
+                  }}
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-[#075B45] focus:ring-4 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold text-slate-900 bg-white shadow-2xs placeholder:text-slate-400 min-h-[46px]"
                 />
               </div>
-              <p className="text-[10.5px] text-slate-500">
-                Digunakan panitia untuk mengirimkan nomor undian resmi dan konfirmasi pemanggilan giliran tampil.
+              <p id="reg-wa-help" className="text-[10.5px] text-slate-500">
+                Gunakan format awalan 08 (contoh: 085269848261). Digunakan panitia untuk konfirmasi penerimaan santri dan nomor undian.
               </p>
             </div>
 

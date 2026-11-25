@@ -129,6 +129,10 @@ dialog.alfalah-dialog {
   overflow: visible;
 }
 
+dialog.alfalah-dialog.alfalah-dialog-wide {
+  max-width: min(95vw, 56rem);
+}
+
 dialog.alfalah-dialog:modal {
   overscroll-behavior: contain;
 }

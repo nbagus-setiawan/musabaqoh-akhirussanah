@@ -22,6 +22,7 @@ import {
   Eye
 } from 'lucide-react';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
+import { normalizePhoneLocal08, buildWaUrl } from '../../shared/utils/phone';
 import { 
   getWaliKelasList, 
   fetchWaliKelas,
@@ -136,7 +137,7 @@ export default function AdminGuru({
       nama: namaGuru.trim(),
       tingkat: tingkatGuru,
       kelas: finalKelas,
-      kontak: kontakWA.trim()
+      kontak: normalizePhoneLocal08(kontakWA)
     };
 
     if (modalMode === 'edit') {
@@ -162,8 +163,7 @@ export default function AdminGuru({
       alert(`Nomor WhatsApp untuk ${guru.nama} belum terdaftar.`);
       return;
     }
-    const cleanPhone = guru.kontak.replace(/^0/, '62').replace(/\D/g, '');
-    const pesan = encodeURIComponent(
+    const pesan =
       `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `Kepada Yth. *${guru.nama}*\n` +
       `Wali Kelas Diniyah: *${guru.kelas || '-'}*\n` +
@@ -175,9 +175,8 @@ export default function AdminGuru({
       `Jazakumullah Khairan Katsiran.\n\n` +
       `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `*Panitia Musabaqah Akhirussanah 1447 H*\n` +
-      `YPPS Al-Falah Putak`
-    );
-    window.open(`https://wa.me/${cleanPhone}?text=${pesan}`, '_blank');
+      `YPPS Al-Falah Putak`;
+    window.open(buildWaUrl(guru.kontak, pesan), '_blank', 'noopener,noreferrer');
   };
 
   // Helper Initials untuk Avatar
@@ -593,7 +592,7 @@ export default function AdminGuru({
                                   title="Kirim pesan WhatsApp"
                                 >
                                   <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
-                                  <span>{guru.kontak}</span>
+                                  <span>{normalizePhoneLocal08(guru.kontak)}</span>
                                 </button>
                               ) : (
                                 <span className="text-[10px] text-slate-400 italic block mt-0.5">
@@ -1000,7 +999,7 @@ export default function AdminGuru({
 
               {/* Nomor WhatsApp */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
+                <label htmlFor="guru-kontak-wa" className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
                   Nomor WhatsApp (Opsional):
                 </label>
                 <div className="relative">
@@ -1008,10 +1007,21 @@ export default function AdminGuru({
                     <WhatsAppIcon variant="brand" className="w-4 h-4 shrink-0" />
                   </div>
                   <input
-                    type="text"
+                    id="guru-kontak-wa"
+                    name="kontakWA"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     placeholder="Contoh: 081234567890"
                     value={kontakWA}
                     onChange={(e) => setKontakWA(e.target.value)}
+                    onBlur={(e) => {
+                      const norm = normalizePhoneLocal08(e.target.value);
+                      if (norm && norm !== e.target.value) setKontakWA(norm);
+                    }}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-slate-800 outline-none focus:border-emerald-800"
                   />
                 </div>

@@ -17,6 +17,7 @@ import {
 import SuccessTicket from '../public/components/SuccessTicket';
 import WhatsAppIcon from '../shared/components/WhatsAppIcon';
 import { drawOfficialKop } from '../shared/utils/pdfKop';
+import { normalizePhoneLocal08 } from '../shared/utils/phone';
 
 export default function BuktiPendaftaranPage() {
   const location = useLocation();
@@ -84,11 +85,15 @@ export default function BuktiPendaftaranPage() {
   }
 
   const entries = batchResult?.entries || (ticket ? [ticket] : []);
-  const meta = batchResult?.metadata || {
+  const rawMeta = batchResult?.metadata || {
     waliKelas: ticket?.Wali_Kelas,
     kelasDiniyah: ticket?.Kelas_Kategori,
     tingkat: ticket?.Tingkat,
     nomorWA: ticket?.Nomor_WA
+  };
+  const meta = {
+    ...rawMeta,
+    nomorWA: rawMeta.nomorWA ? normalizePhoneLocal08(rawMeta.nomorWA) : ''
   };
 
   const formatTingkat = (val) => {

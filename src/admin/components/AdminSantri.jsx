@@ -39,6 +39,8 @@ import {
 import { CABANG_LOMBA_LIST } from '../../shared/data/competitions';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
 import { drawOfficialKop } from '../../shared/utils/pdfKop';
+import { buildWaUrl, normalizePhoneLocal08 } from '../../shared/utils/phone';
+import BulkWhatsAppDialog from './BulkWhatsAppDialog';
 
 export default function AdminSantri({ 
   registrations = [], 
@@ -70,6 +72,9 @@ export default function AdminSantri({
   const [downloadTingkat, setDownloadTingkat] = useState('ALL');
   const [downloadCabang, setDownloadCabang] = useState('ALL');
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Modal Kirim WhatsApp Massal
+  const [isBulkWaOpen, setIsBulkWaOpen] = useState(false);
 
   // Modal Edit Santri State
   const [editingSantri, setEditingSantri] = useState(null);
@@ -105,7 +110,7 @@ export default function AdminSantri({
       Kelas_Kategori: item.Kelas_Kategori || '',
       Cabang_Lomba: item.Cabang_Lomba || '',
       Wali_Kelas: item.Wali_Kelas || '',
-      Nomor_WA: item.Nomor_WA || '',
+      Nomor_WA: normalizePhoneLocal08(item.Nomor_WA || ''),
       Nomor_Urut: item.Nomor_Urut || '',
       Status: item.Status || 'Pending',
       Catatan: item.Catatan || ''
@@ -124,7 +129,8 @@ export default function AdminSantri({
       setEditError('');
       const cleanForm = {
         ...editForm,
-        Nama_Lengkap: editForm.Nama_Lengkap.trim().toUpperCase()
+        Nama_Lengkap: editForm.Nama_Lengkap.trim().toUpperCase(),
+        Nomor_WA: normalizePhoneLocal08(editForm.Nomor_WA || '')
       };
       await updateRegistration(editingSantri.ID_Pendaftaran, cleanForm);
       Swal.fire({
@@ -902,18 +908,19 @@ export default function AdminSantri({
   };
 
   const handleSendWA = (item) => {
-    const phone = (item.Nomor_WA || '').replace(/^0/, '62').replace(/\D/g, '');
-    const pesan = encodeURIComponent(
-      `Assalamu'alaikum Wr. Wb. Yth. Ust/Usth ${item.Wali_Kelas} / Ananda ${item.Nama_Lengkap}.\n\n` +
-      `Konfirmasi Pendaftaran Musabaqah Akhirussanah YPPS Al-Falah Putak:\n` +
-      `• ID Pendaftaran: ${item.ID_Pendaftaran}\n` +
-      `• Cabang Lomba: ${item.Cabang_Lomba}\n` +
-      `• Jenjang & Kelas: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
-      `• Status: ${item.Status}\n` +
-      (item.Nomor_Urut ? `• NOMOR URUT PEMANGGILAN: ${item.Nomor_Urut}\n\n` : `\n`) +
-      `Harap hadir tepat waktu sesuai jadwal musabaqah. Syukron Katsiron.`
-    );
-    window.open(`https://wa.me/${phone}?text=${pesan}`, '_blank');
+    const statusText = item.Status === 'Terverifikasi'
+      ? 'DITERIMA / TERVERIFIKASI'
+      : (item.Status || 'Pending');
+    const pesan =
+      `Assalamu'alaikum Wr. Wb. Yth. ${item.Wali_Kelas} / Ananda ${item.Nama_Lengkap}.\n\n` +
+      `Konfirmasi Penerimaan & Pendaftaran Musabaqah Akhirussanah YPPS Al-Falah Putak:\n` +
+      `- ID Pendaftaran: ${item.ID_Pendaftaran}\n` +
+      `- Cabang Lomba: ${item.Cabang_Lomba}\n` +
+      `- Jenjang & Kelas: ${item.Tingkat} - ${item.Kelas_Kategori}\n` +
+      `- Status: ${statusText}\n` +
+      (item.Nomor_Urut ? `- NOMOR URUT PEMANGGILAN: ${item.Nomor_Urut}\n\n` : `\n`) +
+      `Harap hadir tepat waktu sesuai jadwal musabaqah. Syukron Katsiron.`;
+    window.open(buildWaUrl(item.Nomor_WA, pesan), '_blank', 'noopener,noreferrer');
   };
 
   const tabPills = [
@@ -940,14 +947,25 @@ export default function AdminSantri({
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola pendaftaran santri, verifikasi berkas, dan pengundian nomor urut (format 3 digit, bebas duplikat seluruh cabang lomba).
+              Kelola pendaftaran santri, verifikasi berkas, kirim WhatsApp massal penerimaan, dan pengundian nomor urut.
             </p>
           </div>
         </div>
 
-        {/* Toolbar Aksi (Undi & Unduh PDF) */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Toolbar Aksi (WA Massal, Undi, Unduh PDF) */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
+            type="button"
+            onClick={() => setIsBulkWaOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
+            title="Kirim pesan WhatsApp massal penerimaan santri"
+          >
+            <WhatsAppIcon variant="white" className="w-4 h-4 shrink-0" />
+            <span>WA Massal</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleOpenLotteryModal}
             className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
             title="Undi nomor urut santri"
@@ -957,6 +975,7 @@ export default function AdminSantri({
           </button>
 
           <button
+            type="button"
             onClick={handleOpenDownloadPdfModal}
             className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center space-x-2 transition-all shadow-2xs cursor-pointer active:scale-95"
             title="Pilih tingkat lalu unduh PDF"
@@ -1568,7 +1587,7 @@ export default function AdminSantri({
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                 <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Wali Kelas</span>
                 <span className="font-bold text-slate-800 block mt-0.5">{selectedSantri.Wali_Kelas}</span>
-                <div className="font-mono text-slate-500 text-[11px] mt-0.5">WA: {selectedSantri.Nomor_WA}</div>
+                <div className="font-mono text-slate-500 text-[11px] mt-0.5">WA: {normalizePhoneLocal08(selectedSantri.Nomor_WA) || '-'}</div>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
@@ -1778,11 +1797,22 @@ export default function AdminSantri({
               {/* Row 4: Nomor WA & Nomor Urut */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nomor WhatsApp Aktif</label>
+                  <label htmlFor="edit-santri-wa" className="font-bold text-slate-700">Nomor WhatsApp Aktif (08...)</label>
                   <input
+                    id="edit-santri-wa"
+                    name="Nomor_WA"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     value={editForm.Nomor_WA}
                     onChange={(e) => setEditForm(prev => ({ ...prev, Nomor_WA: e.target.value }))}
+                    onBlur={(e) => {
+                      const norm = normalizePhoneLocal08(e.target.value);
+                      if (norm && norm !== e.target.value) setEditForm(prev => ({ ...prev, Nomor_WA: norm }));
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-mono text-slate-800 focus:border-emerald-700 outline-none bg-slate-50/50 focus:bg-white transition-all"
                     placeholder="081234567890"
                   />
@@ -2008,8 +2038,9 @@ export default function AdminSantri({
 
           <div className="hidden sm:block h-4 w-px bg-slate-700" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <button
+              type="button"
               onClick={handleBulkVerify}
               disabled={isBulkProcessing}
               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
@@ -2019,6 +2050,17 @@ export default function AdminSantri({
             </button>
 
             <button
+              type="button"
+              onClick={() => setIsBulkWaOpen(true)}
+              disabled={isBulkProcessing}
+              className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+            >
+              <WhatsAppIcon variant="white" className="w-3.5 h-3.5 shrink-0" />
+              <span>Kirim WA</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleBulkPending}
               disabled={isBulkProcessing}
               className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
@@ -2028,6 +2070,7 @@ export default function AdminSantri({
             </button>
 
             <button
+              type="button"
               onClick={handleBulkDelete}
               disabled={isBulkProcessing}
               className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
@@ -2037,6 +2080,7 @@ export default function AdminSantri({
             </button>
 
             <button
+              type="button"
               onClick={() => setSelectedIds(new Set())}
               className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               title="Batalkan pilihan"
@@ -2046,6 +2090,14 @@ export default function AdminSantri({
           </div>
         </div>
       )}
+
+      {/* MODAL KIRIM WHATSAPP MASSAL PENERIMAAN SANTRI */}
+      <BulkWhatsAppDialog
+        isOpen={isBulkWaOpen}
+        onClose={() => setIsBulkWaOpen(false)}
+        registrations={registrations}
+        selectedIds={selectedIds}
+      />
 
     </div>
   );

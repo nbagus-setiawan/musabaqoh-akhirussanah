@@ -114,6 +114,28 @@ const HEADERS_KEBUTUHAN = [
   'Keterangan'
 ];
 
+function normalizePhoneLocal08_(rawPhone) {
+  if (rawPhone === undefined || rawPhone === null) return '';
+  let digits = String(rawPhone).replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0062')) {
+    const rest = digits.slice(4).replace(/^0+/, '');
+    return rest ? '0' + rest : '';
+  }
+  if (digits.startsWith('62') && digits.length >= 10) {
+    const rest = digits.slice(2).replace(/^0+/, '');
+    return rest ? '0' + rest : '';
+  }
+  if (digits.startsWith('8') && digits.length >= 9) {
+    return '0' + digits;
+  }
+  if (digits.startsWith('0')) {
+    const rest = digits.slice(1).replace(/^0+/, '');
+    return rest ? '0' + rest : '0';
+  }
+  return digits;
+}
+
 // DATA AWAL MASTER ADMIN
 const MASTER_ADMIN_AWAL = [
   ['ADM-001', 'admin', 'admin123', 'Ustadz Admin Panitia', 'Super Admin', 'Aktif']
@@ -716,7 +738,7 @@ function doGet(e) {
           nama: String(r[1] || '').trim(),
           tingkat: String(r[2] || 'ula').trim().toLowerCase(),
           kelas: String(r[3] || '').trim(),
-          kontak: String(r[4] || '').trim()
+          kontak: normalizePhoneLocal08_(r[4])
         });
       }
       return jsonResponse({ status: 'success', total: list.length, data: list });
@@ -868,6 +890,9 @@ function doGet(e) {
         if (header === 'Nomor_Urut' && val && !isNaN(val) && Number(val) > 0) {
           val = String(val).padStart(3, '0');
         }
+        if (header === 'Nomor_WA' && val) {
+          val = normalizePhoneLocal08_(val);
+        }
 
         item[header] = val;
       });
@@ -995,11 +1020,13 @@ function doPost(e) {
         }
         usedIds[idPendaftaran] = true;
 
+        const waNormalized = normalizePhoneLocal08_(item.Nomor_WA || contents.Nomor_WA || '');
+
         // Susunan 13 Kolom Rapi Sesuai HEADERS_PENDAFTARAN
         const rowData = [
           item.Timestamp || formattedTimestamp,
           item.Wali_Kelas || contents.Wali_Kelas || '',
-          item.Nomor_WA || contents.Nomor_WA || '',
+          waNormalized,
           idPendaftaran,
           item.Nomor_Urut || '',
           namaSantri,
@@ -1013,6 +1040,9 @@ function doPost(e) {
         ];
 
         sheet.appendRow(rowData);
+        if (waNormalized) {
+          sheet.getRange(sheet.getLastRow(), 3).setNumberFormat('@').setValue(waNormalized);
+        }
         added.push(idPendaftaran);
       });
 
@@ -1056,6 +1086,10 @@ function doPost(e) {
             let val = contents[key];
             if (key.toLowerCase() === 'nama_santri' || key.toLowerCase() === 'nama_lengkap') {
               val = String(val).toUpperCase();
+            } else if (key.toLowerCase() === 'nomor_wa') {
+              val = normalizePhoneLocal08_(val);
+              sheet.getRange(rowNum, cIdx + 1).setNumberFormat('@').setValue(val);
+              return;
             }
             sheet.getRange(rowNum, cIdx + 1).setValue(val);
           }
@@ -1180,7 +1214,7 @@ function doPost(e) {
       const nama = String(contents.nama || '').trim();
       const tingkat = String(contents.tingkat || 'ula').trim().toLowerCase();
       const kelas = String(contents.kelas || '').trim();
-      const kontak = String(contents.kontak || '').trim();
+      const kontak = normalizePhoneLocal08_(contents.kontak || '');
 
       let foundIndex = -1;
       if (id) {
@@ -1196,10 +1230,13 @@ function doPost(e) {
         sheet.getRange(foundIndex, 2).setValue(nama);
         sheet.getRange(foundIndex, 3).setValue(tingkat);
         sheet.getRange(foundIndex, 4).setValue(kelas);
-        sheet.getRange(foundIndex, 5).setValue(kontak);
+        sheet.getRange(foundIndex, 5).setNumberFormat('@').setValue(kontak);
       } else {
         const newId = id || ('ust-' + (sheet.getLastRow()));
         sheet.appendRow([newId, nama, tingkat, kelas, kontak]);
+        if (kontak) {
+          sheet.getRange(sheet.getLastRow(), 5).setNumberFormat('@').setValue(kontak);
+        }
       }
 
       return jsonResponse({

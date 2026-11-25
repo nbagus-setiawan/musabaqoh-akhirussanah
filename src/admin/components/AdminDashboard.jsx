@@ -38,6 +38,7 @@ import {
 } from '../../shared/services/api';
 import { MASTER_WALI_KELAS } from '../../shared/data/competitions';
 import WhatsAppIcon from '../../shared/components/WhatsAppIcon';
+import { buildWaUrl } from '../../shared/utils/phone';
 
 export default function AdminDashboard({ 
   registrations = [], 
@@ -203,11 +204,10 @@ export default function AdminDashboard({
   };
 
   const handleSendReminderWA = (item) => {
-    const cleanPhone = (item.kontak || '').replace(/^0/, '62').replace(/\D/g, '');
     const statusDesc = item.totalCount === 0 
       ? 'Belum ada santri yang didaftarkan (0/10 Kuota)' 
       : `Baru terdaftar ${item.totalCount}/10 santri`;
-    const msg = encodeURIComponent(
+    const msg =
       `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `Kepada Yth. *${item.nama}*\n` +
       `Wali Kelas Diniyah: *${item.kelas}*\n` +
@@ -222,13 +222,8 @@ export default function AdminDashboard({
       `Jazakumullah Khairan Katsiran.\n\n` +
       `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `*Panitia Musabaqah Akhirussanah 1447 H*\n` +
-      `YPPS Al-Falah Putak`
-    );
-    if (cleanPhone) {
-      window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
-    } else {
-      window.open(`https://wa.me/?text=${msg}`, '_blank');
-    }
+      `YPPS Al-Falah Putak`;
+    window.open(buildWaUrl(item.kontak, msg), '_blank', 'noopener,noreferrer');
   };
 
   // =========================================================
