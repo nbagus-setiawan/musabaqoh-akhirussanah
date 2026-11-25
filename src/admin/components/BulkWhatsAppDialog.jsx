@@ -22,7 +22,7 @@ const SYSTEM_FOOTER_2026 =
   '_Pesan ini dikirim otomatis dari sistem penerimaan Musabaqah Akhirussanah 2026. Jangan balas pesan ini, silakan hubungi panitia jika ada kendala._';
 
 const DEFAULT_EXTRA_NOTE =
-  'Bagi santri yang telah dinyatakan DITERIMA, Nomor Urut di atas merupakan nomor undian resmi peserta. Pencetakan kartu/nomor undian dilaksanakan langsung oleh Panitia Musabaqah Akhirussanah 2026; mohon Ustadz/Ustadzah menginformasikan nomor urut tersebut kepada santri binaan serta menghubungi panitia apabila terdapat data yang perlu disesuaikan.';
+  'Bagi santri yang telah dinyatakan DITERIMA, mohon Ustadz/Ustadzah untuk mengonfirmasikan Nomor Urut dan data peserta di atas kepada Panitia Musabaqah Akhirussanah 2026 agar Panitia dapat segera mencetak kartu nomor undian resmi. Apabila terdapat data yang perlu diperbaiki, mohon segera disampaikan saat konfirmasi.';
 
 function formatWaliSection(items) {
   const accepted = items.filter(s => s.Status === 'Terverifikasi');
