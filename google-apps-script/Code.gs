@@ -969,13 +969,31 @@ function doPost(e) {
       const formattedTimestamp = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss');
       const added = [];
 
-      let curRow = Math.max(1, sheet.getLastRow());
+      const existingRows = sheet.getDataRange().getValues();
+      const usedIds = {};
+      let maxNum = 0;
+      for (let r = 1; r < existingRows.length; r++) {
+        const eid = String(existingRows[r][3] || '').trim();
+        if (eid) {
+          usedIds[eid] = true;
+          const m = eid.match(/\d+/);
+          if (m) {
+            const num = parseInt(m[0], 10);
+            if (num > maxNum) maxNum = num;
+          }
+        }
+      }
 
       entries.forEach(item => {
-        curRow++;
-        const idPendaftaran = item.ID_Pendaftaran || ('AKH-' + String(curRow).padStart(3, '0'));
         const namaSantri = String(item.Nama_Santri || item.Nama_Lengkap || item.namaSantri || '').trim().toUpperCase();
         if (!namaSantri) return;
+
+        let idPendaftaran = String(item.ID_Pendaftaran || '').trim();
+        if (!idPendaftaran || usedIds[idPendaftaran]) {
+          maxNum++;
+          idPendaftaran = 'AKH-' + String(maxNum).padStart(3, '0');
+        }
+        usedIds[idPendaftaran] = true;
 
         // Susunan 13 Kolom Rapi Sesuai HEADERS_PENDAFTARAN
         const rowData = [
@@ -1014,25 +1032,60 @@ function doPost(e) {
       const rows = sheet.getDataRange().getValues();
       const headers = rows[0].map(h => String(h).trim());
       const idPendaftaran = String(contents.ID_Pendaftaran || '').trim();
+      const targetRowIdx = contents.rowIndex ? parseInt(contents.rowIndex, 10) : 0;
+      const hintNama = String(contents.Nama_Santri || contents.Nama_Lengkap || '').trim().toUpperCase();
+      const hintCabang = String(contents.Cabang_Lomba || '').trim().toLowerCase();
       let updated = false;
 
       const colId = headers.findIndex(h => h.toLowerCase() === 'id_pendaftaran');
-      if (colId !== -1) {
+      const colNama = headers.findIndex(h => h.toLowerCase() === 'nama_santri' || h.toLowerCase() === 'nama_lengkap');
+      const colCabang = headers.findIndex(h => h.toLowerCase() === 'cabang_lomba');
+      const colStatus = headers.findIndex(h => h.toLowerCase() === 'status');
+
+      const applyRowUpdate = (rowNum) => {
+        if (action === 'update_single') {
+          if (colStatus !== -1 && contents.Status !== undefined) {
+            sheet.getRange(rowNum, colStatus + 1).setValue(String(contents.Status).trim());
+            updated = true;
+          }
+          return;
+        }
+        Object.keys(contents).forEach(key => {
+          const cIdx = headers.findIndex(h => h.toLowerCase() === key.toLowerCase());
+          if (cIdx !== -1) {
+            let val = contents[key];
+            if (key.toLowerCase() === 'nama_santri' || key.toLowerCase() === 'nama_lengkap') {
+              val = String(val).toUpperCase();
+            }
+            sheet.getRange(rowNum, cIdx + 1).setValue(val);
+          }
+        });
+        updated = true;
+      };
+
+      // Prioritas 1: Cocokkan berdasarkan rowIndex tepat jika tersedia & valid
+      if (targetRowIdx >= 2 && targetRowIdx <= rows.length) {
+        const r = rows[targetRowIdx - 1];
+        const rowId = colId !== -1 ? String(r[colId] || '').trim() : '';
+        const rowNama = colNama !== -1 ? String(r[colNama] || '').trim().toUpperCase() : '';
+        if ((idPendaftaran && rowId === idPendaftaran) || (hintNama && rowNama === hintNama)) {
+          applyRowUpdate(targetRowIdx);
+        }
+      }
+
+      // Prioritas 2: Fallback mencari berdasarkan ID_Pendaftaran (dan hint Nama/Cabang jika ada duplikat ID)
+      if (!updated && colId !== -1 && idPendaftaran) {
         for (let i = 1; i < rows.length; i++) {
           if (String(rows[i][colId]).trim() === idPendaftaran) {
-            const rowNum = i + 1;
-            Object.keys(contents).forEach(key => {
-              const cIdx = headers.findIndex(h => h.toLowerCase() === key.toLowerCase());
-              if (cIdx !== -1) {
-                let val = contents[key];
-                if (key.toLowerCase() === 'nama_santri' || key.toLowerCase() === 'nama_lengkap') {
-                  val = String(val).toUpperCase();
-                }
-                sheet.getRange(rowNum, cIdx + 1).setValue(val);
-              }
-            });
-            updated = true;
-            break;
+            const rowNama = colNama !== -1 ? String(rows[i][colNama] || '').trim().toUpperCase() : '';
+            const rowCabang = colCabang !== -1 ? String(rows[i][colCabang] || '').trim().toLowerCase() : '';
+            const namaMatch = !hintNama || !rowNama || rowNama === hintNama;
+            const cabangMatch = !hintCabang || !rowCabang || rowCabang === hintCabang;
+
+            if (namaMatch && cabangMatch) {
+              applyRowUpdate(i + 1);
+              if (action !== 'update_single') break;
+            }
           }
         }
       }

@@ -132,13 +132,23 @@ export const fetchRegistrations = async (forceRemote = false) => {
   return getLocalRegistrations();
 };
 
+let activeRegistrationMutations = 0;
+let lastRegistrationMutationAt = 0;
+
 export const syncRemoteRegistrationsSilently = async () => {
+  if (activeRegistrationMutations > 0 || (Date.now() - lastRegistrationMutationAt) < 4000) {
+    return;
+  }
   const gasUrl = getStoredGasUrl();
   if (!gasUrl) return;
 
   try {
+    const reqStartedAt = Date.now();
     const url = gasUrl.includes('?') ? `${gasUrl}&action=get_all` : `${gasUrl}?action=get_all`;
     const resp = await fetch(url, { method: 'GET' });
+    if (activeRegistrationMutations > 0 || lastRegistrationMutationAt >= reqStartedAt) {
+      return;
+    }
     if (resp.ok) {
       const result = await resp.json();
       if (result.status === 'success' && Array.isArray(result.data)) {
@@ -294,38 +304,51 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
 /**
  * Update Status Santri Langsung ke Google Sheets
  */
-export const updateStatus = async (idPendaftaran, newStatus) => {
+export const updateStatus = async (idPendaftaran, newStatus, itemMeta = null) => {
   const cleanId = String(idPendaftaran || '').trim();
+  const targetRowIdx = itemMeta && itemMeta.rowIndex ? Number(itemMeta.rowIndex) : null;
   const currentList = getLocalRegistrations();
+
   const updated = currentList.map(item => {
-    if (String(item.ID_Pendaftaran || '').trim() === cleanId) {
+    const matchByRow = targetRowIdx && item.rowIndex && Number(item.rowIndex) === targetRowIdx;
+    const matchById = !targetRowIdx && String(item.ID_Pendaftaran || '').trim() === cleanId;
+    if (matchByRow || matchById) {
       return { ...item, Status: newStatus };
     }
     return item;
   });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  notifyDataChanged('registrations', { idPendaftaran: cleanId, newStatus });
+  notifyDataChanged('registrations', { idPendaftaran: cleanId, rowIndex: targetRowIdx, newStatus });
 
   addActivityLog(
     'Perubahan Status Santri',
-    `Status santri ID ${cleanId} diubah menjadi "${newStatus}"`,
+    `Status santri ${itemMeta?.Nama_Lengkap || cleanId} (${cleanId}) diubah menjadi "${newStatus}"`,
     'status'
   );
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'update_single',
-        ID_Pendaftaran: cleanId,
-        Status: newStatus
-      })
-    }).catch(e => {
+    activeRegistrationMutations++;
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'update_single',
+          ID_Pendaftaran: cleanId,
+          Status: newStatus,
+          rowIndex: targetRowIdx || '',
+          Nama_Santri: itemMeta?.Nama_Lengkap || itemMeta?.Nama_Santri || '',
+          Cabang_Lomba: itemMeta?.Cabang_Lomba || ''
+        })
+      });
+    } catch (e) {
       console.warn('Update status ke GAS gagal:', e);
-    });
+    } finally {
+      activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
+      lastRegistrationMutationAt = Date.now();
+    }
   }
 
   return updated;
@@ -356,17 +379,23 @@ export const batchUpdateStatus = async (idList = [], newStatus) => {
 
   const gasUrl = getStoredGasUrl();
   if (gasUrl) {
-    fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'batch_update_status',
-        ids: Array.from(cleanIds),
-        status: newStatus
-      })
-    }).catch(e => {
+    activeRegistrationMutations++;
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'batch_update_status',
+          ids: Array.from(cleanIds),
+          status: newStatus
+        })
+      });
+    } catch (e) {
       console.warn('Batch update status ke GAS gagal:', e);
-    });
+    } finally {
+      activeRegistrationMutations = Math.max(0, activeRegistrationMutations - 1);
+      lastRegistrationMutationAt = Date.now();
+    }
   }
 
   return updated;

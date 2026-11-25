@@ -303,12 +303,21 @@ export default function AdminSantri({
   const countPending = registrations.filter(r => r.Status === 'Pending').length;
   const countRejected = registrations.filter(r => r.Status === 'Ditolak').length;
 
-  const handleQuickStatus = async (idPendaftaran, newStatus) => {
-    if (!idPendaftaran) return;
-    const cleanId = String(idPendaftaran).trim();
-    setStatusProcessingId(cleanId);
+  const getRowKey = (item) => {
+    if (!item) return '';
+    return item.rowIndex ? `row-${item.rowIndex}` : String(item.ID_Pendaftaran || '').trim();
+  };
+
+  const handleQuickStatus = async (target, newStatus) => {
+    const isObj = target && typeof target === 'object';
+    const itemObj = isObj ? target : null;
+    const cleanId = String(isObj ? (target.ID_Pendaftaran || '') : (target || '')).trim();
+    const rowKey = isObj ? getRowKey(target) : cleanId;
+    if (!cleanId && !itemObj?.rowIndex) return;
+
+    setStatusProcessingId(rowKey);
     try {
-      await updateStatus(cleanId, newStatus);
+      await updateStatus(cleanId, newStatus, itemObj);
       const isAccepted = newStatus === 'Terverifikasi';
 
       Swal.mixin({
@@ -322,7 +331,7 @@ export default function AdminSantri({
         title: isAccepted ? 'Santri Diterima (Terverifikasi)' : 'Status Dikembalikan ke Pending'
       });
 
-      if (selectedSantri && selectedSantri.ID_Pendaftaran === cleanId) {
+      if (selectedSantri && getRowKey(selectedSantri) === rowKey) {
         setSelectedSantri(prev => prev ? { ...prev, Status: newStatus } : null);
       }
 
@@ -1334,12 +1343,12 @@ export default function AdminSantri({
                         {item.Status !== 'Terverifikasi' ? (
                           <button
                             type="button"
-                            disabled={statusProcessingId === item.ID_Pendaftaran}
-                            onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Terverifikasi')}
+                            disabled={statusProcessingId === getRowKey(item)}
+                            onClick={() => handleQuickStatus(item, 'Terverifikasi')}
                             title="Verifikasi / Terima Santri"
                             className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            {statusProcessingId === item.ID_Pendaftaran ? (
+                            {statusProcessingId === getRowKey(item) ? (
                               <>
                                 <RefreshCw className="w-3 h-3 animate-spin text-white" />
                                 <span>Proses...</span>
@@ -1354,12 +1363,12 @@ export default function AdminSantri({
                         ) : (
                           <button
                             type="button"
-                            disabled={statusProcessingId === item.ID_Pendaftaran}
-                            onClick={() => handleQuickStatus(item.ID_Pendaftaran, 'Pending')}
+                            disabled={statusProcessingId === getRowKey(item)}
+                            onClick={() => handleQuickStatus(item, 'Pending')}
                             title="Kembalikan ke status Pending"
                             className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-[11px] border border-slate-200/80 transition-all cursor-pointer flex items-center space-x-1 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            {statusProcessingId === item.ID_Pendaftaran ? (
+                            {statusProcessingId === getRowKey(item) ? (
                               <>
                                 <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />
                                 <span>Proses...</span>
@@ -1575,30 +1584,30 @@ export default function AdminSantri({
                 {selectedSantri.Status !== 'Terverifikasi' ? (
                   <button
                     type="button"
-                    disabled={statusProcessingId === selectedSantri.ID_Pendaftaran}
-                    onClick={() => handleQuickStatus(selectedSantri.ID_Pendaftaran, 'Terverifikasi')}
+                    disabled={statusProcessingId === getRowKey(selectedSantri)}
+                    onClick={() => handleQuickStatus(selectedSantri, 'Terverifikasi')}
                     className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {statusProcessingId === selectedSantri.ID_Pendaftaran ? (
+                    {statusProcessingId === getRowKey(selectedSantri) ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
                     ) : (
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     )}
-                    <span>{statusProcessingId === selectedSantri.ID_Pendaftaran ? 'Memproses...' : 'Terima Santri'}</span>
+                    <span>{statusProcessingId === getRowKey(selectedSantri) ? 'Memproses...' : 'Terima Santri'}</span>
                   </button>
                 ) : (
                   <button
                     type="button"
-                    disabled={statusProcessingId === selectedSantri.ID_Pendaftaran}
-                    onClick={() => handleQuickStatus(selectedSantri.ID_Pendaftaran, 'Pending')}
+                    disabled={statusProcessingId === getRowKey(selectedSantri)}
+                    onClick={() => handleQuickStatus(selectedSantri, 'Pending')}
                     className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs flex items-center space-x-1.5 border border-slate-200 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {statusProcessingId === selectedSantri.ID_Pendaftaran ? (
+                    {statusProcessingId === getRowKey(selectedSantri) ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
                     ) : (
                       <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                     )}
-                    <span>{statusProcessingId === selectedSantri.ID_Pendaftaran ? 'Memproses...' : 'Kembalikan Pending'}</span>
+                    <span>{statusProcessingId === getRowKey(selectedSantri) ? 'Memproses...' : 'Kembalikan Pending'}</span>
                   </button>
                 )}
 
