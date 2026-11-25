@@ -203,7 +203,7 @@ export default function AdminDashboard({
   };
 
   // =========================================================
-  // SEBARAN PER JENJANG & CABANG LOMBA (PENGGANTI KALENDER STATIS)
+  // SEBARAN PER JENJANG & CABANG LOMBA
   // =========================================================
   const jenjangSummary = useMemo(() => {
     const groups = [
@@ -308,82 +308,82 @@ export default function AdminDashboard({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-5 max-w-7xl mx-auto">
       {/* =========================================================
           1. BAR KENDALI OPERASIONAL RINGKAS (EMERALD & EMAS AL-FALAH)
          ========================================================= */}
-      <section className="rounded-3xl bg-white border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-[#054736] via-[#075B45] to-[#D9B45B]" />
-        <div className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15">
-                Musabaqah Akhirussanah 1447 H
+      <section className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-[#054736] via-[#075B45] to-[#D9B45B]" />
+        <div className="p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15">
+                Musabaqah 1447 H
               </span>
-              <span className="text-xs font-semibold text-slate-500">
+              <span className="text-[11px] font-semibold text-slate-500">
                 YPPS Al-Falah Putak
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+            <h2 className="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Pusat Kendali & Monitoring Panitia
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
-              Pantau kelengkapan {complianceMatrix.length} Kelas Diniyah, antrean verifikasi delegasi, dan pengundian nomor peserta 3 digit.
+            <p className="text-[11px] sm:text-xs text-slate-500 max-w-xl">
+              Pantau kepatuhan {complianceMatrix.length} Kelas Diniyah, verifikasi berkas, dan nomor peserta.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
             <button
               type="button"
               onClick={() => handleJumpWithQuery('')}
-              className="px-4 py-2.5 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs transition-all shadow-xs flex items-center space-x-2 cursor-pointer active:scale-95"
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs transition-all shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
             >
-              <Dices className="w-4 h-4 text-[#D9B45B]" />
-              <span>Undian Nomor Peserta</span>
+              <Dices className="w-3.5 h-3.5 text-[#D9B45B]" />
+              <span>Undian</span>
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 transition-all flex items-center space-x-2 cursor-pointer active:scale-95"
+              className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
             >
-              <Download className="w-4 h-4 text-[#075B45]" />
-              <span>Export Excel</span>
+              <Download className="w-3.5 h-3.5 text-[#075B45]" />
+              <span className="hidden sm:inline">Export</span> Excel
             </button>
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 transition-all cursor-pointer active:scale-95"
+              className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 transition-all cursor-pointer active:scale-95"
               title="Refresh Data"
               aria-label="Refresh Data"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#075B45]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#075B45]' : ''}`} />
             </button>
           </div>
         </div>
       </section>
 
       {/* =========================================================
-          2. 4 KARTU METRIK KPI UTAMA
+          2. 4 KARTU METRIK KPI UTAMA (SLEEK & PROPORSIONAL)
          ========================================================= */}
-      <section aria-label="Ringkasan Statistik" className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <section aria-label="Ringkasan Statistik" className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <button
           type="button"
           onClick={() => handleJumpWithQuery('')}
-          className="text-left bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-[#075B45]/40 hover:shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
+          className="text-left bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:border-[#075B45]/40 hover:shadow-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center shrink-0 border border-[#075B45]/15 group-hover:scale-105 transition-transform">
-            <Users className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center shrink-0 border border-[#075B45]/15 group-hover:scale-105 transition-transform">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
               Total Delegasi
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-tight block mt-1">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-tight block mt-0.5">
               {totalPeserta}
             </span>
-            <span className="text-[11px] font-semibold text-[#075B45] block mt-0.5 truncate">
-              {totalPutra} Putra • {totalPutri} Putri
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[#075B45] block mt-0.5 truncate">
+              {totalPutra} Pa • {totalPutri} Pi
             </span>
           </div>
         </button>
@@ -391,19 +391,19 @@ export default function AdminDashboard({
         <button
           type="button"
           onClick={() => handleJumpWithQuery('')}
-          className="text-left bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-400/50 hover:shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
+          className="text-left bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:border-emerald-400/50 hover:shadow-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/70 group-hover:scale-105 transition-transform">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/70 group-hover:scale-105 transition-transform">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
               Terverifikasi
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-tight block mt-1">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-tight block mt-0.5">
               {totalTerverifikasi}
             </span>
-            <span className="text-[11px] font-semibold text-emerald-700 block mt-0.5 truncate">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 block mt-0.5 truncate">
               {pctTerverifikasi}% Berkas Sah
             </span>
           </div>
@@ -412,20 +412,20 @@ export default function AdminDashboard({
         <button
           type="button"
           onClick={() => handleJumpWithQuery('')}
-          className="text-left bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-amber-400/60 hover:shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
+          className="text-left bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:border-amber-400/60 hover:shadow-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/70 group-hover:scale-105 transition-transform">
-            <Clock className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/70 group-hover:scale-105 transition-transform">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Antrean Pending
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              Pending
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-tight block mt-1 font-mono">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-tight block mt-0.5 font-mono">
               {totalPending}
             </span>
-            <span className="text-[11px] font-semibold text-amber-700 block mt-0.5 truncate">
-              {totalPending > 0 ? 'Perlu dicek panitia' : 'Semua telah dicek'}
+            <span className="text-[10px] sm:text-[11px] font-semibold text-amber-700 block mt-0.5 truncate">
+              {totalPending > 0 ? 'Perlu cek' : 'Selesai'}
             </span>
           </div>
         </button>
@@ -433,52 +433,53 @@ export default function AdminDashboard({
         <button
           type="button"
           onClick={() => handleJumpWithQuery('')}
-          className="text-left bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-[#D9B45B] hover:shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
+          className="text-left bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:border-[#D9B45B] hover:shadow-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 group"
         >
-          <div className="w-12 h-12 rounded-2xl bg-[#FCF6E5] text-[#9A7418] flex items-center justify-center shrink-0 border border-[#D9B45B]/40 group-hover:scale-105 transition-transform">
-            <Trophy className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#FCF6E5] text-[#9A7418] flex items-center justify-center shrink-0 border border-[#D9B45B]/40 group-hover:scale-105 transition-transform">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
-              Nomor Peserta
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 block tracking-wider uppercase leading-none">
+              No. Peserta
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-tight block mt-1 font-mono">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-tight block mt-0.5 font-mono">
               {totalDiundi}
             </span>
-            <span className="text-[11px] font-semibold text-[#9A7418] block mt-0.5 truncate">
-              {pctDiundi}% Sudah Diundi
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[#9A7418] block mt-0.5 truncate">
+              {pctDiundi}% Terundi
             </span>
           </div>
         </button>
       </section>
 
       {/* =========================================================
-          3. MATRIKS KEPATUHAN KELAS DINIYAH (DINAMIS)
+          3. MATRIKS KEPATUHAN KELAS DINIYAH (COMPACT & RESPONSIVE)
          ========================================================= */}
-      <section className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <section className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs p-3.5 sm:p-5 space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
                 Matriks Kepatuhan Kelas Diniyah
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15">
-                Target: {targetKuota} Delegasi / Kelas
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15">
+                Target: {targetKuota}/Kelas
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Pantau pengisian delegasi tiap kelas. Klik Kirim WA untuk mengirim pengingat resmi ke Wali Kelas.
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Pantau pengisian delegasi tiap kelas dan kirim pengingat WhatsApp resmi.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* Tab Filter Swipeable di Layar HP */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-1 px-1">
             <button
               type="button"
               onClick={() => handleFilterChange('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 matrixFilter === 'ALL'
-                  ? 'bg-[#075B45] text-white shadow-xs'
-                  : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70'
+                  ? 'bg-[#075B45] text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
               }`}
             >
               Semua ({complianceMatrix.length})
@@ -487,10 +488,10 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => handleFilterChange('ula')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   matrixFilter === 'ula'
-                    ? 'bg-[#075B45] text-white shadow-xs'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#075B45] text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
                 }`}
               >
                 Ula ({countUlaKelas})
@@ -500,10 +501,10 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => handleFilterChange('wustho')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   matrixFilter === 'wustho'
-                    ? 'bg-[#075B45] text-white shadow-xs'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#075B45] text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
                 }`}
               >
                 Wustho ({countWusthoKelas})
@@ -513,10 +514,10 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => handleFilterChange('ulya')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   matrixFilter === 'ulya'
-                    ? 'bg-[#075B45] text-white shadow-xs'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#075B45] text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
                 }`}
               >
                 Ulya ({countUlyaKelas})
@@ -526,10 +527,10 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => handleFilterChange('mhq')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   matrixFilter === 'mhq'
-                    ? 'bg-[#075B45] text-white shadow-xs'
-                    : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#075B45] text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
                 }`}
               >
                 MHQ ({countMhqKelas})
@@ -538,9 +539,9 @@ export default function AdminDashboard({
             <button
               type="button"
               onClick={() => handleFilterChange('incomplete')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 matrixFilter === 'incomplete'
-                  ? 'bg-rose-600 text-white shadow-xs'
+                  ? 'bg-rose-600 text-white shadow-2xs'
                   : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60'
               }`}
             >
@@ -549,104 +550,97 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        {/* Ringkasan Status Kepatuhan */}
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#075B45]" />
+        {/* Ringkasan Status Kepatuhan Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-1 px-1 text-xs">
+          <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-semibold whitespace-nowrap text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#075B45]" />
             <span>{countLengkap} Lengkap (&ge;{targetKuota})</span>
           </div>
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/70 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+          <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/70 font-semibold whitespace-nowrap text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             <span>{countSebagian} Sebagian (1–{Math.max(1, targetKuota - 1)})</span>
           </div>
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-rose-50 text-rose-800 border border-rose-200/70 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
+          <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200/70 font-semibold whitespace-nowrap text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             <span>{countBelum} Belum Mendaftar</span>
           </div>
         </div>
 
-        {/* Grid 8 Kartu Kelas per Halaman */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
+        {/* Grid 8 Kartu Kelas per Halaman (Compact & Rapi) */}
+        <div className="grid grid-cols-1 min-[520px]:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 pt-0.5">
           {pagedCompliance.map(item => {
             const pctFill = Math.min(100, Math.round((item.totalCount / targetKuota) * 100));
 
             return (
               <div
                 key={item.kelas || item.no}
-                className="bg-slate-50/70 hover:bg-white rounded-2xl p-4 border border-slate-200/80 hover:border-[#075B45]/30 transition-all flex flex-col justify-between space-y-3"
+                className="bg-slate-50/80 hover:bg-white rounded-xl p-3 border border-slate-200/80 hover:border-[#075B45]/30 transition-all flex flex-col justify-between space-y-2.5 shadow-2xs"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[10px] font-mono font-bold text-slate-400">
-                      #{String(item.no).padStart(2, '0')}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#EAF4F0] text-[#075B45]">
-                      {item.tingkatLabel}
-                    </span>
-                  </div>
-
-                  <h3 className="font-extrabold text-slate-900 text-sm leading-snug mt-1.5 truncate" title={item.kelas}>
-                    {item.kelas}
-                  </h3>
-
-                  <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 font-medium mt-1 truncate" title={item.nama}>
-                    <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{item.nama}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-slate-600">Terdaftar</span>
-                    <span className="font-bold text-slate-900 font-mono tabular-nums">
-                      {item.totalCount} / {targetKuota}
-                    </span>
-                  </div>
-
-                  <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 rounded-full ${
-                        item.status === 'LENGKAP'
-                          ? 'bg-[#075B45]'
-                          : item.status === 'SEBAGIAN'
-                          ? 'bg-amber-500'
-                          : 'bg-rose-400'
-                      }`}
-                      style={{ width: `${item.totalCount === 0 ? 4 : pctFill}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-0.5">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
+                      <span className="font-mono font-bold">#{String(item.no).padStart(2, '0')}</span>
+                      <span>•</span>
+                      <span className="text-[#075B45] font-bold">{item.tingkatLabel}</span>
+                    </div>
+                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold shrink-0 ${
                       item.status === 'LENGKAP'
                         ? 'bg-emerald-100 text-[#054736]'
                         : item.status === 'SEBAGIAN'
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-rose-100 text-rose-800'
                     }`}>
-                      {item.status === 'LENGKAP' ? 'LENGKAP' : item.status === 'SEBAGIAN' ? 'SEBAGIAN' : 'BELUM ADA'}
+                      {item.status === 'LENGKAP' ? 'LENGKAP' : item.status === 'SEBAGIAN' ? 'SEBAGIAN' : '0 KUOTA'}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-500 tabular-nums">
-                      {item.verifiedCount} Sah
-                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug mt-1 truncate" title={item.kelas}>
+                    {item.kelas}
+                  </h3>
+
+                  <div className="flex items-center space-x-1 text-[10.5px] text-slate-500 font-medium mt-0.5 truncate" title={item.nama}>
+                    <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{item.nama}</span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200/70 flex items-center space-x-2">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10.5px]">
+                    <span className="font-medium text-slate-500">Kuota Terdaftar</span>
+                    <span className="font-bold text-slate-800 font-mono tabular-nums">
+                      {item.totalCount}/{targetKuota} <span className="text-slate-400 font-normal">({item.verifiedCount} Sah)</span>
+                    </span>
+                  </div>
+
+                  <div className="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-400 rounded-full ${
+                        item.status === 'LENGKAP'
+                          ? 'bg-[#075B45]'
+                          : item.status === 'SEBAGIAN'
+                          ? 'bg-amber-500'
+                          : 'bg-rose-400'
+                      }`}
+                      style={{ width: `${item.totalCount === 0 ? 3 : pctFill}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-1.5 border-t border-slate-200/60 flex items-center space-x-1.5">
                   <button
                     type="button"
                     onClick={() => handleSendReminderWA(item)}
-                    className="flex-1 px-2.5 py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white text-[11px] font-bold transition-all shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                    className="flex-1 py-1 px-2 rounded-lg bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white text-[10.5px] font-bold transition-all shadow-2xs flex items-center justify-center space-x-1 cursor-pointer"
                     title={`Kirim WhatsApp Pengingat ke ${item.nama}`}
                   >
-                    <WhatsAppIcon variant="white" className="w-3.5 h-3.5 text-white shrink-0" />
+                    <WhatsAppIcon variant="white" className="w-3 h-3 text-white shrink-0" />
                     <span>Kirim WA</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleJumpWithQuery(item.kelas)}
-                    className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-700 text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
+                    className="py-1 px-2.5 rounded-lg bg-white hover:bg-slate-100 active:scale-95 text-slate-700 text-[10.5px] font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs"
                     title="Lihat Santri Kelas Ini"
                   >
                     Lihat
@@ -657,22 +651,22 @@ export default function AdminDashboard({
           })}
         </div>
 
-        {/* Paginasi Matriks */}
-        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs text-slate-500 font-medium">
-            Menampilkan <strong className="text-slate-800">{startMatrixIndex}–{endMatrixIndex}</strong> dari{' '}
-            <strong className="text-slate-800">{filteredCompliance.length}</strong> Kelas Diniyah
+        {/* Paginasi Matriks Ringkas */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="text-[11px] text-slate-500 font-medium">
+            Kelas <strong className="text-slate-800">{startMatrixIndex}–{endMatrixIndex}</strong> dari{' '}
+            <strong className="text-slate-800">{filteredCompliance.length}</strong>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
             <button
               type="button"
               onClick={() => handlePageChange(currentSafePage - 1)}
               disabled={currentSafePage === 1}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 cursor-pointer shadow-2xs"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Sebelumnya</span>
+              <span className="hidden sm:inline">Sebelumnya</span>
             </button>
 
             <div className="flex items-center space-x-1">
@@ -681,9 +675,9 @@ export default function AdminDashboard({
                   key={pageNo}
                   type="button"
                   onClick={() => handlePageChange(pageNo)}
-                  className={`w-7 h-7 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`w-6.5 h-6.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     pageNo === currentSafePage
-                      ? 'bg-[#075B45] text-white shadow-xs'
+                      ? 'bg-[#075B45] text-white shadow-2xs'
                       : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -696,9 +690,9 @@ export default function AdminDashboard({
               type="button"
               onClick={() => handlePageChange(currentSafePage + 1)}
               disabled={currentSafePage === totalMatrixPages}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#075B45] text-white hover:bg-[#054736] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 cursor-pointer shadow-xs"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#075B45] text-white hover:bg-[#054736] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 cursor-pointer shadow-2xs"
             >
-              <span>Lanjutkan</span>
+              <span className="hidden sm:inline">Lanjutkan</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -708,46 +702,46 @@ export default function AdminDashboard({
       {/* =========================================================
           4. SEBARAN JENJANG & CABANG LOMBA + DATA SANTRI TERKINI
          ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-5">
         {/* KIRI (5 KOLOM): SEBARAN PER JENJANG & CABANG LOMBA */}
-        <section className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-5">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center border border-[#075B45]/15">
+        <section className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3.5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center border border-[#075B45]/15">
                   <Layers className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight">
                     Sebaran Jenjang & Cabang
                   </h3>
-                  <span className="text-[11px] text-slate-400">
-                    Klik untuk saring di Data Santri
+                  <span className="text-[10.5px] text-slate-400">
+                    Saring cepat delegasi lomba
                   </span>
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-[#9A7418] bg-[#FCF6E5] px-2.5 py-1 rounded-xl border border-[#D9B45B]/40">
+              <span className="text-[10px] font-bold text-[#9A7418] bg-[#FCF6E5] px-2 py-0.5 rounded-lg border border-[#D9B45B]/40">
                 {branchSummary.length} Cabang
               </span>
             </div>
 
             {/* Ringkasan per Jenjang: Ula, Wustho, Ulya, MHQ */}
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {jenjangSummary.map(j => (
                 <button
                   key={j.key}
                   type="button"
                   onClick={() => handleJumpWithQuery(j.keyword)}
-                  className="text-left p-3 rounded-2xl bg-slate-50/80 hover:bg-[#EAF4F0]/70 border border-slate-200/70 hover:border-[#075B45]/30 transition-all cursor-pointer group"
+                  className="text-left p-2.5 rounded-xl bg-slate-50/80 hover:bg-[#EAF4F0]/70 border border-slate-200/70 hover:border-[#075B45]/30 transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-600 group-hover:text-[#054736] truncate">
+                    <span className="text-[10.5px] font-bold text-slate-600 group-hover:text-[#054736] truncate">
                       {j.label}
                     </span>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#075B45] shrink-0" />
+                    <ArrowUpRight className="w-3 h-3 text-slate-300 group-hover:text-[#075B45] shrink-0" />
                   </div>
-                  <div className="flex items-baseline justify-between mt-1">
-                    <span className="text-lg font-black text-slate-900 tabular-nums">{j.total}</span>
+                  <div className="flex items-baseline justify-between mt-0.5">
+                    <span className="text-base font-black text-slate-900 tabular-nums">{j.total}</span>
                     <span className="text-[10px] font-semibold text-[#075B45] tabular-nums">{j.sah} Sah</span>
                   </div>
                 </button>
@@ -755,16 +749,16 @@ export default function AdminDashboard({
             </div>
 
             {/* Partisipasi per Cabang Lomba */}
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span className="inline-flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-[#D9B45B]" />
+            <div className="space-y-2 pt-0.5">
+              <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1">
+                  <Award className="w-3 h-3 text-[#D9B45B]" />
                   <span>Partisipasi Cabang Lomba</span>
                 </span>
                 <span>Peserta</span>
               </div>
 
-              <div className="space-y-2 max-h-[290px] overflow-y-auto pr-1 admin-sidebar-scroll">
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 admin-sidebar-scroll">
                 {branchSummary.map(branch => {
                   const barPct = branch.total === 0 ? 0 : Math.max(6, Math.round((branch.total / maxBranchCount) * 100));
                   return (
@@ -772,9 +766,9 @@ export default function AdminDashboard({
                       key={branch.id}
                       type="button"
                       onClick={() => handleJumpWithQuery(branch.searchKeyword)}
-                      className="w-full text-left group space-y-1 p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="w-full text-left group space-y-0.5 p-1 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-[11px]">
                         <span className="font-bold text-slate-700 group-hover:text-[#075B45] truncate pr-2">
                           {branch.name}
                         </span>
@@ -782,9 +776,9 @@ export default function AdminDashboard({
                           {branch.total}
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#075B45] to-[#D9B45B] transition-all duration-500"
+                          className="h-full rounded-full bg-gradient-to-r from-[#075B45] to-[#D9B45B] transition-all duration-400"
                           style={{ width: `${barPct}%` }}
                         />
                       </div>
@@ -796,19 +790,19 @@ export default function AdminDashboard({
           </div>
         </section>
 
-        {/* KANAN (7 KOLOM): DATA SANTRI TERDAFTAR TERKINI */}
-        <section className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center border border-[#075B45]/15">
+        {/* KANAN (7 KOLOM): DATA SANTRI TERDAFTAR TERKINI (TABEL HORIZONTAL SWIPE RAPI) */}
+        <section className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-[#EAF4F0] text-[#075B45] flex items-center justify-center border border-[#075B45]/15">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight">
                     Data Santri Terdaftar Terkini
                   </h3>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[10.5px] text-slate-400">
                     5 delegasi santri pendaftar terakhir
                   </span>
                 </div>
@@ -823,21 +817,22 @@ export default function AdminDashboard({
               </button>
             </div>
 
-            <div className="dashboard-recent-wrapper" tabIndex={0} role="region" aria-label="Tabel Santri Terdaftar Terkini">
+            {/* Tabel Scrollable di Layar HP tanpa kartu bengkak */}
+            <div className="dashboard-recent-wrapper border border-slate-200/70 rounded-xl overflow-x-auto">
               <table className="dashboard-recent-table text-left text-xs">
                 <thead>
-                  <tr className="text-slate-400 font-semibold text-[11px] border-b border-slate-100">
-                    <th className="pb-3 font-semibold">Nama Santri</th>
-                    <th className="pb-3 font-semibold">Kelas Diniyah</th>
-                    <th className="pb-3 font-semibold">Cabang Lomba</th>
-                    <th className="pb-3 font-semibold text-center">No. Peserta</th>
-                    <th className="pb-3 font-semibold text-center">Status</th>
+                  <tr className="bg-slate-50 text-slate-500 font-semibold text-[11px] border-b border-slate-200/70">
+                    <th className="py-2.5 px-3 font-semibold">Nama Santri</th>
+                    <th className="py-2.5 px-3 font-semibold">Kelas Diniyah</th>
+                    <th className="py-2.5 px-3 font-semibold">Cabang Lomba</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">No. Peserta</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {recentSantri.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="py-10 text-center text-slate-400 text-xs">
+                      <td colSpan="5" className="py-8 text-center text-slate-400 text-xs">
                         Belum ada santri yang didaftarkan.
                       </td>
                     </tr>
@@ -846,40 +841,38 @@ export default function AdminDashboard({
                       const isPutri = item.Jenis_Kelamin === 'P';
                       return (
                         <tr key={item.ID_Pendaftaran || idx} className="hover:bg-slate-50/80 transition-colors">
-                          <th scope="row" className="py-3 pr-2 font-normal">
-                            <span className="font-bold text-slate-900 block truncate max-w-[170px]">
+                          <td className="py-2.5 px-3 font-normal whitespace-nowrap">
+                            <span className="font-bold text-slate-900 block truncate max-w-[160px]">
                               {item.Nama_Lengkap}
                             </span>
                             <span className="text-[10px] text-slate-400 font-mono">
                               {item.ID_Pendaftaran}
                             </span>
-                          </th>
-                          <td data-label="Kelas Diniyah" className="py-3 text-slate-600 font-medium">
-                            <div className="flex flex-col sm:items-start items-end">
-                              <span className="truncate max-w-[140px]">
-                                {item.Kelas_Kategori || item.Kelas_Diniyah}
-                              </span>
-                              <span className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                isPutri ? 'bg-rose-50 text-rose-700' : 'bg-[#EAF4F0] text-[#075B45]'
-                              }`}>
-                                {isPutri ? 'Putri' : 'Putra'}
-                              </span>
-                            </div>
                           </td>
-                          <td data-label="Cabang Lomba" className="py-3 text-slate-700 font-semibold">
-                            <span className="truncate block max-w-[140px]">{item.Cabang_Lomba}</span>
+                          <td className="py-2.5 px-3 text-slate-600 font-medium whitespace-nowrap">
+                            <span className="truncate block max-w-[130px]">
+                              {item.Kelas_Kategori || item.Kelas_Diniyah}
+                            </span>
+                            <span className={`inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                              isPutri ? 'bg-rose-50 text-rose-700' : 'bg-[#EAF4F0] text-[#075B45]'
+                            }`}>
+                              {isPutri ? 'Putri' : 'Putra'}
+                            </span>
                           </td>
-                          <td data-label="No. Peserta" className="py-3 text-center font-mono">
+                          <td className="py-2.5 px-3 text-slate-700 font-semibold whitespace-nowrap">
+                            <span className="truncate block max-w-[130px]">{item.Cabang_Lomba}</span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-mono whitespace-nowrap">
                             {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
-                              <span className="px-2 py-0.5 rounded-lg bg-[#FCF6E5] text-[#9A7418] font-bold text-[11px] border border-[#D9B45B]/50 tabular-nums">
+                              <span className="px-2 py-0.5 rounded-md bg-[#FCF6E5] text-[#9A7418] font-bold text-[10.5px] border border-[#D9B45B]/50 tabular-nums">
                                 {String(item.Nomor_Urut).padStart(3, '0')}
                               </span>
                             ) : (
                               <span className="text-slate-300 text-xs">-</span>
                             )}
                           </td>
-                          <td data-label="Status" className="py-3 text-center">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
                               item.Status === 'Terverifikasi'
                                 ? 'bg-[#EAF4F0] text-[#054736] border border-[#075B45]/20'
                                 : item.Status === 'Ditolak'
@@ -896,10 +889,13 @@ export default function AdminDashboard({
                 </tbody>
               </table>
             </div>
+            <p className="text-[10px] text-slate-400 sm:hidden text-center">
+              Geser tabel ke kanan untuk melihat nomor peserta & status &rarr;
+            </p>
           </div>
 
-          <div className="pt-2.5 flex items-center justify-between border-t border-slate-100 text-[11px] text-slate-400">
-            <span>Terurut dari pendaftaran paling baru</span>
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100 text-[10.5px] text-slate-400">
+            <span>Terurut dari pendaftar paling baru</span>
             <span className="font-semibold text-slate-600 tabular-nums">
               Total {totalPeserta} delegasi
             </span>
