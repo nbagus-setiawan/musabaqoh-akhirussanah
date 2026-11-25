@@ -285,7 +285,7 @@ export default function AdminSidebar({
           {/* Kelompok 1: Menu Utama */}
           <div className="space-y-1">
             {!compact && (
-              <div className="px-2.5 pb-1 text-[10px] font-bold tracking-wider text-emerald-300/70 uppercase flex items-center justify-between">
+              <div className="px-2.5 pb-1 text-[10px] font-extrabold tracking-wider text-[#D9B45B] uppercase flex items-center justify-between">
                 <span>Menu Utama</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D9B45B]" aria-hidden="true" />
               </div>
@@ -307,13 +307,13 @@ export default function AdminSidebar({
                       compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
                     } ${
                       isActive
-                        ? 'bg-[#075B45] text-white shadow-xs font-bold border border-[#D9B45B]/40 ring-1 ring-white/15'
-                        : 'text-emerald-100/85 hover:text-white hover:bg-white/10 font-semibold'
+                        ? 'bg-white/20 text-white shadow-xs font-bold border border-[#D9B45B] ring-1 ring-[#D9B45B]/40'
+                        : 'text-white/90 hover:text-white hover:bg-white/10 font-medium'
                     }`}
                   >
                     <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
                       <Icon className={`w-4 h-4 shrink-0 transition-colors ${
-                        isActive ? 'text-[#D9B45B]' : 'text-emerald-300 group-hover:text-white'
+                        isActive ? 'text-[#D9B45B]' : 'text-[#D9B45B]/80 group-hover:text-[#D9B45B]'
                       }`} />
                       {!compact && <span className="truncate">{item.label}</span>}
                     </div>
@@ -321,18 +321,18 @@ export default function AdminSidebar({
                     {!compact && item.count !== undefined && (
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tabular-nums shrink-0 ${
                         isActive
-                          ? 'bg-[#D9B45B] text-slate-950 font-bold'
-                          : 'bg-black/25 text-emerald-200 border border-white/10 group-hover:bg-white/15 group-hover:text-white'
+                          ? 'bg-[#D9B45B] text-slate-950 font-black'
+                          : 'bg-white/15 text-white border border-white/25 group-hover:bg-[#D9B45B] group-hover:text-slate-950'
                       }`}>
                         {item.count}
                       </span>
                     )}
 
                     {!compact && item.badge && (
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wide shrink-0 ${
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide shrink-0 ${
                         isActive
-                          ? 'bg-[#D9B45B] text-slate-950 font-extrabold'
-                          : 'bg-white/10 text-[#D9B45B] border border-[#D9B45B]/30'
+                          ? 'bg-[#D9B45B] text-slate-950 font-black'
+                          : 'bg-[#D9B45B]/20 text-[#D9B45B] border border-[#D9B45B]/50'
                       }`}>
                         {item.badge}
                       </span>
@@ -362,13 +362,13 @@ export default function AdminSidebar({
                     compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
                   } ${
                     isPencatatanActive
-                      ? 'bg-white/15 text-white border border-[#D9B45B]/40 font-bold'
-                      : 'text-emerald-100/85 hover:text-white hover:bg-white/10 font-semibold'
+                      ? 'bg-white/20 text-white border border-[#D9B45B] font-bold ring-1 ring-[#D9B45B]/30'
+                      : 'text-white/90 hover:text-white hover:bg-white/10 font-medium'
                   }`}
                 >
                   <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
                     <ClipboardList className={`w-4 h-4 shrink-0 transition-colors ${
-                      isPencatatanActive ? 'text-[#D9B45B]' : 'text-emerald-300 group-hover:text-white'
+                      isPencatatanActive ? 'text-[#D9B45B]' : 'text-[#D9B45B]/80 group-hover:text-[#D9B45B]'
                     }`} />
                     {!compact && <span className="truncate">Pencatatan</span>}
                   </div>
@@ -376,12 +376,12 @@ export default function AdminSidebar({
                   {!compact && (
                     <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
                       isPencatatanOpen ? 'rotate-0' : '-rotate-90'
-                    } ${isPencatatanActive ? 'text-[#D9B45B]' : 'text-emerald-300'}`} />
+                    } ${isPencatatanActive ? 'text-[#D9B45B]' : 'text-white/70'}`} />
                   )}
                 </button>
 
                 {!compact && isPencatatanOpen && (
-                  <div id="submenu-pencatatan" className="pl-3 ml-3 border-l border-white/20 space-y-1">
+                  <div id="submenu-pencatatan" className="pl-3 ml-3 border-l-2 border-[#D9B45B]/40 space-y-1">
                     {pencatatanSubMenus.map(sub => {
                       const SubIcon = sub.icon;
                       const isSubActive = activeView === sub.id;
@@ -393,20 +393,20 @@ export default function AdminSidebar({
                           aria-current={isSubActive ? 'page' : undefined}
                           className={`w-full group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-150 text-left cursor-pointer ${
                             isSubActive
-                              ? 'bg-[#075B45] text-white shadow-xs font-bold border border-[#D9B45B]/40'
-                              : 'text-emerald-200/80 hover:text-white hover:bg-white/10 font-semibold'
+                              ? 'bg-white/20 text-white shadow-xs font-bold border border-[#D9B45B]'
+                              : 'text-white/80 hover:text-white hover:bg-white/10 font-medium'
                           }`}
                         >
                           <div className="flex items-center space-x-2 min-w-0">
                             <SubIcon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                              isSubActive ? 'text-[#D9B45B]' : 'text-emerald-300 group-hover:text-white'
+                              isSubActive ? 'text-[#D9B45B]' : 'text-[#D9B45B]/70 group-hover:text-[#D9B45B]'
                             }`} />
                             <span className="truncate">{sub.label}</span>
                           </div>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tabular-nums shrink-0 ${
                             isSubActive
-                              ? 'bg-[#D9B45B] text-slate-950'
-                              : 'bg-black/25 text-emerald-200 border border-white/10 group-hover:bg-white/15 group-hover:text-white'
+                              ? 'bg-[#D9B45B] text-slate-950 font-black'
+                              : 'bg-white/15 text-white border border-white/25 group-hover:bg-[#D9B45B] group-hover:text-slate-950'
                           }`}>
                             {sub.count}
                           </span>
@@ -422,7 +422,7 @@ export default function AdminSidebar({
           {/* Kelompok 2: Sistem & Database */}
           <div className="space-y-1 pt-2 border-t border-white/10">
             {!compact && (
-              <div className="px-2.5 pt-1 pb-1 text-[10px] font-bold tracking-wider text-emerald-300/70 uppercase">
+              <div className="px-2.5 pt-1 pb-1 text-[10px] font-extrabold tracking-wider text-[#D9B45B] uppercase">
                 Sistem
               </div>
             )}
@@ -443,22 +443,22 @@ export default function AdminSidebar({
                       compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2.5 text-left'
                     } ${
                       isActive
-                        ? 'bg-[#075B45] text-white shadow-xs font-bold border border-[#D9B45B]/40 ring-1 ring-white/15'
-                        : 'text-emerald-100/85 hover:text-white hover:bg-white/10 font-semibold'
+                        ? 'bg-white/20 text-white shadow-xs font-bold border border-[#D9B45B] ring-1 ring-[#D9B45B]/40'
+                        : 'text-white/90 hover:text-white hover:bg-white/10 font-medium'
                     }`}
                   >
                     <div className={`flex items-center min-w-0 ${compact ? 'justify-center' : 'space-x-2.5'}`}>
                       <Icon className={`w-4 h-4 shrink-0 transition-colors ${
-                        isActive ? 'text-[#D9B45B]' : 'text-emerald-300 group-hover:text-white'
+                        isActive ? 'text-[#D9B45B]' : 'text-[#D9B45B]/80 group-hover:text-[#D9B45B]'
                       }`} />
                       {!compact && <span className="truncate">{item.label}</span>}
                     </div>
 
                     {!compact && (
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold shrink-0 ${
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black shrink-0 ${
                         isActive
-                          ? 'bg-[#D9B45B] text-slate-950 font-extrabold'
-                          : 'bg-white/10 text-[#D9B45B] border border-[#D9B45B]/30'
+                          ? 'bg-[#D9B45B] text-slate-950 font-black'
+                          : 'bg-[#D9B45B]/20 text-[#D9B45B] border border-[#D9B45B]/50'
                       }`}>
                         {item.badge}
                       </span>
@@ -476,16 +476,16 @@ export default function AdminSidebar({
             href="/"
             title={compact ? 'Portal Formulir Publik' : undefined}
             aria-label="Portal Formulir Publik"
-            className={`w-full flex items-center rounded-xl text-xs font-semibold text-emerald-200 hover:text-white hover:bg-white/10 transition-colors group ${
+            className={`w-full flex items-center rounded-xl text-xs font-semibold text-white/90 hover:text-white hover:bg-white/10 transition-colors group ${
               compact ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2'
             }`}
           >
             <span className={`flex items-center ${compact ? 'justify-center' : 'space-x-2'}`}>
-              <ExternalLink className="w-4 h-4 text-emerald-300 group-hover:text-[#D9B45B] transition-colors shrink-0" />
+              <ExternalLink className="w-4 h-4 text-[#D9B45B] group-hover:text-white transition-colors shrink-0" />
               {!compact && <span>Portal Publik</span>}
             </span>
             {!compact && (
-              <ChevronRight className="w-3.5 h-3.5 text-emerald-300 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-3.5 h-3.5 text-white/60 group-hover:translate-x-0.5 transition-transform" />
             )}
           </a>
 
@@ -494,11 +494,11 @@ export default function AdminSidebar({
             onClick={onLogout}
             title={compact ? 'Keluar / Logout' : undefined}
             aria-label="Keluar dari Panel Admin"
-            className={`w-full flex items-center rounded-xl text-xs font-semibold text-rose-300 hover:text-white hover:bg-rose-500/20 transition-colors cursor-pointer ${
+            className={`w-full flex items-center rounded-xl text-xs font-bold text-rose-200 hover:text-white hover:bg-rose-600/30 transition-colors cursor-pointer ${
               compact ? 'justify-center px-2 py-2.5' : 'space-x-2 px-3 py-2 text-left'
             }`}
           >
-            <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
+            <LogOut className="w-4 h-4 text-rose-300 shrink-0" />
             {!compact && <span>Logout</span>}
           </button>
         </div>

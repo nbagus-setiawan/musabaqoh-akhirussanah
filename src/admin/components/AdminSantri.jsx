@@ -912,108 +912,104 @@ export default function AdminSantri({
   const statusCards = [
     {
       id: 'ALL',
-      label: 'Semua Pendaftar',
-      sublabel: 'Semua delegasi masuk',
+      shortLabel: 'Semua',
+      cleanSublabel: `${countAll} Delegasi`,
       count: countAll,
       icon: Users,
-      accent: 'blue',
-      ringClass: 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30',
-      iconClass: 'bg-blue-50 text-blue-600 border-blue-100/80',
-      subClass: 'text-blue-600'
+      ringClass: 'border-[#075B45] ring-2 ring-[#075B45]/20 bg-[#EAF4F0]/40',
+      iconClass: 'bg-[#EAF4F0] text-[#075B45] border-[#075B45]/20',
+      subClass: 'text-[#075B45]'
     },
     {
       id: 'Terverifikasi',
-      label: 'Diterima / Lolos',
-      sublabel: 'Siap diundi / tanding',
+      shortLabel: 'Sah / Lolos',
+      cleanSublabel: `${countVerified} Siap Tanding`,
       count: countVerified,
       icon: CheckCircle2,
-      accent: 'emerald',
-      ringClass: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/30',
-      iconClass: 'bg-emerald-50 text-emerald-600 border-emerald-100/80',
-      subClass: 'text-emerald-600'
+      ringClass: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40',
+      iconClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      subClass: 'text-emerald-700'
     },
     {
       id: 'Pending',
-      label: 'Menunggu Verifikasi',
-      sublabel: 'Perlu dicek panitia',
+      shortLabel: 'Pending',
+      cleanSublabel: countPending > 0 ? `${countPending} Perlu Cek` : 'Nihil Antrean',
       count: countPending,
       icon: Clock,
-      accent: 'amber',
-      ringClass: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/30',
-      iconClass: 'bg-amber-50 text-amber-600 border-amber-100/80',
-      subClass: 'text-amber-600'
+      ringClass: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40',
+      iconClass: 'bg-amber-50 text-amber-600 border-amber-200',
+      subClass: 'text-amber-700'
     },
     {
       id: 'Ditolak',
-      label: 'Ditolak / Batal',
-      sublabel: 'Tidak memenuhi syarat',
+      shortLabel: 'Ditolak',
+      cleanSublabel: countRejected > 0 ? `${countRejected} Berkas Gugur` : 'Nihil Ditolak',
       count: countRejected,
       icon: AlertCircle,
-      accent: 'rose',
-      ringClass: 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30',
-      iconClass: 'bg-rose-50 text-rose-600 border-rose-100/80',
-      subClass: 'text-rose-600'
+      ringClass: 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40',
+      iconClass: 'bg-rose-50 text-rose-600 border-rose-200',
+      subClass: 'text-rose-700'
     }
   ];
 
   return (
-    <div className="p-3 sm:p-5 lg:p-7 space-y-4 sm:space-y-5 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="p-3 sm:p-5 lg:p-7 space-y-3 sm:space-y-4 max-w-7xl mx-auto animate-in fade-in duration-200">
       
-      {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        <div className="flex items-start sm:items-center space-x-3.5 min-w-0">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
+      {/* 1. TOP HEADER BANNER (COMPACT & RAPI) */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 relative overflow-hidden">
+        <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/15 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+            <h2 className="text-sm sm:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Data Peserta Santri</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 whitespace-nowrap">
                 {countAll} Santri
               </span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
               Kelola pendaftaran santri, verifikasi berkas, kirim WhatsApp massal penerimaan, dan pengundian nomor peserta.
             </p>
           </div>
         </div>
 
-        {/* Toolbar Aksi (WA Massal, Undi, Unduh PDF) */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Toolbar Aksi (WA Massal, Undi, Unduh PDF) - 1 Baris Rapi di HP */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setIsBulkWaOpen(true)}
-            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
+            className="flex-1 sm:flex-none px-3 py-1.5 sm:py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white font-bold text-xs shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
             title="Kirim pesan WhatsApp massal penerimaan santri"
           >
-            <WhatsAppIcon variant="white" className="w-4 h-4 shrink-0" />
+            <WhatsAppIcon variant="white" className="w-3.5 h-3.5 shrink-0" />
             <span>WA Massal</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenLotteryModal}
-            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-2 transition-all cursor-pointer"
+            className="flex-1 sm:flex-none px-3 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
             title="Undi nomor peserta santri"
           >
-            <Dices className="w-4 h-4 text-white" aria-hidden="true" />
-            <span>Undi Nomor Peserta</span>
+            <Dices className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+            <span>Undian</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenDownloadPdfModal}
-            className="santri-control px-3.5 sm:px-4 py-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center space-x-2 transition-all shadow-2xs cursor-pointer active:scale-95"
+            className="px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-2xs cursor-pointer active:scale-95 whitespace-nowrap"
             title="Pilih tingkat lalu unduh PDF"
           >
-            <FileText className="w-4 h-4 text-rose-600" aria-hidden="true" />
-            <span>Unduh PDF</span>
+            <FileText className="w-3.5 h-3.5 text-rose-600" aria-hidden="true" />
+            <span>PDF</span>
           </button>
         </div>
       </div>
 
-      {/* 2. KARTU FILTER STATUS INTERAKTIF (RINGKAS & MUDAH DIPINDAI) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 2. KARTU FILTER STATUS INTERAKTIF (COMPACT WIDGET LAYOUT - BEBAS BENGKAK) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {statusCards.map((card) => {
           const IconComponent = card.icon;
           const isActive = statusTab === card.id;
@@ -1023,24 +1019,26 @@ export default function AdminSantri({
               type="button"
               aria-pressed={isActive}
               onClick={() => setStatusTab(card.id)}
-              className={`text-left rounded-2xl p-3.5 sm:p-4 border transition-all cursor-pointer flex items-center space-x-3 group ${
+              className={`text-left rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${
                 isActive
                   ? card.ringClass
-                  : 'bg-white border-slate-100 shadow-xs hover:shadow-md hover:border-slate-200'
+                  : 'bg-white border-slate-200/80 shadow-2xs hover:border-[#075B45]/40 hover:shadow-xs'
               }`}
             >
-              <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.iconClass}`}>
-                <IconComponent className="w-5 h-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[10.5px] font-bold text-slate-500 block tracking-wider uppercase leading-tight truncate">
-                  {card.label}
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 tracking-wider uppercase truncate">
+                  {card.shortLabel}
                 </span>
-                <span className="text-lg sm:text-2xl font-black text-slate-900 leading-tight block mt-0.5">
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.iconClass}`}>
+                  <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-none block">
                   {card.count}
                 </span>
-                <span className={`text-[10px] font-semibold block mt-0.5 truncate ${card.subClass}`}>
-                  {card.sublabel}
+                <span className={`text-[10.5px] sm:text-xs font-semibold block mt-1 whitespace-nowrap truncate ${card.subClass}`}>
+                  {card.cleanSublabel}
                 </span>
               </div>
             </button>
@@ -1184,12 +1182,170 @@ export default function AdminSantri({
           </div>
         </search>
 
-        {/* Responsive Table + Stacked Card Fallback (@container) */}
+        {/* Tampilan Kartu Khusus Layar HP (Kompak, Rapi, & Padat Tanpa Garis-Garis Bengkak) */}
+        <div className="block sm:hidden bg-slate-50/60 p-2.5 space-y-2">
+          {filteredData.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 text-xs">
+              Tidak ada data santri yang cocok dengan filter.
+            </div>
+          ) : (
+            paginatedData.map((item, idx) => {
+              const rowKey = getRowKey(item);
+              const isChecked = selectedIds.has(rowKey);
+              const wa08 = normalizePhoneLocal08(item.Nomor_WA);
+              const isPutri = item.Jenis_Kelamin === 'P';
+
+              return (
+                <div
+                  key={`mob-${rowKey}-${idx}`}
+                  className={`rounded-xl p-2.5 border transition-all ${
+                    isChecked
+                      ? 'bg-[#EAF4F0] border-[#075B45] ring-1 ring-[#075B45]/30'
+                      : 'bg-white border-slate-200/80 shadow-2xs'
+                  }`}
+                >
+                  {/* Baris 1: Checkbox + Nama + ID + Gender & No Peserta + Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <label className="inline-flex items-center justify-center cursor-pointer pt-0.5 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleSelectOne(rowKey)}
+                          aria-label={`Pilih ${item.Nama_Lengkap}`}
+                          className="rounded text-[#075B45] focus:ring-[#075B45] w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs leading-snug truncate">
+                          {item.Nama_Lengkap}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mt-0.5">
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            isPutri ? 'bg-rose-50 text-rose-700' : 'bg-[#EAF4F0] text-[#075B45]'
+                          }`}>
+                            {isPutri ? 'Putri' : 'Putra'}
+                          </span>
+                          <span>•</span>
+                          <span>{item.ID_Pendaftaran}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* No Peserta & Status Pill */}
+                    <div className="flex flex-col items-end shrink-0 gap-1">
+                      <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold whitespace-nowrap ${
+                        item.Status === 'Terverifikasi'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : item.Status === 'Ditolak'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {item.Status === 'Terverifikasi' ? 'Sah' : item.Status}
+                      </span>
+                      {item.Nomor_Urut && String(item.Nomor_Urut).trim() !== '' ? (
+                        <span className="px-1.5 py-0.2 rounded bg-[#FCF6E5] text-[#9A7418] font-mono font-bold text-[10px] border border-[#D9B45B]/40 tabular-nums">
+                          #{String(item.Nomor_Urut).padStart(3, '0')}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-400 font-mono">
+                          Belum diundi
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Baris 2: Cabang Lomba & Kelas Diniyah */}
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-slate-100">
+                    <span className="font-bold text-slate-800 truncate mr-2">
+                      {item.Cabang_Lomba}
+                    </span>
+                    <span className="text-slate-500 font-medium truncate text-[10.5px] shrink-0">
+                      {item.Kelas_Kategori || item.Kelas_Diniyah} ({item.Tingkat})
+                    </span>
+                  </div>
+
+                  {/* Baris 3: Wali Kelas & Aksi Panitia */}
+                  <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-100 text-xs">
+                    <div className="flex items-center gap-1.5 text-[10.5px] text-slate-600 truncate mr-2">
+                      <span className="truncate">{item.Wali_Kelas || 'Wali Kelas'}</span>
+                      {wa08 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendWA(item)}
+                          className="p-1 rounded text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0"
+                          title={`Kirim WA ke ${item.Wali_Kelas}`}
+                        >
+                          <WhatsAppIcon variant="brand" className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Tombol Aksi Ringkas */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {item.Status !== 'Terverifikasi' ? (
+                        <button
+                          type="button"
+                          disabled={statusProcessingId === rowKey}
+                          onClick={() => handleQuickStatus(item, 'Terverifikasi')}
+                          className="px-2 py-1 rounded-lg bg-[#075B45] hover:bg-[#054736] text-white text-[10px] font-bold transition-all shadow-2xs"
+                        >
+                          Terima
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={statusProcessingId === rowKey}
+                          onClick={() => handleQuickStatus(item, 'Pending')}
+                          className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold border border-slate-200 transition-all shadow-2xs"
+                        >
+                          Reset
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSantri(item)}
+                        aria-label={`Lihat detail ${item.Nama_Lengkap}`}
+                        className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 cursor-pointer"
+                        title="Lihat Detail"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(item)}
+                        aria-label={`Edit ${item.Nama_Lengkap}`}
+                        className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer"
+                        title="Edit Data"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSantri(item)}
+                        aria-label={`Hapus ${item.Nama_Lengkap}`}
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer"
+                        title="Hapus Data"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tabel Desktop & Tablet (hidden sm:block) */}
         <div
           tabIndex={0}
           role="region"
           aria-labelledby="santri-table-caption"
-          className="santri-table-wrapper"
+          className="hidden sm:block santri-table-wrapper"
         >
           <table className="santri-table text-left text-xs">
             <caption id="santri-table-caption" className="sr-only">
