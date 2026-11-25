@@ -667,26 +667,24 @@ export default function AdminPencatatan({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-7 space-y-5 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-5 lg:p-7 space-y-3 sm:space-y-4 max-w-7xl mx-auto">
 
       {/* =========================================================
-          1. TOP HEADER BANNER & TOMBOL AKSI CEPAT
+          1. TOP HEADER BANNER (COMPACT & RAPI - 1 BARIS AKSI)
           ========================================================= */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center shrink-0">
-            <ClipboardList className="w-6 h-6" />
+      <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 relative overflow-hidden">
+        <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/15 flex items-center justify-center shrink-0">
+            <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                {activeTab === 'pengeluaran' ? 'Pencatatan Pengeluaran Panitia' : 'Pencatatan Kebutuhan Sebelum Hari-H'}
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+            <h2 className="text-sm sm:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>{activeTab === 'pengeluaran' ? 'Catat Pengeluaran Panitia' : 'Catat Kebutuhan Hari-H'}</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 whitespace-nowrap">
                 {activeTab === 'pengeluaran' ? `${statsOut.count} Akun` : `${statsKeb.total} Item`}
               </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+            </h2>
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5 leading-relaxed">
               {activeTab === 'pengeluaran'
                 ? 'Catat nama akun pengeluaran, satuan, harga satuan, qty, dan total biaya serta unduh laporan PDF ber-KOP resmi.'
                 : 'Susun daftar perlengkapan & persiapan sebelum Hari-H beserta status kesiapan dan penanggung jawab panitia.'}
@@ -694,202 +692,166 @@ export default function AdminPencatatan({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Toolbar Aksi - 1 Baris Rapi di HP */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={activeTab === 'pengeluaran' ? openAddPengeluaran : openAddKebutuhan}
-            className="min-h-[42px] px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 sm:py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white font-bold text-xs shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            <span>{activeTab === 'pengeluaran' ? 'Catat Pengeluaran' : 'Tambah Kebutuhan'}</span>
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+            <span>{activeTab === 'pengeluaran' ? '+ Pengeluaran' : '+ Kebutuhan'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setPdfModalOpen(true)}
-            className="min-h-[42px] px-4 py-2 rounded-2xl bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-bold text-xs flex items-center justify-center space-x-1 transition-all shadow-2xs cursor-pointer active:scale-95 whitespace-nowrap"
+            title="Unduh Laporan PDF Resmi"
           >
-            <FileText className="w-4 h-4 text-[#D9B45B]" />
-            <span>Unduh PDF Resmi</span>
+            <FileText className="w-3.5 h-3.5 text-rose-600" />
+            <span>PDF</span>
           </button>
 
           <button
             type="button"
             onClick={handleExportExcel}
-            className="min-h-[42px] px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs flex items-center space-x-1.5 transition-all shadow-2xs cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200/90 bg-white text-emerald-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer active:scale-95"
             title="Ekspor ke Excel (.xlsx)"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span className="hidden sm:inline">Excel</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           <button
             type="button"
             onClick={loadAllPencatatan}
             disabled={isRefreshing}
-            className="min-h-[42px] px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold text-xs flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer active:scale-95"
             title="Segarkan Data"
             aria-label="Segarkan Data Pencatatan"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin text-[#075B45]' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* =========================================================
-          2. SUB-MENU TABS (SINGLE-ROW ACCESSIBLE SWITCHER)
-          ========================================================= */}
-      <div
-        role="tablist"
-        aria-label="Sub menu pencatatan panitia"
-        className="flex items-center gap-2 overflow-x-auto scrollbar-none bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs"
-      >
-        <button
-          type="button"
-          role="tab"
-          id="tab-pengeluaran"
-          aria-selected={activeTab === 'pengeluaran'}
-          onClick={() => switchSubMenu('pengeluaran')}
-          className={`flex-none relative flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border-b-2 ${
-            activeTab === 'pengeluaran'
-              ? 'bg-blue-50/90 text-blue-700 border-blue-600'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent'
-          }`}
-        >
-          <Receipt className="w-4 h-4 shrink-0" />
-          <span>1. Pengeluaran</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-            activeTab === 'pengeluaran' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-          }`}>
-            {statsOut.count}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          id="tab-kebutuhan"
-          aria-selected={activeTab === 'kebutuhan'}
-          onClick={() => switchSubMenu('kebutuhan')}
-          className={`flex-none relative flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border-b-2 ${
-            activeTab === 'kebutuhan'
-              ? 'bg-emerald-50/90 text-emerald-800 border-emerald-600'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-transparent'
-          }`}
-        >
-          <ListChecks className="w-4 h-4 shrink-0" />
-          <span className="sm:hidden">2. Kebutuhan</span>
-          <span className="hidden sm:inline">2. Kebutuhan Sebelum Hari-H</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-            activeTab === 'kebutuhan' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
-          }`}>
-            {statsKeb.total}
-          </span>
-        </button>
-      </div>
-
-      {/* =========================================================
-          PANEL 1: SUB-MENU PENGELUARAN
+          PANEL 1: PENGELUARAN
           ========================================================= */}
       {activeTab === 'pengeluaran' && (
-        <div role="tabpanel" aria-labelledby="tab-pengeluaran" className="space-y-5">
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center shrink-0">
-                <Wallet className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Total Pengeluaran
+        <div className="space-y-3 sm:space-y-4">
+          
+          {/* KPI Summary Cards (Compact 2x2 on Mobile - Bebas Bengkak) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            
+            {/* Card 1: Total Pengeluaran */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                  Total Biaya
                 </span>
-                <span className="text-lg sm:text-xl font-black text-slate-900 tabular-nums block truncate mt-0.5">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                  <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block truncate">
                   {formatRupiah(statsOut.totalNominal)}
                 </span>
-                <span className="text-[10.5px] text-emerald-700 font-semibold block truncate">
-                  Akumulasi seluruh akun
+                <span className="text-[10.5px] sm:text-xs text-emerald-700 font-semibold block truncate mt-0.5">
+                  Akumulasi seluruh pos
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                <Receipt className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
+            {/* Card 2: Total Akun / Pos */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
                   Total Akun / Pos
                 </span>
-                <span className="text-lg sm:text-xl font-black text-slate-900 tabular-nums block mt-0.5">
-                  {statsOut.count} Item
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-blue-50 text-blue-700 border-blue-200">
+                  <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block">
+                  {statsOut.count} <span className="text-xs font-normal text-slate-400">Item</span>
                 </span>
-                <span className="text-[10.5px] text-blue-600 font-semibold block">
-                  Tersimpan rapi di sistem
+                <span className="text-[10.5px] sm:text-xs text-blue-700 font-semibold block truncate mt-0.5">
+                  Tersimpan di sistem
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                <Package className="w-5 h-5" />
+            {/* Card 3: Akumulasi Kuantitas */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                  Total Kuantitas
+                </span>
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-amber-50 text-amber-700 border-amber-200">
+                  <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Akumulasi Kuantitas
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block">
+                  {statsOut.totalQty.toLocaleString('id-ID')} <span className="text-xs font-normal text-slate-400">Qty</span>
                 </span>
-                <span className="text-lg sm:text-xl font-black text-slate-900 tabular-nums block mt-0.5">
-                  {statsOut.totalQty.toLocaleString('id-ID')} Qty
-                </span>
-                <span className="text-[10.5px] text-amber-700 font-semibold block">
+                <span className="text-[10.5px] sm:text-xs text-amber-700 font-semibold block truncate mt-0.5">
                   Gabungan semua satuan
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
-                <Calculator className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
+            {/* Card 4: Pos Terbesar */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
                   Pos Terbesar
                 </span>
-                <span className="text-sm sm:text-base font-black text-slate-900 tabular-nums block truncate mt-0.5">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-purple-50 text-purple-700 border-purple-200">
+                  <Calculator className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block truncate">
                   {statsOut.maxItem ? formatRupiah(statsOut.maxItem.total) : 'Rp 0'}
                 </span>
-                <span className="text-[10.5px] text-purple-700 font-semibold block truncate">
+                <span className="text-[10.5px] sm:text-xs text-purple-700 font-semibold block truncate mt-0.5" title={statsOut.maxItem ? statsOut.maxItem.namaAkun : ''}>
                   {statsOut.maxItem ? statsOut.maxItem.namaAkun : 'Belum ada transaksi'}
                 </span>
               </div>
             </div>
+
           </div>
 
           {/* Search & Sort Bar */}
-          <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-100 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <search className="relative flex-1">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            <div className="relative flex-1">
               <label htmlFor="search-pengeluaran" className="sr-only">Cari akun pengeluaran</label>
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 id="search-pengeluaran"
                 type="search"
                 value={searchOut}
                 onChange={(e) => setSearchOut(e.target.value)}
                 placeholder="Cari akun atau catatan..."
-                className="w-full min-h-[44px] pl-10 pr-9 py-2 bg-slate-50 focus:bg-white rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 outline-none text-base sm:text-xs font-medium text-slate-800 transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 focus:bg-white rounded-xl border border-slate-200 focus:border-[#075B45] focus:ring-1 focus:ring-[#075B45] outline-none text-xs font-medium text-slate-800 transition-all"
               />
               {searchOut && (
                 <button
                   type="button"
                   onClick={() => setSearchOut('')}
                   aria-label="Hapus pencarian"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  className="absolute right-2.5 top-2.5 p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </search>
+            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
               <label htmlFor="sort-pengeluaran" className="text-xs font-bold text-slate-500 shrink-0">
                 Urutkan:
               </label>
@@ -897,137 +859,210 @@ export default function AdminPencatatan({
                 id="sort-pengeluaran"
                 value={sortOut}
                 onChange={(e) => setSortOut(e.target.value)}
-                className="min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-base sm:text-xs font-bold text-slate-700 outline-none focus:border-blue-600 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 outline-none cursor-pointer"
               >
-                <option value="terbaru">Tanggal Terbaru</option>
-                <option value="terbesar">Nominal Terbesar</option>
-                <option value="terkecil">Nominal Terkecil</option>
-                <option value="nama">Nama Akun (A-Z)</option>
+                <option value="terbaru">Terbaru</option>
+                <option value="terbesar">Terbesar</option>
+                <option value="terkecil">Terkecil</option>
+                <option value="nama">Nama (A-Z)</option>
               </select>
             </div>
           </div>
 
-          {/* Data Table Pengeluaran */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+          {/* Data List & Table Pengeluaran */}
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             {filteredPengeluaran.length === 0 ? (
-              <div className="p-10 text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 border border-slate-200/80 mx-auto flex items-center justify-center">
-                  <Receipt className="w-7 h-7" />
+              <div className="p-8 text-center space-y-2.5">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 border border-slate-200/80 mx-auto flex items-center justify-center">
+                  <Receipt className="w-6 h-6" />
                 </div>
-                <div className="space-y-1 max-w-md mx-auto">
-                  <h3 className="text-sm font-bold text-slate-900">
+                <div className="space-y-0.5 max-w-md mx-auto">
+                  <h3 className="text-xs font-bold text-slate-900">
                     {pengeluaranList.length === 0 ? 'Belum Ada Catatan Pengeluaran' : 'Tidak Ada Hasil yang Cocok'}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[11px] text-slate-500">
                     {pengeluaranList.length === 0
-                      ? 'Mulai catat pos pengeluaran panitia beserta harga satuan, qty, dan total biaya agar mudah dicetak ke PDF resmi.'
-                      : 'Coba ubah kata kunci pencarian untuk menampilkan data pengeluaran lainnya.'}
+                      ? 'Mulai catat pos pengeluaran panitia beserta harga satuan, qty, dan total biaya.'
+                      : 'Coba ubah kata kunci pencarian.'}
                   </p>
                 </div>
                 {pengeluaranList.length === 0 && (
                   <button
                     type="button"
                     onClick={openAddPengeluaran}
-                    className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs cursor-pointer shadow-2xs"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Catat Pengeluaran Pertama</span>
                   </button>
                 )}
               </div>
             ) : (
-              <div
-                tabIndex={0}
-                role="region"
-                aria-labelledby="tabel-pengeluaran-caption"
-                className="pencatatan-table-wrapper p-2 sm:p-0"
-              >
-                <table className="pencatatan-table text-left">
-                  <caption id="tabel-pengeluaran-caption" className="sr-only">
-                    Daftar pencatatan pengeluaran panitia Musabaqah Akhirussanah 1447 H
-                  </caption>
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      <th className="py-3.5 px-4 text-center w-14">No.</th>
-                      <th className="py-3.5 px-4 text-center w-28">Tanggal</th>
-                      <th className="py-3.5 px-4">Nama Akun & Catatan</th>
-                      <th className="py-3.5 px-4 text-center w-28">Satuan</th>
-                      <th className="py-3.5 px-4 text-right w-36">Harga Satuan</th>
-                      <th className="py-3.5 px-4 text-center w-20">Qty</th>
-                      <th className="py-3.5 px-4 text-right w-40">Total</th>
-                      <th className="py-3.5 px-4 text-center w-28">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {filteredPengeluaran.map((item, idx) => (
-                      <tr key={item.idPengeluaran} className="hover:bg-slate-50/70 transition-colors">
-                        <td data-label="No." className="py-3.5 px-4 text-center font-mono font-bold text-slate-400">
-                          {idx + 1}
-                        </td>
-                        <td data-label="Tanggal" className="py-3.5 px-4 text-center font-medium text-slate-600 tabular-nums">
+              <div>
+                {/* Tampilan Kartu Khusus HP (block sm:hidden) - Anti Bengkak & Super Responsif */}
+                <div className="block sm:hidden divide-y divide-slate-100 bg-white">
+                  {filteredPengeluaran.map((item, idx) => (
+                    <div key={item.idPengeluaran || idx} className="p-3 hover:bg-slate-50/80 transition-colors">
+                      {/* Baris 1: No, Nama Akun, Tanggal */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-slate-400 text-[10px] font-semibold w-4 shrink-0 text-center">
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 text-xs truncate block">
+                              {item.namaAkun}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-mono text-[10px] text-slate-500 shrink-0 tabular-nums">
                           {formatTanggalId(item.tanggal)}
-                        </td>
-                        <th data-label="Nama Akun" scope="row" className="py-3.5 px-4 font-bold text-slate-900">
-                          <div className="text-right sm:text-left">
+                        </span>
+                      </div>
+
+                      {/* Baris 2: Qty x Harga Satuan & Total Biaya */}
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-slate-100">
+                        <div className="text-slate-600 font-medium truncate mr-2">
+                          <span>{item.qty} {item.satuan || 'Pcs'}</span>
+                          <span className="text-slate-400 mx-1">@</span>
+                          <span className="font-mono">{formatRupiah(item.hargaSatuan)}</span>
+                        </div>
+                        <span className="font-mono font-extrabold text-[#054736] text-xs shrink-0">
+                          {formatRupiah(item.total)}
+                        </span>
+                      </div>
+
+                      {/* Baris 3: Catatan & Aksi */}
+                      <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-100 text-xs">
+                        <div className="text-[10.5px] text-slate-400 italic truncate mr-2">
+                          {item.keterangan || '-'}
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditPengeluaran(item)}
+                            aria-label={`Edit ${item.namaAkun}`}
+                            title="Edit Pengeluaran"
+                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget({ type: 'pengeluaran', item })}
+                            aria-label={`Hapus ${item.namaAkun}`}
+                            title="Hapus Pengeluaran"
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Total Footer Ringkas di HP */}
+                  <div className="p-3 bg-emerald-50/80 border-t border-emerald-200 flex items-center justify-between text-xs font-bold text-emerald-950">
+                    <span>Total ({filteredPengeluaran.length} Item)</span>
+                    <span className="font-mono font-black text-sm text-emerald-900">
+                      {formatRupiah(statsOut.filteredNominal)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tampilan Tabel Desktop (hidden sm:block) */}
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-labelledby="tabel-pengeluaran-caption"
+                  className="hidden sm:block overflow-x-auto"
+                >
+                  <table className="w-full text-left text-xs">
+                    <caption id="tabel-pengeluaran-caption" className="sr-only">
+                      Daftar pencatatan pengeluaran panitia Musabaqah Akhirussanah 1447 H
+                    </caption>
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <th className="py-3 px-4 text-center w-12">No.</th>
+                        <th className="py-3 px-4 text-center w-28">Tanggal</th>
+                        <th className="py-3 px-4">Nama Akun & Catatan</th>
+                        <th className="py-3 px-4 text-center w-24">Satuan</th>
+                        <th className="py-3 px-4 text-right w-32">Harga Satuan</th>
+                        <th className="py-3 px-4 text-center w-20">Qty</th>
+                        <th className="py-3 px-4 text-right w-36">Total</th>
+                        <th className="py-3 px-4 text-center w-24">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {filteredPengeluaran.map((item, idx) => (
+                        <tr key={item.idPengeluaran} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 px-4 text-center font-mono font-bold text-slate-400">
+                            {idx + 1}
+                          </td>
+                          <td className="py-3 px-4 text-center font-medium text-slate-600 tabular-nums">
+                            {formatTanggalId(item.tanggal)}
+                          </td>
+                          <th scope="row" className="py-3 px-4 font-bold text-slate-900 text-left">
                             <span className="block font-bold text-slate-900">{item.namaAkun}</span>
                             {item.keterangan && (
                               <span className="block text-[11px] font-normal text-slate-500 mt-0.5">
                                 {item.keterangan}
                               </span>
                             )}
-                          </div>
-                        </th>
-                        <td data-label="Satuan" className="py-3.5 px-4 text-center">
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold text-[11px]">
-                            {item.satuan || 'Pcs'}
-                          </span>
+                          </th>
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px]">
+                              {item.satuan || 'Pcs'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-700 tabular-nums">
+                            {formatRupiah(item.hargaSatuan)}
+                          </td>
+                          <td className="py-3 px-4 text-center font-mono font-bold text-slate-800 tabular-nums">
+                            {item.qty}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-extrabold text-[#054736] tabular-nums">
+                            {formatRupiah(item.total)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openEditPengeluaran(item)}
+                                aria-label={`Edit ${item.namaAkun}`}
+                                title="Edit Pengeluaran"
+                                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget({ type: 'pengeluaran', item })}
+                                aria-label={`Hapus ${item.namaAkun}`}
+                                title="Hapus Pengeluaran"
+                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-emerald-50/80 border-t-2 border-emerald-200 font-bold text-emerald-900">
+                        <td colSpan={6} className="py-3 px-4 text-right text-xs uppercase tracking-wider">
+                          Total Pengeluaran ({filteredPengeluaran.length} Item)
                         </td>
-                        <td data-label="Harga Satuan" className="py-3.5 px-4 text-right font-mono text-slate-700 tabular-nums">
-                          {formatRupiah(item.hargaSatuan)}
+                        <td className="py-3 px-4 text-right font-mono text-sm sm:text-base font-black text-emerald-800 tabular-nums">
+                          {formatRupiah(statsOut.filteredNominal)}
                         </td>
-                        <td data-label="Qty" className="py-3.5 px-4 text-center font-mono font-bold text-slate-800 tabular-nums">
-                          {item.qty}
-                        </td>
-                        <td data-label="Total" className="py-3.5 px-4 text-right font-mono font-extrabold text-emerald-700 tabular-nums">
-                          {formatRupiah(item.total)}
-                        </td>
-                        <td data-label="Aksi" className="py-3.5 px-4">
-                          <div className="flex items-center justify-end sm:justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openEditPengeluaran(item)}
-                              aria-label={`Edit ${item.namaAkun}`}
-                              title="Edit Pengeluaran"
-                              className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget({ type: 'pengeluaran', item })}
-                              aria-label={`Hapus ${item.namaAkun}`}
-                              title="Hapus Pengeluaran"
-                              className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
+                        <td></td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-emerald-50/80 border-t-2 border-emerald-200 font-bold text-emerald-900">
-                      <td colSpan={6} className="py-3.5 px-4 text-right text-xs uppercase tracking-wider">
-                        Total Pengeluaran ({filteredPengeluaran.length} Item)
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-sm sm:text-base font-black text-emerald-800 tabular-nums">
-                        {formatRupiah(statsOut.filteredNominal)}
-                      </td>
-                      <td className="hidden sm:table-cell"></td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -1035,103 +1070,134 @@ export default function AdminPencatatan({
       )}
 
       {/* =========================================================
-          PANEL 2: SUB-MENU KEBUTUHAN SEBELUM HARI-H
+          PANEL 2: KEBUTUHAN SEBELUM HARI-H
           ========================================================= */}
       {activeTab === 'kebutuhan' && (
-        <div role="tabpanel" aria-labelledby="tab-kebutuhan" className="space-y-5">
-          {/* KPI Progress Kebutuhan */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs space-y-2">
+        <div className="space-y-3 sm:space-y-4">
+          
+          {/* KPI Progress Kebutuhan (Compact 2x2 on Mobile - Bebas Bengkak) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            
+            {/* Card 1: Kesiapan Persentase */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs space-y-1.5">
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Kesiapan
                 </span>
-                <span className="text-xs font-mono font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-[10px] font-mono font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-full shrink-0">
                   {statsKeb.readyPct}%
                 </span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-slate-900 tabular-nums">
-                {statsKeb.siap} / {statsKeb.total} Siap
+              <div className="text-base sm:text-xl font-black text-slate-900 tabular-nums">
+                {statsKeb.siap} / {statsKeb.total} <span className="text-xs font-normal text-slate-400">Siap</span>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                  className="h-full bg-[#075B45] rounded-full transition-all duration-300"
                   style={{ width: `${statsKeb.readyPct}%` }}
                 />
               </div>
             </div>
 
-            <div
-              onClick={() => setFilterStatusKeb('Sudah Siap')}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:border-emerald-300 transition-colors cursor-pointer flex items-center space-x-3"
+            {/* Card 2: Sudah Siap */}
+            <button
+              type="button"
+              onClick={() => setFilterStatusKeb(filterStatusKeb === 'Sudah Siap' ? 'ALL' : 'Sudah Siap')}
+              className={`text-left rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${
+                filterStatusKeb === 'Sudah Siap'
+                  ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40'
+                  : 'bg-white border-slate-200/80 shadow-2xs hover:border-emerald-300'
+              }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase">Sudah Siap</span>
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600 border-emerald-200 group-hover:scale-105 transition-transform">
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase block">Sudah Siap</span>
-                <span className="text-xl font-black text-slate-900 tabular-nums block">{statsKeb.siap}</span>
+              <div className="mt-1 sm:mt-1.5">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block">{statsKeb.siap}</span>
+                <span className="text-[10.5px] text-emerald-700 font-semibold block mt-0.5">Siap digunakan</span>
               </div>
-            </div>
+            </button>
 
-            <div
-              onClick={() => setFilterStatusKeb('Dalam Proses')}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:border-amber-300 transition-colors cursor-pointer flex items-center space-x-3"
+            {/* Card 3: Dalam Proses */}
+            <button
+              type="button"
+              onClick={() => setFilterStatusKeb(filterStatusKeb === 'Dalam Proses' ? 'ALL' : 'Dalam Proses')}
+              className={`text-left rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${
+                filterStatusKeb === 'Dalam Proses'
+                  ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40'
+                  : 'bg-white border-slate-200/80 shadow-2xs hover:border-amber-300'
+              }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5" />
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase">Dalam Proses</span>
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-amber-50 text-amber-600 border-amber-200 group-hover:scale-105 transition-transform">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase block">Dalam Proses</span>
-                <span className="text-xl font-black text-slate-900 tabular-nums block">{statsKeb.proses}</span>
+              <div className="mt-1 sm:mt-1.5">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block">{statsKeb.proses}</span>
+                <span className="text-[10.5px] text-amber-700 font-semibold block mt-0.5">Sedang disiapkan</span>
               </div>
-            </div>
+            </button>
 
-            <div
-              onClick={() => setFilterStatusKeb('Belum Siap')}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:border-rose-300 transition-colors cursor-pointer flex items-center space-x-3"
+            {/* Card 4: Belum Siap */}
+            <button
+              type="button"
+              onClick={() => setFilterStatusKeb(filterStatusKeb === 'Belum Siap' ? 'ALL' : 'Belum Siap')}
+              className={`text-left rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${
+                filterStatusKeb === 'Belum Siap'
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40'
+                  : 'bg-white border-slate-200/80 shadow-2xs hover:border-rose-300'
+              }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5" />
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase">Belum Siap</span>
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 bg-rose-50 text-rose-600 border-rose-200 group-hover:scale-105 transition-transform">
+                  <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="text-[10.5px] font-bold text-slate-400 uppercase block">Belum Siap</span>
-                <span className="text-xl font-black text-slate-900 tabular-nums block">{statsKeb.belum}</span>
+              <div className="mt-1 sm:mt-1.5">
+                <span className="text-base sm:text-xl font-black text-slate-900 tabular-nums block">{statsKeb.belum}</span>
+                <span className="text-[10.5px] text-rose-700 font-semibold block mt-0.5">Perlu tindak lanjut</span>
               </div>
-            </div>
+            </button>
+
           </div>
 
           {/* Search & Filter Toolbar */}
-          <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-100 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <search className="relative flex-1">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+            <div className="relative flex-1">
               <label htmlFor="search-kebutuhan" className="sr-only">Cari daftar kebutuhan</label>
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 id="search-kebutuhan"
                 type="search"
                 value={searchKeb}
                 onChange={(e) => setSearchKeb(e.target.value)}
                 placeholder="Cari kebutuhan atau PJ..."
-                className="w-full min-h-[44px] pl-10 pr-9 py-2 bg-slate-50 focus:bg-white rounded-xl border border-slate-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 outline-none text-base sm:text-xs font-medium text-slate-800 transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 focus:bg-white rounded-xl border border-slate-200 focus:border-[#075B45] focus:ring-1 focus:ring-[#075B45] outline-none text-xs font-medium text-slate-800 transition-all"
               />
               {searchKeb && (
                 <button
                   type="button"
                   onClick={() => setSearchKeb('')}
                   aria-label="Hapus pencarian kebutuhan"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  className="absolute right-2.5 top-2.5 p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </search>
+            </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               <select
                 aria-label="Filter status kebutuhan"
                 value={filterStatusKeb}
                 onChange={(e) => setFilterStatusKeb(e.target.value)}
-                className="min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-base sm:text-xs font-bold text-slate-700 outline-none focus:border-emerald-600 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 outline-none cursor-pointer"
               >
                 <option value="ALL">Semua Status ({statsKeb.total})</option>
                 {STATUS_KEBUTUHAN_OPTIONS.map(s => (
@@ -1143,9 +1209,9 @@ export default function AdminPencatatan({
                 aria-label="Filter kategori seksi"
                 value={filterKategoriKeb}
                 onChange={(e) => setFilterKategoriKeb(e.target.value)}
-                className="min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-base sm:text-xs font-bold text-slate-700 outline-none focus:border-emerald-600 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-700 outline-none cursor-pointer"
               >
-                <option value="ALL">Semua Seksi / Kategori</option>
+                <option value="ALL">Semua Kategori</option>
                 {KEBUTUHAN_KATEGORI.map(k => (
                   <option key={k} value={k}>{k}</option>
                 ))}
@@ -1153,20 +1219,20 @@ export default function AdminPencatatan({
             </div>
           </div>
 
-          {/* Data Table Kebutuhan */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+          {/* Data List & Table Kebutuhan */}
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             {filteredKebutuhan.length === 0 ? (
-              <div className="p-10 text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 border border-slate-200/80 mx-auto flex items-center justify-center">
-                  <ListChecks className="w-7 h-7" />
+              <div className="p-8 text-center space-y-2.5">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 border border-slate-200/80 mx-auto flex items-center justify-center">
+                  <ListChecks className="w-6 h-6" />
                 </div>
-                <div className="space-y-1 max-w-md mx-auto">
-                  <h3 className="text-sm font-bold text-slate-900">
+                <div className="space-y-0.5 max-w-md mx-auto">
+                  <h3 className="text-xs font-bold text-slate-900">
                     {kebutuhanList.length === 0 ? 'Belum Ada Daftar Kebutuhan Hari-H' : 'Tidak Ada Kebutuhan yang Cocok'}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[11px] text-slate-500">
                     {kebutuhanList.length === 0
-                      ? 'Catat seluruh barang, perlengkapan lomba, konsumsi, dan tugas persiapan sebelum Hari-H agar tidak ada yang terlewat.'
+                      ? 'Catat seluruh barang, perlengkapan lomba, konsumsi, dan tugas persiapan sebelum Hari-H.'
                       : 'Coba reset filter status atau kata kunci pencarian.'}
                   </p>
                 </div>
@@ -1174,9 +1240,9 @@ export default function AdminPencatatan({
                   <button
                     type="button"
                     onClick={openAddKebutuhan}
-                    className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] text-white font-bold text-xs cursor-pointer shadow-2xs"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Tambah Daftar Kebutuhan</span>
                   </button>
                 ) : (
@@ -1187,47 +1253,130 @@ export default function AdminPencatatan({
                       setFilterStatusKeb('ALL');
                       setFilterKategoriKeb('ALL');
                     }}
-                    className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                    className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
                   >
                     Reset Filter
                   </button>
                 )}
               </div>
             ) : (
-              <div
-                tabIndex={0}
-                role="region"
-                aria-labelledby="tabel-kebutuhan-caption"
-                className="pencatatan-table-wrapper p-2 sm:p-0"
-              >
-                <table className="pencatatan-table text-left">
-                  <caption id="tabel-kebutuhan-caption" className="sr-only">
-                    Daftar pencatatan kebutuhan dan persiapan sebelum Hari-H Musabaqah Akhirussanah
-                  </caption>
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      <th className="py-3.5 px-4 text-center w-14">No.</th>
-                      <th className="py-3.5 px-4 w-36">Seksi / Kategori</th>
-                      <th className="py-3.5 px-4">Kebutuhan & Keterangan</th>
-                      <th className="py-3.5 px-4 text-center w-28">Jumlah</th>
-                      <th className="py-3.5 px-4 w-44">Target & PJ</th>
-                      <th className="py-3.5 px-4 text-center w-36">Status (Klik Ubah)</th>
-                      <th className="py-3.5 px-4 text-center w-28">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {filteredKebutuhan.map((item, idx) => (
-                      <tr key={item.idKebutuhan} className="hover:bg-slate-50/70 transition-colors">
-                        <td data-label="No." className="py-3.5 px-4 text-center font-mono font-bold text-slate-400">
-                          {idx + 1}
-                        </td>
-                        <td data-label="Kategori" className="py-3.5 px-4">
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold text-[11px]">
+              <div>
+                {/* Tampilan Kartu Khusus HP (block sm:hidden) - Anti Bengkak & Super Responsif */}
+                <div className="block sm:hidden divide-y divide-slate-100 bg-white">
+                  {filteredKebutuhan.map((item, idx) => (
+                    <div key={item.idKebutuhan || idx} className="p-3 hover:bg-slate-50/80 transition-colors">
+                      {/* Baris 1: No, Nama Kebutuhan, Status Badge */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-slate-400 text-[10px] font-semibold w-4 shrink-0 text-center">
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <span className={`block font-bold text-xs truncate ${item.status === 'Sudah Siap' ? 'text-emerald-900' : 'text-slate-900'}`}>
+                              {item.namaKebutuhan}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCycleStatusKebutuhan(item)}
+                          title="Klik untuk ubah status kesiapan"
+                          className="cursor-pointer hover:opacity-85 active:scale-95 transition-all shrink-0"
+                        >
+                          {renderStatusBadge(item.status)}
+                        </button>
+                      </div>
+
+                      {/* Baris 2: Kategori & Target Hari & PJ */}
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-slate-100">
+                        <div className="flex items-center gap-1.5 text-slate-600 truncate mr-2">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700 shrink-0">
                             {item.kategori}
                           </span>
-                        </td>
-                        <th data-label="Kebutuhan" scope="row" className="py-3.5 px-4 font-bold text-slate-900">
-                          <div className="text-right sm:text-left">
+                          <span className="font-bold text-slate-800 text-[10.5px] truncate">
+                            {item.qty} {item.satuan}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-[10.5px] text-slate-500 shrink-0">
+                          {item.penanggungJawab && (
+                            <span className="flex items-center space-x-1">
+                              <User className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span className="truncate max-w-[100px]">{item.penanggungJawab}</span>
+                            </span>
+                          )}
+                          {item.targetTanggal && (
+                            <span className="font-mono text-slate-400 text-[10px]">
+                              ({item.targetTanggal})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Baris 3: Catatan & Aksi */}
+                      <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-100 text-xs">
+                        <div className="text-[10.5px] text-slate-400 italic truncate mr-2">
+                          {item.keterangan || '-'}
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditKebutuhan(item)}
+                            aria-label={`Edit ${item.namaKebutuhan}`}
+                            title="Edit Kebutuhan"
+                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget({ type: 'kebutuhan', item })}
+                            aria-label={`Hapus ${item.namaKebutuhan}`}
+                            title="Hapus Kebutuhan"
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tampilan Tabel Desktop (hidden sm:block) */}
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-labelledby="tabel-kebutuhan-caption"
+                  className="hidden sm:block overflow-x-auto"
+                >
+                  <table className="w-full text-left text-xs">
+                    <caption id="tabel-kebutuhan-caption" className="sr-only">
+                      Daftar pencatatan kebutuhan dan persiapan sebelum Hari-H Musabaqah Akhirussanah
+                    </caption>
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <th className="py-3 px-4 text-center w-12">No.</th>
+                        <th className="py-3 px-4 w-32">Seksi / Kategori</th>
+                        <th className="py-3 px-4">Kebutuhan & Keterangan</th>
+                        <th className="py-3 px-4 text-center w-24">Jumlah</th>
+                        <th className="py-3 px-4 w-40">Target & PJ</th>
+                        <th className="py-3 px-4 text-center w-36">Status (Klik Ubah)</th>
+                        <th className="py-3 px-4 text-center w-24">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {filteredKebutuhan.map((item, idx) => (
+                        <tr key={item.idKebutuhan} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 px-4 text-center font-mono font-bold text-slate-400">
+                            {idx + 1}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px]">
+                              {item.kategori}
+                            </span>
+                          </td>
+                          <th scope="row" className="py-3 px-4 font-bold text-slate-900 text-left">
                             <span className={`block font-bold ${item.status === 'Sudah Siap' ? 'text-emerald-900' : 'text-slate-900'}`}>
                               {item.namaKebutuhan}
                             </span>
@@ -1236,64 +1385,64 @@ export default function AdminPencatatan({
                                 {item.keterangan}
                               </span>
                             )}
-                          </div>
-                        </th>
-                        <td data-label="Jumlah" className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">
-                          {item.qty} {item.satuan}
-                        </td>
-                        <td data-label="Target & PJ" className="py-3.5 px-4">
-                          <div className="space-y-0.5 text-[11px] text-slate-600 text-right sm:text-left">
-                            {item.targetTanggal && (
-                              <span className="flex items-center justify-end sm:justify-start space-x-1 font-semibold text-slate-800">
-                                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                                <span>{item.targetTanggal}</span>
-                              </span>
-                            )}
-                            {item.penanggungJawab && (
-                              <span className="flex items-center justify-end sm:justify-start space-x-1 text-slate-500">
-                                <User className="w-3 h-3 text-slate-400 shrink-0" />
-                                <span>{item.penanggungJawab}</span>
-                              </span>
-                            )}
-                            {!item.targetTanggal && !item.penanggungJawab && <span>-</span>}
-                          </div>
-                        </td>
-                        <td data-label="Status" className="py-3.5 px-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleCycleStatusKebutuhan(item)}
-                            title="Klik untuk ubah status kesiapan"
-                            className="cursor-pointer hover:opacity-85 active:scale-95 transition-all"
-                          >
-                            {renderStatusBadge(item.status)}
-                          </button>
-                        </td>
-                        <td data-label="Aksi" className="py-3.5 px-4">
-                          <div className="flex items-center justify-end sm:justify-center gap-1.5">
+                          </th>
+                          <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
+                            {item.qty} {item.satuan}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="space-y-0.5 text-[11px] text-slate-600">
+                              {item.targetTanggal && (
+                                <span className="flex items-center space-x-1 font-semibold text-slate-800">
+                                  <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{item.targetTanggal}</span>
+                                </span>
+                              )}
+                              {item.penanggungJawab && (
+                                <span className="flex items-center space-x-1 text-slate-500">
+                                  <User className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{item.penanggungJawab}</span>
+                                </span>
+                              )}
+                              {!item.targetTanggal && !item.penanggungJawab && <span>-</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
                             <button
                               type="button"
-                              onClick={() => openEditKebutuhan(item)}
-                              aria-label={`Edit ${item.namaKebutuhan}`}
-                              title="Edit Kebutuhan"
-                              className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                              onClick={() => handleCycleStatusKebutuhan(item)}
+                              title="Klik untuk ubah status kesiapan"
+                              className="cursor-pointer hover:opacity-85 active:scale-95 transition-all"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              {renderStatusBadge(item.status)}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget({ type: 'kebutuhan', item })}
-                              aria-label={`Hapus ${item.namaKebutuhan}`}
-                              title="Hapus Kebutuhan"
-                              className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openEditKebutuhan(item)}
+                                aria-label={`Edit ${item.namaKebutuhan}`}
+                                title="Edit Kebutuhan"
+                                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget({ type: 'kebutuhan', item })}
+                                aria-label={`Hapus ${item.namaKebutuhan}`}
+                                title="Hapus Kebutuhan"
+                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
