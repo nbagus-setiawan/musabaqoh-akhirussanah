@@ -14,7 +14,10 @@ import {
   FileText,
   Layers,
   Award,
-  ArrowUpRight
+  ArrowUpRight,
+  Copy,
+  Check,
+  X
 } from 'lucide-react';
 import {
   getWaliKelasList,
@@ -48,6 +51,11 @@ export default function AdminDashboard({
   const [matrixFilter, setMatrixFilter] = useState('ALL');
   const [matrixPage, setMatrixPage] = useState(1);
   const matrixPerPage = 8;
+
+  // State Modal Siaran WhatsApp Grup Panitia / Asatidz
+  const [isGroupWaModalOpen, setIsGroupWaModalOpen] = useState(false);
+  const [copiedGroupMsg, setCopiedGroupMsg] = useState(false);
+  const [editableGroupMsg, setEditableGroupMsg] = useState('');
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -286,25 +294,173 @@ export default function AdminDashboard({
   const handleSendReminderWA = (item) => {
     const statusDesc =
       item.totalCount === 0
-        ? `Belum ada santri yang didaftarkan (0/${targetKuota} Kuota)`
-        : `Baru terdaftar ${item.totalCount}/${targetKuota} santri`;
+        ? 'Belum ada santri yang didaftarkan'
+        : `Baru terdaftar ${item.totalCount} santri`;
     const msg =
       `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
       `Kepada Yth. *${item.nama}*\n` +
       `Wali Kelas Diniyah: *${item.kelas}*\n` +
       `Pondok Pesantren Al-Falah Putak\n\n` +
-      `Semoga Ustadz/Ustadzah senantiasa dalam limpahan rahmat dan kesehatan dari Allah SWT.\n\n` +
-      `Kami dari Panitia Pelaksana menyampaikan pengingat resmi terkait pendaftaran delegasi santri dalam rangka *Musabaqah Akhirussanah 1447 H*.\n\n` +
-      `Status Kuota Kelas Saat Ini: *${statusDesc}*.\n\n` +
-      `Mohon kiranya Ustadz/Ustadzah dapat segera melengkapi data delegasi santri secara mandiri melalui portal resmi pendaftaran berikut:\n` +
+      `Semoga Ustadz/Ustadzah senantiasa dalam limpahan taufiq, rahmat, dan kesehatan dari Allah SWT.\n\n` +
+      `Kami dari Panitia Pelaksana menyampaikan pengingat resmi terkait pendaftaran delegasi santri dalam rangka *Musabaqah Akhirussanah 1447 H / 2026 M*.\n\n` +
+      `Status Pengisian Kelas Saat Ini: *${statusDesc}*.\n\n` +
+      `Mohon kiranya Ustadz/Ustadzah dapat segera mengisi dan melengkapi data delegasi santri secara mandiri melalui portal resmi pendaftaran berikut:\n` +
       `https://musabaqoh-akhirussanah.vercel.app/\n\n` +
-      `Besar harapan kami agar pendaftaran dapat diselesaikan tepat waktu demi kelancaran pengundian nomor peserta dan persiapan jadwal lomba.\n\n` +
+      `Apabila terdapat kendala teknis atau kesalahan penulisan nama maupun cabang lomba yang perlu diperbaiki, silakan langsung menghubungi panitia pelaksana.\n\n` +
       `Atas perhatian, dedikasi, dan kerja sama Ustadz/Ustadzah, kami haturkan terima kasih yang sebesar-besarnya.\n` +
       `Jazakumullah Khairan Katsiran.\n\n` +
       `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n` +
-      `*Panitia Musabaqah Akhirussanah 1447 H*\n` +
+      `*Panitia Musabaqah Akhirussanah 1447 H / 2026 M*\n` +
       `YPPS Al-Falah Putak`;
     window.open(buildWaUrl(item.kontak, msg), '_blank', 'noopener,noreferrer');
+  };
+
+  // =========================================================
+  // GENERATOR PESAN SIARAN GRUP WHATSAPP (SOPAN & TANPA BATAS KUOTA)
+  // =========================================================
+  const generateGroupWaMessage = () => {
+    // 1. Kelas yang BELUM mengisi (0 santri)
+    const belumUla = complianceMatrix.filter(m => m.tingkatKey === 'ula' && m.totalCount === 0);
+    const belumWustho = complianceMatrix.filter(m => m.tingkatKey === 'wustho' && m.totalCount === 0);
+    const belumLainnya = complianceMatrix.filter(
+      m => m.tingkatKey !== 'ula' && m.tingkatKey !== 'wustho' && m.totalCount === 0
+    );
+
+    // 2. Kelas yang SUDAH mengisi (>0 santri)
+    const sudahUla = complianceMatrix.filter(m => m.tingkatKey === 'ula' && m.totalCount > 0);
+    const sudahWustho = complianceMatrix.filter(m => m.tingkatKey === 'wustho' && m.totalCount > 0);
+    const sudahLainnya = complianceMatrix.filter(
+      m => m.tingkatKey !== 'ula' && m.tingkatKey !== 'wustho' && m.totalCount > 0
+    );
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    let msg = `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n`;
+    msg += `Salam ta'dzim kami haturkan kepada segenap Asatidz dan Asatidzah Wali Kelas Diniyah Pondok Pesantren Al-Falah Putak.\n\n`;
+    msg += `Semoga para Asatidz senantiasa berada dalam lindungan taufiq, rahmat, dan kesehatan dari Allah Subhanahu wa Ta'ala.\n\n`;
+    msg += `Izin kami dari Panitia Pelaksana menyampaikan rekapitulasi status pengisian formulir pendaftaran delegasi santri untuk *Musabaqah Akhirussanah 1447 H / 2026 M* (per ${dateStr}):\n\n`;
+
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `*KELAS & TINGKAT YANG BELUM MENGISI FORMULIR:*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // Tingkat Ula
+    msg += `*Tingkat Ula (Sifir s.d Jurumiyah):*\n`;
+    if (belumUla.length > 0) {
+      belumUla.forEach((item, idx) => {
+        msg += `${idx + 1}. ${item.kelas}\n    Wali Kelas: ${item.nama}\n`;
+      });
+    } else {
+      msg += `_(Alhamdulillah seluruh kelas Tingkat Ula sudah mengisi formulir)_\n`;
+    }
+    msg += `\n`;
+
+    // Tingkat Wustho
+    msg += `*Tingkat Wustho (Imrithi s.d Alfiyah):*\n`;
+    if (belumWustho.length > 0) {
+      belumWustho.forEach((item, idx) => {
+        msg += `${idx + 1}. ${item.kelas}\n    Wali Kelas: ${item.nama}\n`;
+      });
+    } else {
+      msg += `_(Alhamdulillah seluruh kelas Tingkat Wustho sudah mengisi formulir)_\n`;
+    }
+
+    if (belumLainnya.length > 0) {
+      msg += `\n*Tingkat Lainnya:*\n`;
+      belumLainnya.forEach((item, idx) => {
+        msg += `${idx + 1}. ${item.kelas}\n    Wali Kelas: ${item.nama}\n`;
+      });
+    }
+
+    msg += `\nKepada para Asatidz/Asatidzah wali kelas di atas yang belum mengisi, mohon bantuan dan kerja samanya untuk segera mendaftarkan delegasi santri kelas masing-masing melalui tautan resmi:\n`;
+    msg += `https://musabaqoh-akhirussanah.vercel.app/\n\n`;
+
+    // Kelas yang sudah mendaftarkan santri
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `*KELAS YANG SUDAH MENDAFTARKAN DELEGASI:*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    const totalSudah = sudahUla.length + sudahWustho.length + sudahLainnya.length;
+    if (totalSudah > 0) {
+      if (sudahUla.length > 0) {
+        msg += `*Tingkat Ula:*\n`;
+        sudahUla.forEach(item => {
+          msg += `• ${item.kelas} (${item.nama}) — Terdaftar: ${item.totalCount} santri\n`;
+        });
+        msg += `\n`;
+      }
+      if (sudahWustho.length > 0) {
+        msg += `*Tingkat Wustho:*\n`;
+        sudahWustho.forEach(item => {
+          msg += `• ${item.kelas} (${item.nama}) — Terdaftar: ${item.totalCount} santri\n`;
+        });
+        msg += `\n`;
+      }
+      if (sudahLainnya.length > 0) {
+        msg += `*Tingkat Lainnya:*\n`;
+        sudahLainnya.forEach(item => {
+          msg += `• ${item.kelas} (${item.nama}) — Terdaftar: ${item.totalCount} santri\n`;
+        });
+        msg += `\n`;
+      }
+
+      msg += `Bagi para Asatidz/Asatidzah yang kelasnya sudah mengisi di atas, kami mohon konfirmasinya apakah data pendaftaran delegasi santri dari kelas panjenengan sudah *fix (lengkap & final)*, ataukah masih ada delegasi santri tambahan yang akan didaftarkan?\n\n`;
+    } else {
+      msg += `_(Belum ada kelas yang mengisi pendaftaran)_\n\n`;
+    }
+
+    // Bagian Kendala & Hubungi Panitia
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `*KENDALA & BANTUAN PANITIA:*\n`;
+    msg += `Apabila terdapat kendala teknis dalam pengisian formulir online, atau terdapat kesalahan nama peserta maupun cabang lomba yang ingin diralat, mohon untuk segera menghubungi panitia pelaksana agar dapat segera kami bantu perbaiki sebelum proses pengundian nomor peserta dilakukan.\n\n`;
+
+    msg += `Portal Pendaftaran:\n`;
+    msg += `https://musabaqoh-akhirussanah.vercel.app/\n\n`;
+
+    msg += `Atas perhatian, dedikasi, dan kerja sama yang baik dari segenap Asatidz dan Asatidzah sekalian, kami haturkan terima kasih yang sebesar-besarnya.\n\n`;
+    msg += `Jazakumullah Khairan Katsiran.\n\n`;
+    msg += `Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n`;
+    msg += `*Panitia Musabaqah Akhirussanah 1447 H / 2026 M*\n`;
+    msg += `YPPS Al-Falah Putak`;
+
+    return msg;
+  };
+
+  const handleOpenGroupWaModal = () => {
+    setEditableGroupMsg(generateGroupWaMessage());
+    setCopiedGroupMsg(false);
+    setIsGroupWaModalOpen(true);
+  };
+
+  const handleCopyGroupMsg = () => {
+    if (!editableGroupMsg) return;
+    navigator.clipboard.writeText(editableGroupMsg).then(() => {
+      setCopiedGroupMsg(true);
+      setTimeout(() => setCopiedGroupMsg(false), 2500);
+    }).catch(() => {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = editableGroupMsg;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopiedGroupMsg(true);
+        setTimeout(() => setCopiedGroupMsg(false), 2500);
+      } catch (err) {}
+    });
+  };
+
+  const handleSendToGroupWa = () => {
+    if (!editableGroupMsg) return;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(editableGroupMsg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -333,6 +489,16 @@ export default function AdminDashboard({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleOpenGroupWaModal}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs transition-all shadow-2xs flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+              title="Siarkan Rekap Kepatuhan ke Grup WhatsApp"
+            >
+              <WhatsAppIcon variant="white" className="w-3.5 h-3.5 text-white shrink-0" />
+              <span className="hidden sm:inline">Siarkan WA</span>
+              <span className="sm:hidden">WA Grup</span>
+            </button>
             <button
               type="button"
               onClick={() => handleJumpWithQuery('')}
@@ -464,23 +630,46 @@ export default function AdminDashboard({
           3. MATRIKS KEPATUHAN KELAS DINIYAH (COMPACT & RESPONSIVE)
          ========================================================= */}
       <section className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs p-3 sm:p-5 space-y-3 sm:space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5 pb-2.5 sm:pb-3 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
-                Matriks Kepatuhan Kelas Diniyah
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 whitespace-nowrap">
-                Target: {targetKuota}/Kelas
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-slate-100">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                  Matriks Kepatuhan Kelas Diniyah
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 whitespace-nowrap">
+                  Target: {targetKuota}/Kelas
+                </span>
+              </div>
+              <p className="hidden sm:block text-[11px] text-slate-500 mt-0.5">
+                Pantau kepatuhan delegasi kelas dan siarkan rekap ke grup WhatsApp.
+              </p>
             </div>
-            <p className="hidden sm:block text-[11px] text-slate-500 mt-0.5">
-              Pantau pengisian delegasi tiap kelas dan kirim pengingat WhatsApp resmi.
-            </p>
+
+            {/* Tombol Mobile WA Grup */}
+            <button
+              type="button"
+              onClick={handleOpenGroupWaModal}
+              className="sm:hidden px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold shadow-2xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+              title="Siarkan Rekap ke WhatsApp Grup"
+            >
+              <WhatsAppIcon variant="white" className="w-3.5 h-3.5 text-white shrink-0" />
+              <span>Grup WA</span>
+            </button>
           </div>
 
-          {/* Tab Filter Swipeable di Layar HP */}
+          {/* Tab Filter Swipeable di Layar HP & Tombol Desktop */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none -mx-1 px-1">
+            <button
+              type="button"
+              onClick={handleOpenGroupWaModal}
+              className="hidden sm:flex px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-2xs hover:shadow-xs active:scale-95 transition-all items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 mr-1"
+              title="Siarkan Rekap ke WhatsApp Grup"
+            >
+              <WhatsAppIcon variant="white" className="w-3.5 h-3.5 text-white shrink-0" />
+              <span>Siarkan ke Grup WA</span>
+            </button>
+
             <button
               type="button"
               onClick={() => handleFilterChange('ALL')}
@@ -910,6 +1099,121 @@ export default function AdminDashboard({
           </div>
         </section>
       </div>
+
+      {/* =========================================================
+          MODAL SIARKAN PESAN KE GRUP WHATSAPP ASATIDZ / PANITIA
+         ========================================================= */}
+      {isGroupWaModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+            {/* Top Bar Gradient Al-Falah Putak */}
+            <div className="h-1 bg-gradient-to-r from-[#054736] via-[#075B45] to-[#D9B45B]" />
+
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-slate-50/60">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center shrink-0 border border-[#25D366]/30">
+                  <WhatsAppIcon variant="color" className="w-6 h-6 shrink-0" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                    Siarkan Rekap ke WhatsApp Grup
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Pesan sopan kepatuhan pendaftaran untuk grup Asatidz & Panitia
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsGroupWaModalOpen(false)}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer"
+                title="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-5 space-y-3.5">
+              {/* Badges Info Ringkas */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 font-bold">
+                  Belum Mengisi: {countBelum} Kelas
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                  Sudah Terdata: {countLengkap + countSebagian} Kelas
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                  Bebas Batas Kuota
+                </span>
+              </div>
+
+              {/* Textarea Live Preview & Editable */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>Pratinjau & Edit Draf Pesan:</span>
+                  <span className="text-[11px] font-normal text-slate-500">
+                    Bisa disunting bebas sebelum dikirim
+                  </span>
+                </div>
+                <textarea
+                  value={editableGroupMsg}
+                  onChange={(e) => setEditableGroupMsg(e.target.value)}
+                  rows={13}
+                  className="w-full text-xs font-mono leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:bg-white focus:border-[#075B45] focus:ring-1 focus:ring-[#075B45] outline-none transition-all resize-y select-text"
+                  placeholder="Ketik atau edit draf pesan WhatsApp..."
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-normal">
+                Pesan ini diformat khusus tanpa batas maksimal kuota. Klik <strong>Salin Pesan</strong> untuk menyalin teks ke papan klip, atau klik <strong>Buka WhatsApp</strong> untuk langsung membuka WhatsApp dan memilih grup tujuan.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/70 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => setEditableGroupMsg(generateGroupWaMessage())}
+                className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border border-slate-200 transition-all cursor-pointer"
+              >
+                Reset Pesan Asli
+              </button>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleCopyGroupMsg}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  {copiedGroupMsg ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span className="text-emerald-700 font-bold">Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-slate-600" />
+                      <span>Salin Pesan</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendToGroupWa}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#1EBE5D] text-white shadow-2xs hover:shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <WhatsAppIcon variant="white" className="w-4 h-4 text-white shrink-0" />
+                  <span>Buka WhatsApp (Pilih Grup)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
