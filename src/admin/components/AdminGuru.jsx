@@ -325,173 +325,182 @@ export default function AdminGuru({
     { id: 'mhq_juz', label: 'Tingkat MHQ', count: stats.mhq.count }
   ];
 
+  // Kartu KPI Interaktif (Compact Widget Layout - Bebas Bengkak)
+  const kpiCards = [
+    {
+      id: 'ALL',
+      label: 'Total Wali Kelas',
+      count: stats.total,
+      sublabel: 'Semua jenjang aktif',
+      icon: Users,
+      ringClass: 'border-[#075B45] ring-2 ring-[#075B45]/20 bg-[#EAF4F0]/40',
+      iconClass: 'bg-[#EAF4F0] text-[#075B45] border-[#075B45]/20',
+      subClass: 'text-[#075B45]'
+    },
+    {
+      id: 'ula',
+      label: 'Tingkat Ula',
+      count: stats.ula.count,
+      sublabel: `${stats.ula.santri} Santri Terdaftar`,
+      icon: GraduationCap,
+      ringClass: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40',
+      iconClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      subClass: 'text-emerald-700'
+    },
+    {
+      id: 'wustho',
+      label: 'Tingkat Wustho',
+      count: stats.wustho.count,
+      sublabel: `${stats.wustho.santri} Santri Terdaftar`,
+      icon: BookOpen,
+      ringClass: 'border-purple-500 ring-2 ring-purple-500/20 bg-purple-50/40',
+      iconClass: 'bg-purple-50 text-purple-700 border-purple-200',
+      subClass: 'text-purple-700'
+    },
+    {
+      id: 'mhq_juz',
+      label: 'Cabang MHQ',
+      count: stats.mhq.count,
+      sublabel: `${stats.mhq.santri} Santri Terdaftar`,
+      icon: Award,
+      ringClass: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40',
+      iconClass: 'bg-amber-50 text-amber-700 border-amber-200',
+      subClass: 'text-amber-700'
+    }
+  ];
+
   return (
-    <div className="p-4 sm:p-6 lg:p-7 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="p-3 sm:p-5 lg:p-7 space-y-3 sm:space-y-4 max-w-7xl mx-auto animate-in fade-in duration-200">
       
-      {/* 1. TOP HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-        <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0">
-            <UserCheck className="w-6 h-6" />
+      {/* 1. TOP HEADER BANNER (COMPACT & RAPI) */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 relative overflow-hidden">
+        <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EAF4F0] text-[#075B45] border border-[#075B45]/15 flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Data Guru & Wali Kelas</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF4F0] text-[#054736] border border-[#075B45]/15 whitespace-nowrap">
                 {guruList.length} Wali Kelas
               </span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
               Kelola master data asatidz, Kelas Diniyah binaan, dan pantau santri bimbingan di Musabaqah Akhirussanah.
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center space-x-2 shrink-0">
+        {/* Toolbar Aksi - 1 Baris Rapi di HP */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
           {/* View Mode Toggle */}
-          <div className="p-1 bg-slate-100 rounded-2xl flex items-center border border-slate-200/70">
+          <div className="p-0.5 sm:p-1 bg-slate-100 rounded-xl flex items-center border border-slate-200/70">
             <button
+              type="button"
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white text-blue-600 shadow-xs'
+                  ? 'bg-white text-[#075B45] shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
               title="Tampilan Tabel"
             >
-              <List className="w-4 h-4" />
+              <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white text-blue-600 shadow-xs'
+                  ? 'bg-white text-[#075B45] shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
               title="Tampilan Grid Kartu"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
 
           <button
+            type="button"
             onClick={openAddModal}
-            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 sm:py-2 rounded-xl bg-[#075B45] hover:bg-[#054736] active:scale-95 text-white font-bold text-xs shadow-2xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap"
           >
-            <Plus className="w-4 h-4 text-white" />
-            <span>Tambah Wali Kelas</span>
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+            <span>+ Wali Kelas</span>
           </button>
 
           <button
+            type="button"
             onClick={loadData}
             title="Segarkan Data"
-            className="p-2.5 rounded-2xl border border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer active:scale-95"
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin text-[#075B45]' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* 2. STATISTIC METRIC CARDS (SESUAI REFERENSI DESAIN) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card Total */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
-              Total Wali Kelas
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {stats.total}
-            </span>
-            <span className="text-[10.5px] font-semibold text-blue-600 block mt-0.5">
-              Semua jenjang aktif
-            </span>
-          </div>
-        </div>
-
-        {/* Card Ula */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
-              Tingkat Ula
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {stats.ula.count} <span className="text-xs font-normal text-slate-400">Guru</span>
-            </span>
-            <span className="text-[10.5px] font-semibold text-emerald-600 block mt-0.5">
-              {stats.ula.santri} Santri Terdaftar
-            </span>
-          </div>
-        </div>
-
-        {/* Card Wustho */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <BookOpen className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
-              Tingkat Wustho
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {stats.wustho.count} <span className="text-xs font-normal text-slate-400">Guru</span>
-            </span>
-            <span className="text-[10.5px] font-semibold text-purple-600 block mt-0.5">
-              {stats.wustho.santri} Santri Terdaftar
-            </span>
-          </div>
-        </div>
-
-        {/* Card MHQ */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all flex items-center space-x-3.5 group">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100/70 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <Award className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
-              Cabang MHQ
-            </span>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-tight block mt-1">
-              {stats.mhq.count} <span className="text-xs font-normal text-slate-400">Kategori</span>
-            </span>
-            <span className="text-[10.5px] font-semibold text-amber-600 block mt-0.5">
-              {stats.mhq.santri} Santri Terdaftar
-            </span>
-          </div>
-        </div>
-
+      {/* 2. STATISTIC METRIC CARDS (COMPACT WIDGET LAYOUT - BEBAS BENGKAK) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        {kpiCards.map((card) => {
+          const IconComp = card.icon;
+          const isActive = filterTingkat === card.id;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setFilterTingkat(card.id)}
+              className={`text-left rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border transition-all cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${
+                isActive
+                  ? card.ringClass
+                  : 'bg-white border-slate-200/80 shadow-2xs hover:border-[#075B45]/40 hover:shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 tracking-wider uppercase truncate">
+                  {card.label}
+                </span>
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.iconClass}`}>
+                  <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums leading-none block">
+                  {card.count}
+                </span>
+                <span className={`text-[10.5px] sm:text-xs font-semibold block mt-1 whitespace-nowrap truncate ${card.subClass}`}>
+                  {card.sublabel}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* 3. MAIN CONTENT CONTAINER */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         
         {/* Jenjang Pill Tabs Bar */}
-        <div className="border-b border-slate-100 px-4 sm:px-6 pt-3 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-          <div className="flex items-center space-x-1.5 overflow-x-auto pb-3 w-full sm:w-auto scrollbar-none">
+        <div className="border-b border-slate-100 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 bg-slate-50/50">
+          <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none w-full sm:w-auto">
             {tabPills.map((tab) => {
               const isActive = filterTingkat === tab.id;
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setFilterTingkat(tab.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center space-x-2 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center space-x-1.5 cursor-pointer shrink-0 ${
                     isActive
-                      ? 'bg-emerald-800 text-white shadow-2xs'
+                      ? 'bg-[#054736] text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
                   <span>{tab.label}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                    isActive ? 'bg-emerald-950/40 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                    isActive ? 'bg-[#075B45] text-emerald-100' : 'bg-slate-200 text-slate-600'
                   }`}>
                     {tab.count}
                   </span>
@@ -500,207 +509,336 @@ export default function AdminGuru({
             })}
           </div>
 
-          {/* Quick Active Filter Indicator */}
           {filterTingkat !== 'ALL' && (
             <button
+              type="button"
               onClick={() => setFilterTingkat('ALL')}
-              className="pb-3 text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center space-x-1 cursor-pointer"
+              className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center space-x-1 cursor-pointer shrink-0 ml-2"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Reset Jenjang</span>
+              <span className="hidden sm:inline">Reset</span>
             </button>
           )}
         </div>
 
         {/* Search & Tool Bar */}
-        <div className="p-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
-          <div className="relative flex-1 w-full max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+        <div className="p-3 sm:p-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-white">
+          <div className="relative flex-1 w-full sm:max-w-md">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari nama Ustadz / Ustadzah, kelas, nomor kontak..."
+              placeholder="Cari nama Ustadz / Ustadzah, kelas, kontak..."
               value={searchGuru}
               onChange={(e) => setSearchGuru(e.target.value)}
-              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800 bg-slate-50/50 focus:bg-white transition-all"
+              className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none focus:border-[#075B45] focus:ring-1 focus:ring-[#075B45] bg-slate-50/50 focus:bg-white transition-all"
             />
             {searchGuru && (
               <button
+                type="button"
                 onClick={() => setSearchGuru('')}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          <div className="flex items-center space-x-2 text-xs text-slate-500 w-full sm:w-auto justify-end">
-            <span>Menampilkan <strong>{startIndex} - {endIndex}</strong> dari <strong>{filteredGuru.length}</strong> wali kelas (Hal. {currentPage}/{totalPages})</span>
+          <div className="text-[11px] sm:text-xs text-slate-500 w-full sm:w-auto text-left sm:text-right">
+            Menampilkan <strong>{startIndex} - {endIndex}</strong> dari <strong>{filteredGuru.length}</strong> guru (Hal. {currentPage}/{totalPages})
           </div>
         </div>
 
-        {/* 4A. VIEW MODE: TABEL */}
+        {/* 4A. VIEW MODE: TABEL & DAFTAR KARTU MOBILE */}
         {viewMode === 'table' ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/60">
-                <tr>
-                  <th className="py-3.5 px-4 w-12 text-center">No</th>
-                  <th className="py-3.5 px-4">Nama Ustadz / Ustadzah</th>
-                  <th className="py-3.5 px-4">Jenjang Binaan</th>
-                  <th className="py-3.5 px-4">Kelas yang Diampu</th>
-                  <th className="py-3.5 px-4 text-center">Santri Binaan</th>
-                  <th className="py-3.5 px-4 text-center w-36">Aksi Panitia</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredGuru.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-16 text-center text-slate-400">
-                      <div className="max-w-xs mx-auto space-y-2">
-                        <UserCheck className="w-8 h-8 text-slate-300 mx-auto" />
-                        <p className="font-semibold text-slate-700 text-sm">Tidak ada wali kelas ditemukan</p>
-                        <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti filter jenjang tingkat.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedGuru.map((guru, idx) => {
-                    const santriList = registrations.filter(r => 
-                      ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
-                      ((r.Kelas_Kategori || '').toLowerCase().trim() === (guru.kelas || '').toLowerCase().trim())
-                    );
-                    const santriCount = santriList.length;
-                    const isLengkap = santriCount >= 10;
-                    const isSebagian = santriCount > 0 && santriCount < 10;
+          <div>
+            {/* Tampilan Kartu Khusus HP (block sm:hidden) - Anti Bengkak & Super Responsif */}
+            <div className="block sm:hidden divide-y divide-slate-100 bg-white">
+              {filteredGuru.length === 0 ? (
+                <div className="py-12 text-center text-slate-400">
+                  <UserCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-semibold text-slate-700 text-xs">Tidak ada wali kelas ditemukan</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Coba ubah kata kunci atau ganti filter jenjang.</p>
+                </div>
+              ) : (
+                paginatedGuru.map((guru, idx) => {
+                  const santriList = registrations.filter(r => 
+                    ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
+                    ((r.Kelas_Kategori || '').toLowerCase().trim() === (guru.kelas || '').toLowerCase().trim())
+                  );
+                  const santriCount = santriList.length;
+                  const isLengkap = santriCount >= 10;
+                  const isSebagian = santriCount > 0 && santriCount < 10;
+                  const badge = getTingkatBadge(guru.tingkat);
+                  const initials = getInitials(guru.nama);
+                  const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
 
-                    const badge = getTingkatBadge(guru.tingkat);
-                    const initials = getInitials(guru.nama);
-                    const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
-
-                    return (
-                      <tr key={guru.id || idx} className="hover:bg-slate-50/80 transition-colors group">
-                        
-                        {/* No */}
-                        <td className="py-3.5 px-4 text-center font-mono text-slate-400 text-xs font-semibold">
-                          {rowNumber}
-                        </td>
-
-                        {/* Nama Wali Kelas & Kontak */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-9 h-9 rounded-xl ${badge.avatarBg} font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200/50 shadow-2xs`}>
-                              {initials}
-                            </div>
-                            <div>
-                              <div className="font-bold text-slate-900 text-xs group-hover:text-emerald-800 transition-colors">
-                                {guru.nama}
-                              </div>
-                              {guru.kontak ? (
-                                <button
-                                  onClick={() => handleSendWA(guru)}
-                                  className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-mono flex items-center space-x-1 mt-0.5 cursor-pointer"
-                                  title="Kirim pesan WhatsApp"
-                                >
-                                  <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
-                                  <span>{normalizePhoneLocal08(guru.kontak)}</span>
-                                </button>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 italic block mt-0.5">
-                                  Belum ada nomor WA
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Jenjang Tingkat */}
-                        <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${badge.dot}`}></span>
-                            {badge.label}
+                  return (
+                    <div key={guru.id || idx} className="p-3 hover:bg-slate-50/80 transition-colors">
+                      {/* Baris 1: No, Avatar, Nama, Jenjang */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-slate-400 text-[10px] font-semibold w-4 shrink-0 text-center">
+                            {rowNumber}
                           </span>
-                        </td>
-
-                        {/* Kelas yang Diampu */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-slate-800 text-xs flex items-center space-x-1.5">
-                            <School className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{guru.kelas}</span>
+                          <div className={`w-7 h-7 rounded-lg ${badge.avatarBg} font-bold text-[11px] flex items-center justify-center shrink-0 border border-slate-200/50`}>
+                            {initials}
                           </div>
-                        </td>
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900 text-xs truncate">
+                              {guru.nama}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9.5px] font-bold border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
+                          {badge.label}
+                        </span>
+                      </div>
 
-                        {/* Santri Masuk */}
-                        <td className="py-3.5 px-4 text-center">
+                      {/* Baris 2: Kelas Diniyah & Status Santri Binaan */}
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 mt-1.5 border-t border-slate-100">
+                        <div className="flex items-center space-x-1.5 font-medium text-slate-700 truncate mr-2">
+                          <School className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">Kelas: <strong>{guru.kelas}</strong></span>
+                        </div>
+                        <div className="shrink-0">
                           {isLengkap ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                               Lengkap ({santriCount})
                             </span>
                           ) : isSebagian ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                               Sebagian ({santriCount})
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 animate-pulse">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
                               Belum Ada (0)
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Aksi */}
-                        <td className="py-3.5 px-4 text-center">
-                          <div className="flex items-center justify-center space-x-1.5">
-                            
-                            {/* Tombol Lihat Santri */}
+                      {/* Baris 3: WA Contact & Action Buttons */}
+                      <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-100 text-xs">
+                        <div className="min-w-0 truncate mr-2">
+                          {guru.kontak ? (
                             <button
-                              onClick={() => {
-                                if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
-                                if (setActiveView) setActiveView('santri');
-                              }}
-                              title={`Lihat delegasi santri ${guru.kelas}`}
-                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                              type="button"
+                              onClick={() => handleSendWA(guru)}
+                              className="text-[11px] text-emerald-700 hover:text-emerald-900 font-mono flex items-center space-x-1 cursor-pointer truncate"
+                              title="Kirim pesan WhatsApp"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{normalizePhoneLocal08(guru.kontak)}</span>
                             </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">
+                              Belum ada WA
+                            </span>
+                          )}
+                        </div>
 
-                            {guru.kontak && (
-                              <button
-                                onClick={() => handleSendWA(guru)}
-                                title="Chat WhatsApp"
-                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
-                              >
-                                <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
-                              </button>
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
+                              if (setActiveView) setActiveView('santri');
+                            }}
+                            title={`Lihat delegasi santri ${guru.kelas}`}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(guru)}
+                            title="Edit Data Guru"
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(guru)}
+                            title="Hapus Data Guru"
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tampilan Tabel Desktop (hidden sm:block) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/60">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">No</th>
+                    <th className="py-3 px-4">Nama Ustadz / Ustadzah</th>
+                    <th className="py-3 px-4">Jenjang Binaan</th>
+                    <th className="py-3 px-4">Kelas yang Diampu</th>
+                    <th className="py-3 px-4 text-center">Santri Binaan</th>
+                    <th className="py-3 px-4 text-center w-36">Aksi Panitia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredGuru.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-16 text-center text-slate-400">
+                        <div className="max-w-xs mx-auto space-y-2">
+                          <UserCheck className="w-8 h-8 text-slate-300 mx-auto" />
+                          <p className="font-semibold text-slate-700 text-sm">Tidak ada wali kelas ditemukan</p>
+                          <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti filter jenjang tingkat.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedGuru.map((guru, idx) => {
+                      const santriList = registrations.filter(r => 
+                        ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
+                        ((r.Kelas_Kategori || '').toLowerCase().trim() === (guru.kelas || '').toLowerCase().trim())
+                      );
+                      const santriCount = santriList.length;
+                      const isLengkap = santriCount >= 10;
+                      const isSebagian = santriCount > 0 && santriCount < 10;
+
+                      const badge = getTingkatBadge(guru.tingkat);
+                      const initials = getInitials(guru.nama);
+                      const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
+
+                      return (
+                        <tr key={guru.id || idx} className="hover:bg-slate-50/80 transition-colors group">
+                          
+                          {/* No */}
+                          <td className="py-3 px-4 text-center font-mono text-slate-400 text-xs font-semibold">
+                            {rowNumber}
+                          </td>
+
+                          {/* Nama Wali Kelas & Kontak */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-8 h-8 rounded-xl ${badge.avatarBg} font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200/50 shadow-2xs`}>
+                                {initials}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-900 text-xs group-hover:text-emerald-800 transition-colors">
+                                  {guru.nama}
+                                </div>
+                                {guru.kontak ? (
+                                  <button
+                                    onClick={() => handleSendWA(guru)}
+                                    className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-mono flex items-center space-x-1 mt-0.5 cursor-pointer"
+                                    title="Kirim pesan WhatsApp"
+                                  >
+                                    <WhatsAppIcon variant="brand" className="w-3 h-3 shrink-0" />
+                                    <span>{normalizePhoneLocal08(guru.kontak)}</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 italic block mt-0.5">
+                                    Belum ada nomor WA
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Jenjang Tingkat */}
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${badge.dot}`}></span>
+                              {badge.label}
+                            </span>
+                          </td>
+
+                          {/* Kelas yang Diampu */}
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-slate-800 text-xs flex items-center space-x-1.5">
+                              <School className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{guru.kelas}</span>
+                            </div>
+                          </td>
+
+                          {/* Santri Masuk */}
+                          <td className="py-3 px-4 text-center">
+                            {isLengkap ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                Lengkap ({santriCount})
+                              </span>
+                            ) : isSebagian ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                Sebagian ({santriCount})
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 animate-pulse">
+                                Belum Ada (0)
+                              </span>
                             )}
+                          </td>
 
-                            <button
-                              onClick={() => openEditModal(guru)}
-                              title="Edit Data Guru"
-                              className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
+                          {/* Aksi */}
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center space-x-1.5">
+                              
+                              {/* Tombol Lihat Santri */}
+                              <button
+                                onClick={() => {
+                                  if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
+                                  if (setActiveView) setActiveView('santri');
+                                }}
+                                title={`Lihat delegasi santri ${guru.kelas}`}
+                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
 
-                            <button
-                              onClick={() => setDeleteTarget(guru)}
-                              title="Hapus Data Guru"
-                              className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              {guru.kontak && (
+                                <button
+                                  onClick={() => handleSendWA(guru)}
+                                  title="Chat WhatsApp"
+                                  className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                >
+                                  <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
+                                </button>
+                              )}
 
-                          </div>
-                        </td>
+                              <button
+                                onClick={() => openEditModal(guru)}
+                                title="Edit Data Guru"
+                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
 
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              <button
+                                onClick={() => setDeleteTarget(guru)}
+                                title="Hapus Data Guru"
+                                className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+
+                            </div>
+                          </td>
+
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           /* 4B. VIEW MODE: GRID KARTU */
-          <div className="p-4 sm:p-6 bg-slate-50/30">
+          <div className="p-3 sm:p-5 bg-slate-50/30">
             {filteredGuru.length === 0 ? (
               <div className="py-16 text-center text-slate-400">
                 <UserCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -708,7 +846,7 @@ export default function AdminGuru({
                 <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau ganti filter jenjang tingkat.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {paginatedGuru.map((guru, idx) => {
                   const santriList = registrations.filter(r => 
                     ((r.Wali_Kelas || '').toLowerCase().trim() === (guru.nama || '').toLowerCase().trim()) ||
@@ -724,12 +862,12 @@ export default function AdminGuru({
                   return (
                     <div 
                       key={guru.id || idx}
-                      className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group"
+                      className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-[#075B45]/40 transition-all flex flex-col justify-between group"
                     >
                       <div>
                         {/* Top Card: Avatar + Level Badge */}
-                        <div className="flex items-start justify-between gap-2 mb-3">
-                          <div className={`w-11 h-11 rounded-2xl ${badge.avatarBg} font-black text-sm flex items-center justify-center border border-slate-200/60 shadow-2xs`}>
+                        <div className="flex items-start justify-between gap-2 mb-2.5">
+                          <div className={`w-10 h-10 rounded-xl ${badge.avatarBg} font-black text-xs flex items-center justify-center border border-slate-200/60 shadow-2xs`}>
                             {initials}
                           </div>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -739,7 +877,7 @@ export default function AdminGuru({
                         </div>
 
                         {/* Name & Class */}
-                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-800 transition-colors line-clamp-1">
+                        <h4 className="font-bold text-slate-900 text-xs group-hover:text-emerald-800 transition-colors line-clamp-1">
                           {guru.nama}
                         </h4>
 
@@ -749,11 +887,11 @@ export default function AdminGuru({
                         </div>
 
                         {/* Santri Count Box */}
-                        <div className="mt-3.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500 font-medium">Santri Bimbingan:</span>
-                          <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
+                        <div className="mt-3 p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                          <span className="text-[11px] text-slate-500 font-medium">Santri Binaan:</span>
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
                             isLengkap 
-                              ? 'bg-emerald-800 text-white' 
+                              ? 'bg-[#075B45] text-white' 
                               : isSebagian 
                               ? 'bg-amber-100 text-amber-900 border border-amber-300' 
                               : 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -764,15 +902,16 @@ export default function AdminGuru({
                       </div>
 
                       {/* Card Bottom: Phone & Actions */}
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                         {guru.kontak ? (
                           <button
+                            type="button"
                             onClick={() => handleSendWA(guru)}
-                            className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium flex items-center space-x-1.5 cursor-pointer"
+                            className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium flex items-center space-x-1 cursor-pointer"
                             title="Chat WhatsApp"
                           >
                             <WhatsAppIcon variant="brand" className="w-3.5 h-3.5 shrink-0" />
-                            <span>Hubungi WA</span>
+                            <span>Hubungi</span>
                           </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 italic">Tanpa WA</span>
@@ -780,6 +919,7 @@ export default function AdminGuru({
 
                         <div className="flex items-center space-x-1">
                           <button
+                            type="button"
                             onClick={() => {
                               if (setSearchTerm) setSearchTerm(guru.kelas || guru.nama);
                               if (setActiveView) setActiveView('santri');
@@ -790,6 +930,7 @@ export default function AdminGuru({
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => openEditModal(guru)}
                             className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
                             title="Edit Data Guru"
@@ -797,6 +938,7 @@ export default function AdminGuru({
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setDeleteTarget(guru)}
                             className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
                             title="Hapus Data Guru"
@@ -815,10 +957,10 @@ export default function AdminGuru({
         )}
 
         {/* 4C. PAGINATION FOOTER */}
-        <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
           <div className="text-slate-500 font-medium text-center sm:text-left flex flex-wrap items-center gap-2">
             <span>
-              Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari total <strong className="text-slate-800">{filteredGuru.length}</strong> wali kelas
+              Menampilkan <strong className="text-slate-800">{startIndex} - {endIndex}</strong> dari total <strong className="text-slate-800">{filteredGuru.length}</strong> guru
             </span>
             <div className="flex items-center space-x-1.5 ml-1">
               <span className="text-[11px] text-slate-400 font-medium">Tampilkan:</span>
@@ -839,9 +981,10 @@ export default function AdminGuru({
           <div className="flex items-center space-x-1.5">
             {/* Tombol Sebelumnya */}
             <button
+              type="button"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
               title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -868,10 +1011,11 @@ export default function AdminGuru({
                 return (
                   <button
                     key={page}
+                    type="button"
                     onClick={() => setCurrentPage(page)}
                     className={`w-7 h-7 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer ${
                       isActive
-                        ? 'bg-emerald-800 text-white shadow-2xs'
+                        ? 'bg-[#054736] text-white shadow-2xs'
                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -883,9 +1027,10 @@ export default function AdminGuru({
 
             {/* Tombol Berikutnya */}
             <button
+              type="button"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages || filteredGuru.length === 0}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
               title="Halaman Berikutnya"
             >
               <span>Berikutnya</span>
