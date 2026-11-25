@@ -8,7 +8,7 @@ import {
   SKEMA_POIN_JUARA,
   getGenderFromKelas
 } from '../data/competitions';
-import { normalizePhoneLocal08 } from '../utils/phone';
+import { normalizePhoneLocal08, toSheetPlainTextPhone } from '../utils/phone';
 
 // Kunci penyimpanan sesi
 const STORAGE_KEY = 'akhirusanah_registrations_v2';
@@ -224,7 +224,11 @@ export const saveRegistration = async (formData) => {
       await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'register', ...newEntry })
+        body: JSON.stringify({
+          action: 'register',
+          ...newEntry,
+          Nomor_WA: toSheetPlainTextPhone(newEntry.Nomor_WA)
+        })
       });
     } catch (e) {
       console.warn('Gagal kirim ke Google Sheets:', e);
@@ -297,10 +301,13 @@ export const saveBatchRegistrations = async (santriList = [], metadata = {}) => 
         body: JSON.stringify({
           action: 'batch_register',
           Wali_Kelas: metadata.waliKelas || '',
-          Nomor_WA: normalizedMetaWA,
+          Nomor_WA: toSheetPlainTextPhone(normalizedMetaWA),
           Tingkat: metadata.tingkatName || metadata.tingkat || '',
           Kelas_Kategori: metadata.kelasDiniyah || '',
-          entries: newEntries
+          entries: newEntries.map(entry => ({
+            ...entry,
+            Nomor_WA: toSheetPlainTextPhone(entry.Nomor_WA)
+          }))
         })
       });
     } catch (e) {
@@ -446,13 +453,17 @@ export const updateRegistration = async (idPendaftaran, updatedFields) => {
   if (gasUrl) {
     activeRegistrationMutations++;
     try {
+      const remoteFields = { ...sanitizedFields };
+      if (remoteFields.Nomor_WA !== undefined) {
+        remoteFields.Nomor_WA = toSheetPlainTextPhone(remoteFields.Nomor_WA);
+      }
       await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'edit_santri',
           ID_Pendaftaran: idPendaftaran,
-          ...sanitizedFields
+          ...remoteFields
         })
       });
     } catch (e) {
@@ -610,7 +621,11 @@ export const saveWaliKelas = async (ustadzData) => {
       await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'save_ustadz', ...newItem })
+        body: JSON.stringify({
+          action: 'save_ustadz',
+          ...newItem,
+          kontak: toSheetPlainTextPhone(newItem.kontak)
+        })
       });
     } catch (e) {
       console.warn('Simpan Ustadz ke Google Sheets gagal:', e);

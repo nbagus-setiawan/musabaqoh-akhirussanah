@@ -76,3 +76,13 @@ export function buildWaUrl(rawPhone, message = '') {
   const query = message ? `?text=${encodeURIComponent(message)}` : '';
   return waDigits ? `https://wa.me/${waDigits}${query}` : `https://wa.me/${query}`;
 }
+
+/**
+ * Format nomor agar Google Sheets menyimpannya sebagai teks 08... tanpa memotong angka 0 di depan.
+ * @param {string|number} rawPhone
+ * @returns {string}
+ */
+export function toSheetPlainTextPhone(rawPhone) {
+  const local = normalizePhoneLocal08(rawPhone);
+  return local ? `'${local}` : '';
+}

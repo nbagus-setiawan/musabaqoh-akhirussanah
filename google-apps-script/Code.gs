@@ -235,6 +235,7 @@ function onOpen() {
     .addSeparator()
     .addItem('5. Undi Nomor Urut (Beregu: 1 Nomor Urut Per Regu)', 'undiNomorUrutOtomatis')
     .addItem('6. Rekapitulasi Poin & Juara Umum', 'hitungRekapJuaraUmum')
+    .addItem('7. Perbaiki Format Nomor WA (08...)', 'perbaikiSemuaNomorWA')
     .addToUi();
 }
 
@@ -436,6 +437,7 @@ function perbaruiHeaderTabelPendaftaran() {
   sheet.getRange('L2:L').setHorizontalAlignment('center');
 
   formatSeluruhLembarKerja();
+  perbaikiSemuaNomorWA();
   SpreadsheetApp.getActiveSpreadsheet().toast('Alhamdulillah! Tabel pendaftaran berhasil dimigrasi ke 13 kolom rapi.', 'Sukses', 5);
 }
 
@@ -476,6 +478,59 @@ function isiMasterDataAwal() {
 }
 
 /**
+ * Perbaiki seluruh baris Nomor_WA (Pendaftaran) & Kontak_WA (Ustadz) agar berformat teks 08...
+ */
+function perbaikiSemuaNomorWA() {
+  let fixedCount = 0;
+
+  try {
+    const sPendaftaran = getSheetByName(SHEET_PENDAFTARAN);
+    const lastRow = sPendaftaran.getLastRow();
+    if (lastRow > 1) {
+      const headers = sPendaftaran.getRange(1, 1, 1, sPendaftaran.getLastColumn()).getValues()[0].map(h => String(h).trim());
+      const colWa = headers.findIndex(h => h.toLowerCase() === 'nomor_wa');
+      const waColNum = colWa !== -1 ? colWa + 1 : 3;
+      const waRange = sPendaftaran.getRange(2, waColNum, lastRow - 1, 1);
+      waRange.setNumberFormat('@');
+      const vals = waRange.getValues();
+      const fixedVals = vals.map(r => {
+        const raw = r[0];
+        const norm = normalizePhoneLocal08_(raw);
+        if (norm && String(raw) !== norm) fixedCount++;
+        return [norm];
+      });
+      waRange.setValues(fixedVals);
+    }
+  } catch (e) {}
+
+  try {
+    const sUstadz = getSheetByName(SHEET_USTADZ);
+    const lastUstadzRow = sUstadz.getLastRow();
+    if (lastUstadzRow > 1) {
+      const waRange = sUstadz.getRange(2, 5, lastUstadzRow - 1, 1);
+      waRange.setNumberFormat('@');
+      const vals = waRange.getValues();
+      const fixedVals = vals.map(r => {
+        const raw = r[0];
+        const norm = normalizePhoneLocal08_(raw);
+        if (norm && String(raw) !== norm) fixedCount++;
+        return [norm];
+      });
+      waRange.setValues(fixedVals);
+    }
+  } catch (e) {}
+
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Format Nomor WA selesai diperiksa. ' + fixedCount + ' baris diperbaiki ke format teks 08...',
+      'Perbaikan Nomor WA',
+      5
+    );
+  } catch (e) {}
+  return fixedCount;
+}
+
+/**
  * Rapikan Format Seluruh Lembar Kerja
  */
 function formatSeluruhLembarKerja() {
@@ -486,6 +541,7 @@ function formatSeluruhLembarKerja() {
       sheet.autoResizeColumns(1, Math.min(sheet.getLastColumn(), 15));
     } catch (e) {}
   });
+  perbaikiSemuaNomorWA();
 }
 
 /**
@@ -722,6 +778,15 @@ function doGet(e) {
         totalPengeluaran: Math.max(0, sPengeluaran.getLastRow() - 1),
         totalKebutuhan: Math.max(0, sKebutuhan.getLastRow() - 1),
         timestamp: new Date().toISOString()
+      });
+    }
+
+    if (action === 'repair_wa') {
+      const fixedCount = perbaikiSemuaNomorWA();
+      return jsonResponse({
+        status: 'success',
+        message: 'Berhasil memperbaiki ' + fixedCount + ' baris Nomor WA menjadi format teks 08...',
+        fixedCount: fixedCount
       });
     }
 
