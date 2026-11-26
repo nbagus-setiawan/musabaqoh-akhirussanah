@@ -346,7 +346,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
             detailCabang: `${item.bahasa} (Duet)`,
             label: `Duet 1 • ${item.bahasa}`,
-            catatan: `Format: Duet (${duetTitle}) - Santri 1 | Bahasa: ${item.bahasa}`
+            catatan: `Duet - ${item.bahasa}`
           });
         }
         if (item.nama2 && item.nama2.trim()) {
@@ -358,7 +358,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
             detailCabang: `${item.bahasa} (Duet)`,
             label: `Duet 2 • ${item.bahasa}`,
-            catatan: `Format: Duet (${duetTitle}) - Santri 2 | Bahasa: ${item.bahasa}`
+            catatan: `Duet - ${item.bahasa}`
           });
         }
       } else {
@@ -371,7 +371,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
             detailCabang: item.bahasa,
             label: `Perorangan • ${item.bahasa}`,
-            catatan: `Format: Perorangan | Bahasa: ${item.bahasa}`
+            catatan: item.bahasa
           });
         }
       }
@@ -391,7 +391,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
             detailCabang: `${item.bahasa} (Duet)`,
             label: `Duet 1 • ${item.bahasa}`,
-            catatan: `Format: Duet (${duetTitle}) - Santri 1 | Bahasa: ${item.bahasa}`
+            catatan: `Duet - ${item.bahasa}`
           });
         }
         if (item.nama2 && item.nama2.trim()) {
@@ -403,7 +403,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
             detailCabang: `${item.bahasa} (Duet)`,
             label: `Duet 2 • ${item.bahasa}`,
-            catatan: `Format: Duet (${duetTitle}) - Santri 2 | Bahasa: ${item.bahasa}`
+            catatan: `Duet - ${item.bahasa}`
           });
         }
       } else {
@@ -416,7 +416,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
             detailCabang: item.bahasa,
             label: `Perorangan • ${item.bahasa}`,
-            catatan: `Format: Perorangan | Bahasa: ${item.bahasa}`
+            catatan: item.bahasa
           });
         }
       }
@@ -504,7 +504,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
           kategoriDetail: `${kelasDiniyah} (${item.juz})`,
           detailCabang: item.juz,
           label: `Santri ${idx + 1} • Kategori ${item.juz}`,
-          catatan: `Kategori Hafalan: ${item.juz}`
+          catatan: item.juz
         });
       }
     });
@@ -578,7 +578,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         kategoriDetail: `${kelasDiniyah} (${reguTitle})`,
         detailCabang: reguTitle,
         label: `Ketua Regu • ${reguTitle}`,
-        catatan: `Ketua: ${kreasiNadzom.ketua.trim().toUpperCase()}, Jumlah Anggota: ${kreasiNadzom.jumlahAnggota || '-'}. ${kreasiNadzom.catatan || ''}`
+        catatan: kreasiNadzom.jumlahAnggota ? `${kreasiNadzom.jumlahAnggota} Anggota` : 'Kreasi Nadzom'
       });
     }
 

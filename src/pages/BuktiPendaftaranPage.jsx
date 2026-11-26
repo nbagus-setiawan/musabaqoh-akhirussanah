@@ -105,6 +105,149 @@ export default function BuktiPendaftaranPage() {
     return val;
   };
 
+  // Format Keterangan Singkat Tanpa Bertele-tele
+  const formatKeterangan = (raw = '', cabang = '') => {
+    const str = String(raw || '').trim();
+    if (!str || str === '-') return '-';
+
+    // 1. Duet (MC / Pidato)
+    if (/duet/i.test(str)) {
+      const bMatch = str.match(/bahasa\s*([a-z]+)/i);
+      const b = bMatch ? `Bahasa ${bMatch[1].charAt(0).toUpperCase() + bMatch[1].slice(1).toLowerCase()}` : '';
+      return b ? `Duet - ${b}` : 'Duet';
+    }
+
+    // 2. Perorangan Bahasa (MC / Pidato)
+    if (/perorangan/i.test(str) || (/bahasa\s*([a-z]+)/i.test(str) && /pidato|mc/i.test(cabang))) {
+      const bMatch = str.match(/bahasa\s*([a-z]+)/i);
+      if (bMatch) {
+        return `Bahasa ${bMatch[1].charAt(0).toUpperCase() + bMatch[1].slice(1).toLowerCase()}`;
+      }
+    }
+
+    // 3. Regu (Syarhil / CCM)
+    const reguMatch = str.match(/regu\s*(\d+)/i);
+    if (reguMatch) {
+      return `Regu ${reguMatch[1]}`;
+    }
+
+    // 4. Kreasi Nadzom
+    if (/kreasi/i.test(cabang) || /kreasi/i.test(str)) {
+      const aggMatch = str.match(/(\d+)\s*anggota/i);
+      return aggMatch ? `${aggMatch[1]} Anggota` : 'Kreasi Nadzom';
+    }
+
+    // 5. MHQ Juz
+    const juzMatch = str.match(/(\d+)\s*juz/i);
+    if (juzMatch) {
+      return `${juzMatch[1]} Juz`;
+    }
+
+    return str;
+  };
+
+  // Satukan Peserta Duet & Regu ke dalam 1 Baris Tabel
+  const groupedEntries = useMemo(() => {
+    const list = [];
+    const groupMap = new Map();
+
+    entries.forEach(item => {
+      const c = String(item.Cabang_Lomba || '').toLowerCase();
+      const cat = String(item.Catatan || item.kategoriDetail || item.detailCabang || '');
+      const isDuet = /duet/i.test(cat);
+      const isSyarhil = /syarhil/i.test(c);
+      const isCcm = /ccm|cerdas\s*cermat/i.test(c);
+      const isKreasi = /kreasi/i.test(c);
+
+      if (isDuet) {
+        const bMatch = cat.match(/bahasa\s*([a-z]+)/i);
+        const bahasa = bMatch ? bMatch[1].toLowerCase() : 'duet';
+        const key = `duet___${c}___${bahasa}`;
+        if (!groupMap.has(key)) {
+          groupMap.set(key, {
+            isGroup: true,
+            type: 'duet',
+            Cabang_Lomba: item.Cabang_Lomba,
+            keterangan: formatKeterangan(cat, item.Cabang_Lomba),
+            members: []
+          });
+        }
+        groupMap.get(key).members.push(item);
+      } else if (isSyarhil || isCcm) {
+        const rMatch = cat.match(/regu\s*(\d+)/i);
+        const reguNum = rMatch ? rMatch[1] : '1';
+        const key = `regu___${c}___${reguNum}`;
+        if (!groupMap.has(key)) {
+          groupMap.set(key, {
+            isGroup: true,
+            type: isSyarhil ? 'syarhil' : 'ccm',
+            Cabang_Lomba: item.Cabang_Lomba,
+            keterangan: `Regu ${reguNum}`,
+            members: []
+          });
+        }
+        groupMap.get(key).members.push(item);
+      } else if (isKreasi) {
+        const key = `kreasi___${c}`;
+        if (!groupMap.has(key)) {
+          groupMap.set(key, {
+            isGroup: true,
+            type: 'kreasi',
+            Cabang_Lomba: item.Cabang_Lomba,
+            keterangan: formatKeterangan(cat, item.Cabang_Lomba),
+            members: []
+          });
+        }
+        groupMap.get(key).members.push(item);
+      } else {
+        list.push({
+          isGroup: false,
+          ID_Pendaftaran: item.ID_Pendaftaran || '-',
+          Nama_Lengkap: item.Nama_Lengkap || '-',
+          Cabang_Lomba: item.Cabang_Lomba || '-',
+          keterangan: formatKeterangan(cat, item.Cabang_Lomba)
+        });
+      }
+    });
+
+    groupMap.forEach(grp => {
+      const ids = grp.members.map(m => m.ID_Pendaftaran).filter(Boolean);
+      let idStr = ids.join(', ');
+      if (ids.length > 2) {
+        idStr = `${ids[0]} s.d ${ids[ids.length - 1]}`;
+      }
+
+      let namaFormatted = '';
+      if (grp.type === 'syarhil') {
+        namaFormatted = grp.members.map((m, idx) => {
+          const mCat = String(m.Catatan || m.label || '');
+          let role = '';
+          if (/pensyarah/i.test(mCat)) role = ' (Pensyarah)';
+          else if (/tilawah/i.test(mCat)) role = ' (Tilawah)';
+          else if (/terjemah/i.test(mCat)) role = ' (Terjemah)';
+          return `${idx + 1}. ${m.Nama_Lengkap}${role}`;
+        }).join('\n');
+      } else if (grp.type === 'kreasi') {
+        namaFormatted = grp.members.map(m => m.Nama_Lengkap).join('\n');
+      } else {
+        namaFormatted = grp.members.map((m, idx) => `${idx + 1}. ${m.Nama_Lengkap}`).join('\n');
+      }
+
+      list.push({
+        isGroup: true,
+        type: grp.type,
+        ID_Pendaftaran: idStr || '-',
+        Nama_Lengkap: namaFormatted,
+        Cabang_Lomba: grp.Cabang_Lomba,
+        keterangan: grp.keterangan,
+        membersCount: grp.members.length,
+        members: grp.members
+      });
+    });
+
+    return list;
+  }, [entries]);
+
   // ========================================================
   // GENERATOR PDF RESMI DENGAN KOP & TTD (PERSIS DAFTAR SANTRI)
   // ========================================================
@@ -162,13 +305,13 @@ export default function BuktiPendaftaranPage() {
       const subtitleText = `KELAS : ${cleanKelas}   |   JENJANG : ${cleanTingkat}   |   WALI KELAS : ${cleanWali}`;
       doc.text(subtitleText, 105, 58.5, { align: 'center' });
 
-      // 5. Tabel Delegasi Santri (jsPDF AutoTable)
-      const tableRows = entries.map((item, idx) => [
+      // 5. Tabel Delegasi Santri (jsPDF AutoTable - 1 Baris per Regu/Duet)
+      const tableRows = groupedEntries.map((item, idx) => [
         String(idx + 1),
-        item.ID_Pendaftaran ? String(item.ID_Pendaftaran) : '-',
+        item.ID_Pendaftaran || '-',
         item.Nama_Lengkap || '-',
         item.Cabang_Lomba || '-',
-        item.Catatan || '-'
+        item.keterangan || '-'
       ]);
 
       autoTable(doc, {
@@ -253,11 +396,7 @@ export default function BuktiPendaftaranPage() {
       doc.setLineWidth(0.3);
       doc.line(rightSig - (rightWidth / 2), nameRightY + 1, rightSig + (rightWidth / 2), nameRightY + 1);
 
-      if (meta.nomorWA) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.text(`WA: ${meta.nomorWA}`, rightSig, nameRightY + 5.5, { align: 'center' });
-      }
+      // (Nomor WA di bawah tanda tangan ditiadakan sesuai arahan)
 
       // 7. Footer nomor halaman
       const totalPages = doc.internal.getNumberOfPages();
@@ -445,18 +584,19 @@ export default function BuktiPendaftaranPage() {
                   <span className="col-span-1">No</span>
                   <span className="col-span-2">ID Santri</span>
                   <span className="col-span-5">Nama Lengkap Santri</span>
-                  <span className="col-span-4 text-right">Cabang Lomba</span>
+                  <span className="col-span-2">Cabang Lomba</span>
+                  <span className="col-span-2 text-right">Keterangan</span>
                 </div>
 
                 {/* 2. Header Khusus Layar Ponsel */}
                 <div className="bg-slate-100/80 px-3 py-2 text-[10px] font-black text-slate-600 uppercase tracking-wider flex items-center justify-between sm:hidden">
-                  <span>Daftar Delegasi ({entries.length} Santri)</span>
-                  <span>Cabang Lomba</span>
+                  <span>Daftar Delegasi ({groupedEntries.length} Baris / {entries.length} Santri)</span>
+                  <span>Cabang</span>
                 </div>
 
-                {entries.map((item, idx) => (
+                {groupedEntries.map((item, idx) => (
                   <React.Fragment key={idx}>
-                    {/* Tampilan Mobile: Rapi, Lebar Penuh, Tanpa Pemotongan Teks */}
+                    {/* Tampilan Mobile: Rapi, 1 Baris per Regu/Duet */}
                     <div className="p-3 hover:bg-slate-50/80 transition-colors sm:hidden">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -464,16 +604,16 @@ export default function BuktiPendaftaranPage() {
                             {idx + 1}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-black text-slate-900 text-xs leading-snug break-words">
+                            <p className="font-black text-slate-900 text-xs leading-snug whitespace-pre-line">
                               {item.Nama_Lengkap}
                             </p>
-                            <div className="flex items-center gap-1.5 mt-1 text-[10px]">
+                            <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
                               <span className="font-mono font-bold text-emerald-800 bg-emerald-50/90 px-1.5 py-0.5 rounded border border-emerald-200/60 shrink-0">
                                 {item.ID_Pendaftaran}
                               </span>
-                              {item.Catatan && (
-                                <span className="text-slate-500 italic truncate max-w-[140px]">
-                                  • {item.Catatan}
+                              {item.keterangan && item.keterangan !== '-' && (
+                                <span className="font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                  {item.keterangan}
                                 </span>
                               )}
                             </div>
@@ -485,17 +625,15 @@ export default function BuktiPendaftaranPage() {
                       </div>
                     </div>
 
-                    {/* Tampilan Desktop */}
+                    {/* Tampilan Desktop: Rapi, 1 Baris per Regu/Duet */}
                     <div className="px-3.5 py-2.5 text-xs hover:bg-slate-50 hidden sm:grid grid-cols-12 gap-2 items-center">
                       <span className="col-span-1 font-bold text-slate-400">{idx + 1}</span>
-                      <span className="col-span-2 font-mono font-bold text-emerald-800 text-[11px]">{item.ID_Pendaftaran}</span>
+                      <span className="col-span-2 font-mono font-bold text-emerald-800 text-[11px] truncate">{item.ID_Pendaftaran}</span>
                       <div className="col-span-5 min-w-0 pr-1">
-                        <p className="font-black text-slate-900 truncate">{item.Nama_Lengkap}</p>
-                        {item.Catatan && (
-                          <p className="text-[10px] text-slate-400 truncate">{item.Catatan}</p>
-                        )}
+                        <p className="font-black text-slate-900 whitespace-pre-line leading-relaxed">{item.Nama_Lengkap}</p>
                       </div>
-                      <span className="col-span-4 text-right font-bold text-slate-700">{item.Cabang_Lomba}</span>
+                      <span className="col-span-2 font-bold text-slate-700">{item.Cabang_Lomba}</span>
+                      <span className="col-span-2 text-right font-semibold text-slate-600 text-[11px]">{item.keterangan || '-'}</span>
                     </div>
                   </React.Fragment>
                 ))}
