@@ -367,7 +367,7 @@ export default function BuktiPendaftaranPage() {
                   Seluruh Delegasi Berhasil Didaftarkan
                 </h3>
                 <p className="text-[10.5px] sm:text-[11px] text-emerald-800 mt-0.5 leading-tight truncate">
-                  Data telah tersimpan di sistem panitia dan spreadsheet resmi
+                  Data telah tersimpan resmi di sistem panitia
                 </p>
               </div>
             </div>

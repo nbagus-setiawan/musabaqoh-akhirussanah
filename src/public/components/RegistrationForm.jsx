@@ -1248,7 +1248,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         await onSubmitSuccess(result);
       }
     } catch (err) {
-      setFormError(err?.message || 'Terjadi kendala saat menyimpan data ke database. Silakan periksa koneksi dan coba lagi.');
+      setFormError(err?.message || 'Terjadi kendala saat menyimpan data pendaftaran. Silakan periksa koneksi dan coba lagi.');
       setIsSubmitting(false);
     }
   };
@@ -2773,7 +2773,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                   Pratinjau & Konfirmasi Pendaftaran
                 </h1>
                 <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-tight mt-0.5 truncate">
-                  Periksa seluruh data delegasi sebelum dikirim ke database panitia
+                  Periksa seluruh data delegasi sebelum dikirim ke sistem resmi panitia
                 </p>
               </div>
             </div>
@@ -2842,13 +2842,72 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                       </button>
                     </div>
 
-                    <div className="space-y-1 pl-7">
-                      {branch.names.map((n, i) => (
-                        <div key={i} className="text-xs text-slate-700 flex items-center space-x-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#075B45] shrink-0"></span>
-                          <span className="font-semibold text-slate-800">{n}</span>
-                        </div>
-                      ))}
+                    <div className="space-y-2 pt-1">
+                      {branch.names.map((n, i) => {
+                        // Jika entry merupakan Duet
+                        if (typeof n === 'string' && n.startsWith('Duet (')) {
+                          const match = n.match(/^Duet \(([^)]+)\):\s*(.+)$/);
+                          if (match) {
+                            const bahasa = match[1];
+                            const members = match[2].split('&').map(m => m.trim());
+                            return (
+                              <div key={i} className="bg-emerald-50/50 border border-emerald-200/70 rounded-xl p-2.5 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#075B45] bg-white border border-emerald-200 px-2 py-0.5 rounded-full">
+                                    Duet • {bahasa}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-400">2 Santri</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                                  {members.map((m, mIdx) => (
+                                    <div key={mIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-emerald-150 flex items-center space-x-2">
+                                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-[#075B45] text-[10px] font-black flex items-center justify-center shrink-0">
+                                        {mIdx + 1}
+                                      </span>
+                                      <span className="text-xs font-bold text-slate-900 truncate">{m}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+                        }
+
+                        // Jika entry merupakan Regu (Syarhil / CCM)
+                        if (typeof n === 'string' && /^(Regu \d+):\s*(.+)$/.test(n)) {
+                          const match = n.match(/^(Regu \d+):\s*(.+)$/);
+                          const reguTitle = match[1];
+                          const members = match[2].split(',').map(m => m.trim());
+                          return (
+                            <div key={i} className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#075B45] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                  {reguTitle}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400">{members.length} Anggota</span>
+                              </div>
+                              <div className="space-y-1 pt-0.5">
+                                {members.map((m, mIdx) => (
+                                  <div key={mIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/80 flex items-center space-x-2">
+                                    <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                      {mIdx + 1}
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-900">{m}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Standar Perorangan / Individu
+                        return (
+                          <div key={i} className="bg-slate-50/80 border border-slate-200/70 rounded-xl px-3 py-2 flex items-center space-x-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#075B45] shrink-0"></span>
+                            <span className="text-xs font-bold text-slate-900 truncate">{n}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -2859,7 +2918,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
               <p className="font-bold text-slate-800">Ketentuan Resmi Panitia:</p>
               <p className="leading-relaxed">
-                Data yang dikirimkan akan langsung tersimpan ke Google Sheets panitia. Santri yang didaftarkan wajib mematuhi ketentuan tata tertib dan hadir saat pemanggilan nomor peserta perlombaan.
+                Data yang dikirimkan akan langsung tersimpan resmi ke sistem panitia. Santri yang didaftarkan wajib mematuhi ketentuan tata tertib dan hadir saat pemanggilan nomor peserta perlombaan.
               </p>
             </div>
 
@@ -2878,7 +2937,7 @@ export default function RegistrationForm({ onSubmitSuccess }) {
                 {isSubmitting ? (
                   <span className="inline-flex items-center space-x-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    <span>Menyimpan ke Google Sheets...</span>
+                    <span>Menyimpan data pendaftaran...</span>
                   </span>
                 ) : (
                   <>
