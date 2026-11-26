@@ -211,11 +211,8 @@ export default function BuktiPendaftaranPage() {
     });
 
     groupMap.forEach(grp => {
-      const ids = grp.members.map(m => m.ID_Pendaftaran).filter(Boolean);
-      let idStr = ids.join(', ');
-      if (ids.length > 2) {
-        idStr = `${ids[0]} s.d ${ids[ids.length - 1]}`;
-      }
+      // Tepat 1 ID Santri saja per baris (baik regu, tim, maupun duet)
+      const idStr = grp.members[0]?.ID_Pendaftaran || '-';
 
       let namaFormatted = '';
       if (grp.type === 'syarhil') {
