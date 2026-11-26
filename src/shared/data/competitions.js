@@ -109,7 +109,7 @@ export const CABANG_LOMBA_LIST = [
     name: 'PIDATO',
     fullName: 'PIDATO (3 Bahasa: Indonesia, Arab, Inggris)',
     tingkatAllowed: ['ula', 'wustho'],
-    description: 'Lomba orasi dakwah Islamiyah (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
+    description: 'Lomba orasi dakwah Islamiyah (Pilihan Perorangan atau Duet dalam Bahasa Indonesia, Arab, atau Inggris).',
     type: 'language',
     maxSantri: 3,
     tatibUrl: '/tatib-khitobah-2026.pdf'
@@ -119,7 +119,7 @@ export const CABANG_LOMBA_LIST = [
     name: 'MC',
     fullName: 'MC (Master of Ceremony / Pembawa Acara 3 Bahasa)',
     tingkatAllowed: ['ula', 'wustho'],
-    description: 'Lomba pembawa acara formal & non-formal Islami (Tersedia pilihan Bahasa Indonesia, Arab, atau Inggris - Maksimal 3 Santri).',
+    description: 'Lomba pembawa acara (Pilihan Perorangan atau Duet dalam Bahasa Indonesia, Arab, atau Inggris).',
     type: 'language',
     maxSantri: 3,
     tatibUrl: '/tatib-mc-2026.pdf'

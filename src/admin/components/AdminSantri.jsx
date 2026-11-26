@@ -756,13 +756,51 @@ export default function AdminSantri({
           }
         } else {
           // ==========================================
-          // CABANG INDIVIDU: Baris Per Santri
+          // CABANG INDIVIDU & DUET (1 Baris per Duet)
           // ==========================================
+          const processedEntries = [];
+          const duetMap = new Map();
+
+          itemsInGroup.forEach(it => {
+            const isDuet = /duet/i.test(it.Catatan || it.kategoriDetail || it.detailCabang || '');
+            if (isDuet) {
+              const noUrut = it.Nomor_Urut ? String(it.Nomor_Urut).trim() : '';
+              const kelas = (it.Kelas_Kategori || it.Kelas_Diniyah || it.Tingkat || '-').trim();
+              const bahasaMatch = (it.Catatan || it.kategoriDetail || it.detailCabang || '').match(/bahasa\s*[a-z]+/i);
+              const bahasaKey = bahasaMatch ? bahasaMatch[0].toLowerCase() : '';
+              const idPrefix = (it.ID_Pendaftaran || '').split('-').slice(0, 3).join('-');
+              const duetKey = noUrut && noUrut !== '-' 
+                ? `${kelas}___${bahasaKey}___no_${noUrut}` 
+                : `${kelas}___${bahasaKey}___${idPrefix || it.Timestamp || 'duet'}`;
+
+              if (!duetMap.has(duetKey)) {
+                duetMap.set(duetKey, {
+                  isRegu: true,
+                  isDuet: true,
+                  Nomor_Urut: noUrut || '-',
+                  Kelas: kelas,
+                  Tingkat: it.Tingkat || '-',
+                  Cabang_Lomba: it.Cabang_Lomba || sampleCabang,
+                  Jenis_Kelamin: it.Jenis_Kelamin || (isSantriPutri(it) ? 'P' : 'L'),
+                  members: []
+                });
+              }
+              duetMap.get(duetKey).members.push(it);
+            } else {
+              processedEntries.push(it);
+            }
+          });
+
+          // Masukkan duet team ke daftar entri
+          duetMap.forEach(team => {
+            processedEntries.push(team);
+          });
+
           const putriList = [];
           const putraList = [];
 
-          itemsInGroup.forEach(it => {
-            if (isSantriPutri(it)) {
+          processedEntries.forEach(it => {
+            if (it.isRegu ? it.Jenis_Kelamin === 'P' : isSantriPutri(it)) {
               putriList.push(it);
             } else {
               putraList.push(it);
@@ -775,7 +813,9 @@ export default function AdminSantri({
             if (!isNaN(na) && !isNaN(nb)) return na - nb;
             if (!isNaN(na)) return -1;
             if (!isNaN(nb)) return 1;
-            return String(a.Nama_Lengkap || '').localeCompare(String(b.Nama_Lengkap || ''));
+            const nameA = a.isRegu ? (a.members[0]?.Nama_Lengkap || '') : (a.Nama_Lengkap || '');
+            const nameB = b.isRegu ? (b.members[0]?.Nama_Lengkap || '') : (b.Nama_Lengkap || '');
+            return String(nameA).localeCompare(String(nameB));
           };
 
           putriList.sort(byNomorPeserta);
@@ -847,6 +887,11 @@ export default function AdminSantri({
               if (/pensyarah/i.test(cat)) roleSuffix = ' (Pensyarah)';
               else if (/tilawah/i.test(cat)) roleSuffix = ' (Tilawah)';
               else if (/terjemah/i.test(cat)) roleSuffix = ' (Terjemah)';
+            } else if (entry.isDuet || /duet/i.test(m.Catatan || m.kategoriDetail || '')) {
+              const cat = String(m.Catatan || m.label || '');
+              const s1 = /santri\s*1/i.test(cat);
+              const s2 = /santri\s*2/i.test(cat);
+              roleSuffix = s1 ? ' (Duet 1)' : s2 ? ' (Duet 2)' : ' (Duet)';
             }
             return `${mIdx + 1}. ${cleanName}${roleSuffix}`;
           }).join('\n');

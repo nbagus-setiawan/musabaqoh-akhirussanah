@@ -90,16 +90,16 @@ export default function RegistrationForm({ onSubmitSuccess }) {
 
   // 2. Pidato (maks 3 santri + pilihan 3 bahasa)
   const [pidatoSantri, setPidatoSantri] = useState([
-    { nama: '', bahasa: 'Bahasa Indonesia' },
-    { nama: '', bahasa: 'Bahasa Arab' },
-    { nama: '', bahasa: 'Bahasa Inggris' }
+    { nama: '', nama2: '', bahasa: 'Bahasa Indonesia', jenis: 'perorangan' },
+    { nama: '', nama2: '', bahasa: 'Bahasa Arab', jenis: 'perorangan' },
+    { nama: '', nama2: '', bahasa: 'Bahasa Inggris', jenis: 'perorangan' },
   ]);
 
   // 3. MC (maks 3 santri + pilihan 3 bahasa)
   const [mcSantri, setMcSantri] = useState([
-    { nama: '', bahasa: 'Bahasa Indonesia' },
-    { nama: '', bahasa: 'Bahasa Arab' },
-    { nama: '', bahasa: 'Bahasa Inggris' }
+    { nama: '', nama2: '', bahasa: 'Bahasa Indonesia', jenis: 'perorangan' },
+    { nama: '', nama2: '', bahasa: 'Bahasa Arab', jenis: 'perorangan' },
+    { nama: '', nama2: '', bahasa: 'Bahasa Inggris', jenis: 'perorangan' },
   ]);
 
   // 4. Syarhil Qur'an (Regu: Pensyarah, Tilawah, Terjemah)
@@ -180,8 +180,22 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         if (d.nomorWA) setNomorWA(d.nomorWA);
         if (d.mqkSantri) setMqkSantri(d.mqkSantri);
         if (d.mhnSantri) setMhnSantri(d.mhnSantri);
-        if (d.pidatoSantri) setPidatoSantri(d.pidatoSantri);
-        if (d.mcSantri) setMcSantri(d.mcSantri);
+        if (d.pidatoSantri && Array.isArray(d.pidatoSantri)) {
+          setPidatoSantri(d.pidatoSantri.map(p => ({
+            nama: p.nama || '',
+            nama2: p.nama2 || '',
+            bahasa: p.bahasa || 'Bahasa Indonesia',
+            jenis: p.jenis || 'perorangan'
+          })));
+        }
+        if (d.mcSantri && Array.isArray(d.mcSantri)) {
+          setMcSantri(d.mcSantri.map(m => ({
+            nama: m.nama || '',
+            nama2: m.nama2 || '',
+            bahasa: m.bahasa || 'Bahasa Indonesia',
+            jenis: m.jenis || 'perorangan'
+          })));
+        }
         if (d.syarhilRegu) setSyarhilRegu(d.syarhilRegu);
         if (d.tilawahSantri) setTilawahSantri(d.tilawahSantri);
         if (d.kaligrafiSantri) setKaligrafiSantri(d.kaligrafiSantri);
@@ -318,35 +332,93 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       }
     });
 
-    // 2. PIDATO
+    // 2. PIDATO (Perorangan / Duet - 3 Bahasa)
     pidatoSantri.forEach((item, idx) => {
-      if (item.nama && item.nama.trim()) {
-        list.push({
-          cabangId: 'pidato',
-          cabangLomba: 'PIDATO',
-          namaSantri: item.nama.trim().toUpperCase(),
-          kelasDiniyah: kelasDiniyah,
-          kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-          detailCabang: item.bahasa,
-          label: `Santri ${idx + 1} • ${item.bahasa}`,
-          catatan: `Bahasa: ${item.bahasa}`
-        });
+      const isDuet = item.jenis === 'duet';
+      if (isDuet) {
+        const duetTitle = `Duet ${item.bahasa}`;
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'pidato',
+            cabangLomba: 'PIDATO',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
+            detailCabang: `${item.bahasa} (Duet)`,
+            label: `Duet 1 • ${item.bahasa}`,
+            catatan: `Format: Duet (${duetTitle}) - Santri 1 | Bahasa: ${item.bahasa}`
+          });
+        }
+        if (item.nama2 && item.nama2.trim()) {
+          list.push({
+            cabangId: 'pidato',
+            cabangLomba: 'PIDATO',
+            namaSantri: item.nama2.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
+            detailCabang: `${item.bahasa} (Duet)`,
+            label: `Duet 2 • ${item.bahasa}`,
+            catatan: `Format: Duet (${duetTitle}) - Santri 2 | Bahasa: ${item.bahasa}`
+          });
+        }
+      } else {
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'pidato',
+            cabangLomba: 'PIDATO',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            detailCabang: item.bahasa,
+            label: `Perorangan • ${item.bahasa}`,
+            catatan: `Format: Perorangan | Bahasa: ${item.bahasa}`
+          });
+        }
       }
     });
 
-    // 3. MC
+    // 3. MC (Perorangan / Duet - 3 Bahasa)
     mcSantri.forEach((item, idx) => {
-      if (item.nama && item.nama.trim()) {
-        list.push({
-          cabangId: 'mc',
-          cabangLomba: 'MC',
-          namaSantri: item.nama.trim().toUpperCase(),
-          kelasDiniyah: kelasDiniyah,
-          kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
-          detailCabang: item.bahasa,
-          label: `Santri ${idx + 1} • ${item.bahasa}`,
-          catatan: `Bahasa: ${item.bahasa}`
-        });
+      const isDuet = item.jenis === 'duet';
+      if (isDuet) {
+        const duetTitle = `Duet ${item.bahasa}`;
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'mc',
+            cabangLomba: 'MC',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
+            detailCabang: `${item.bahasa} (Duet)`,
+            label: `Duet 1 • ${item.bahasa}`,
+            catatan: `Format: Duet (${duetTitle}) - Santri 1 | Bahasa: ${item.bahasa}`
+          });
+        }
+        if (item.nama2 && item.nama2.trim()) {
+          list.push({
+            cabangId: 'mc',
+            cabangLomba: 'MC',
+            namaSantri: item.nama2.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa} - Duet)`,
+            detailCabang: `${item.bahasa} (Duet)`,
+            label: `Duet 2 • ${item.bahasa}`,
+            catatan: `Format: Duet (${duetTitle}) - Santri 2 | Bahasa: ${item.bahasa}`
+          });
+        }
+      } else {
+        if (item.nama && item.nama.trim()) {
+          list.push({
+            cabangId: 'mc',
+            cabangLomba: 'MC',
+            namaSantri: item.nama.trim().toUpperCase(),
+            kelasDiniyah: kelasDiniyah,
+            kategoriDetail: `${kelasDiniyah} (${item.bahasa})`,
+            detailCabang: item.bahasa,
+            label: `Perorangan • ${item.bahasa}`,
+            catatan: `Format: Perorangan | Bahasa: ${item.bahasa}`
+          });
+        }
       }
     });
 
@@ -598,12 +670,40 @@ export default function RegistrationForm({ onSubmitSuccess }) {
           count = names.length;
           break;
         case 'pidato':
-          names = pidatoSantri.filter(s => s.nama.trim()).map(s => `${s.nama.trim().toUpperCase()} (${s.bahasa})`);
-          count = names.length;
+          pidatoSantri.forEach(s => {
+            if (s.jenis === 'duet') {
+              const pair = [];
+              if (s.nama && s.nama.trim()) pair.push(s.nama.trim().toUpperCase());
+              if (s.nama2 && s.nama2.trim()) pair.push(s.nama2.trim().toUpperCase());
+              if (pair.length > 0) {
+                names.push(`Duet (${s.bahasa}): ${pair.join(' & ')}`);
+                count += pair.length;
+              }
+            } else {
+              if (s.nama && s.nama.trim()) {
+                names.push(`${s.nama.trim().toUpperCase()} (${s.bahasa})`);
+                count++;
+              }
+            }
+          });
           break;
         case 'mc':
-          names = mcSantri.filter(s => s.nama.trim()).map(s => `${s.nama.trim().toUpperCase()} (${s.bahasa})`);
-          count = names.length;
+          mcSantri.forEach(s => {
+            if (s.jenis === 'duet') {
+              const pair = [];
+              if (s.nama && s.nama.trim()) pair.push(s.nama.trim().toUpperCase());
+              if (s.nama2 && s.nama2.trim()) pair.push(s.nama2.trim().toUpperCase());
+              if (pair.length > 0) {
+                names.push(`Duet (${s.bahasa}): ${pair.join(' & ')}`);
+                count += pair.length;
+              }
+            } else {
+              if (s.nama && s.nama.trim()) {
+                names.push(`${s.nama.trim().toUpperCase()} (${s.bahasa})`);
+                count++;
+              }
+            }
+          });
           break;
         case 'syarhil':
           maxLimit = syarhilRegu.length * 3;
@@ -713,25 +813,65 @@ export default function RegistrationForm({ onSubmitSuccess }) {
         };
       }
       case 'pidato': {
-        const count = pidatoSantri.filter(s => s.nama.trim().length > 0).length;
+        let count = 0;
+        let isPartial = false;
+        let partialMsg = '';
+        pidatoSantri.forEach(s => {
+          if (s.jenis === 'duet') {
+            const n1 = (s.nama || '').trim().length > 0;
+            const n2 = (s.nama2 || '').trim().length > 0;
+            if (n1 && n2) {
+              count += 2;
+            } else if (n1 || n2) {
+              isPartial = true;
+              partialMsg = `Slot Duet ${s.bahasa} baru diisi 1 santri. Lengkapi nama pasangan duetnya atau ubah ke Perorangan.`;
+            }
+          } else {
+            if ((s.nama || '').trim().length > 0) {
+              count += 1;
+            }
+          }
+        });
         return {
-          isFilled: count > 0,
-          isPartial: false,
+          isFilled: count > 0 && !isPartial,
+          isPartial,
           count,
-          message: count > 0
-            ? `${count} santri pidato terdaftar.`
-            : 'Wajib mengisi minimal 1 nama santri pidato beserta bahasanya, atau klik "Lewati Cabang" jika tanpa delegasi.'
+          message: isPartial
+            ? partialMsg
+            : count > 0
+              ? `${count} santri pidato terdaftar.`
+              : 'Wajib mengisi minimal 1 nama santri pidato beserta bahasanya, atau klik "Lewati Cabang" jika tanpa delegasi.'
         };
       }
       case 'mc': {
-        const count = mcSantri.filter(s => s.nama.trim().length > 0).length;
+        let count = 0;
+        let isPartial = false;
+        let partialMsg = '';
+        mcSantri.forEach(s => {
+          if (s.jenis === 'duet') {
+            const n1 = (s.nama || '').trim().length > 0;
+            const n2 = (s.nama2 || '').trim().length > 0;
+            if (n1 && n2) {
+              count += 2;
+            } else if (n1 || n2) {
+              isPartial = true;
+              partialMsg = `Slot Duet ${s.bahasa} baru diisi 1 santri. Lengkapi nama pasangan duetnya atau ubah ke Perorangan.`;
+            }
+          } else {
+            if ((s.nama || '').trim().length > 0) {
+              count += 1;
+            }
+          }
+        });
         return {
-          isFilled: count > 0,
-          isPartial: false,
+          isFilled: count > 0 && !isPartial,
+          isPartial,
           count,
-          message: count > 0
-            ? `${count} santri MC terdaftar.`
-            : 'Wajib mengisi minimal 1 nama santri pembawa acara (MC), atau klik "Lewati Cabang" jika tanpa delegasi.'
+          message: isPartial
+            ? partialMsg
+            : count > 0
+              ? `${count} santri MC terdaftar.`
+              : 'Wajib mengisi minimal 1 nama santri pembawa acara (MC), atau klik "Lewati Cabang" jika tanpa delegasi.'
         };
       }
       case 'syarhil': {
@@ -1020,16 +1160,16 @@ export default function RegistrationForm({ onSubmitSuccess }) {
       case 'mhn': setMhnSantri(['', '', '']); break;
       case 'pidato':
         setPidatoSantri([
-          { nama: '', bahasa: 'Bahasa Indonesia' },
-          { nama: '', bahasa: 'Bahasa Arab' },
-          { nama: '', bahasa: 'Bahasa Inggris' }
+          { nama: '', nama2: '', bahasa: 'Bahasa Indonesia', jenis: 'perorangan' },
+          { nama: '', nama2: '', bahasa: 'Bahasa Arab', jenis: 'perorangan' },
+          { nama: '', nama2: '', bahasa: 'Bahasa Inggris', jenis: 'perorangan' },
         ]);
         break;
       case 'mc':
         setMcSantri([
-          { nama: '', bahasa: 'Bahasa Indonesia' },
-          { nama: '', bahasa: 'Bahasa Arab' },
-          { nama: '', bahasa: 'Bahasa Inggris' }
+          { nama: '', nama2: '', bahasa: 'Bahasa Indonesia', jenis: 'perorangan' },
+          { nama: '', nama2: '', bahasa: 'Bahasa Arab', jenis: 'perorangan' },
+          { nama: '', nama2: '', bahasa: 'Bahasa Inggris', jenis: 'perorangan' },
         ]);
         break;
       case 'syarhil':
@@ -1831,50 +1971,156 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            {/* 2. PIDATO (3 Bahasa) */}
+            {/* 2. PIDATO (Perorangan / Duet - 3 Bahasa) */}
             {activeBranchId === 'pidato' && (
               <div className="space-y-3.5">
                 {pidatoSantri.map((item, idx) => {
-                  const notice = getStudentCrossNotice(item.nama, 'PIDATO');
+                  const isDuet = item.jenis === 'duet';
+                  const notice1 = getStudentCrossNotice(item.nama, 'PIDATO');
+                  const notice2 = isDuet ? getStudentCrossNotice(item.nama2, 'PIDATO') : null;
+
                   return (
-                    <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900">Slot Pidato #{idx + 1}</span>
-                        <select
-                          value={item.bahasa}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setPidatoSantri(prev => {
-                              const arr = [...prev];
-                              arr[idx] = { ...arr[idx], bahasa: val };
-                              return arr;
-                            });
-                          }}
-                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#075B45] outline-none"
-                        >
-                          {PILIHAN_BAHASA.map(b => (
-                            <option key={b} value={b}>{b}</option>
-                          ))}
-                        </select>
+                    <div key={idx} className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3">
+                      {/* Baris kontrol slot: judul, format (perorangan/duet), dan bahasa */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                        <span className="text-xs font-bold text-slate-900">
+                          Slot Pidato #{idx + 1}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {/* Segmented button format: Perorangan / Duet */}
+                          <div className="inline-flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-200">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPidatoSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], jenis: 'perorangan' };
+                                  return arr;
+                                });
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
+                                !isDuet
+                                  ? 'bg-[#075B45] text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Perorangan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPidatoSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], jenis: 'duet' };
+                                  return arr;
+                                });
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
+                                isDuet
+                                  ? 'bg-[#075B45] text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Duet
+                            </button>
+                          </div>
+
+                          {/* Pilihan Bahasa */}
+                          <select
+                            value={item.bahasa}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setPidatoSantri(prev => {
+                                const arr = [...prev];
+                                arr[idx] = { ...arr[idx], bahasa: val };
+                                return arr;
+                              });
+                            }}
+                            className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-[#075B45] outline-none"
+                          >
+                            {PILIHAN_BAHASA.map(b => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <input
-                        type="text"
-                        placeholder={`Nama santri pidato (${item.bahasa})...`}
-                        value={item.nama}
-                        onChange={(e) => {
-                          const val = e.target.value.toUpperCase();
-                          setPidatoSantri(prev => {
-                            const arr = [...prev];
-                            arr[idx] = { ...arr[idx], nama: val };
-                            return arr;
-                          });
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
-                      />
-                      {notice && (
-                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
-                          {notice.text}
-                        </p>
+
+                      {/* Input Santri */}
+                      {!isDuet ? (
+                        <div className="space-y-1">
+                          <input
+                            type="text"
+                            placeholder={`Nama santri pidato (${item.bahasa})...`}
+                            value={item.nama}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setPidatoSantri(prev => {
+                                const arr = [...prev];
+                                arr[idx] = { ...arr[idx], nama: val };
+                                return arr;
+                              });
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                          />
+                          {notice1 && (
+                            <p className={`text-[11px] font-semibold ${notice1.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                              {notice1.text}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700 block">
+                              Santri 1 (Duet {item.bahasa})
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={`Nama santri pertama (${item.bahasa})...`}
+                              value={item.nama}
+                              onChange={(e) => {
+                                const val = e.target.value.toUpperCase();
+                                setPidatoSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], nama: val };
+                                  return arr;
+                                });
+                              }}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                            />
+                            {notice1 && (
+                              <p className={`text-[11px] font-semibold ${notice1.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                                {notice1.text}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700 block">
+                              Santri 2 (Duet {item.bahasa})
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={`Nama santri kedua (${item.bahasa})...`}
+                              value={item.nama2 || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.toUpperCase();
+                                setPidatoSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], nama2: val };
+                                  return arr;
+                                });
+                              }}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                            />
+                            {notice2 && (
+                              <p className={`text-[11px] font-semibold ${notice2.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                                {notice2.text}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   );
@@ -1882,50 +2128,156 @@ export default function RegistrationForm({ onSubmitSuccess }) {
               </div>
             )}
 
-            {/* 3. MC (3 Bahasa) */}
+            {/* 3. MC (Perorangan / Duet - 3 Bahasa) */}
             {activeBranchId === 'mc' && (
               <div className="space-y-3.5">
                 {mcSantri.map((item, idx) => {
-                  const notice = getStudentCrossNotice(item.nama, 'MC');
+                  const isDuet = item.jenis === 'duet';
+                  const notice1 = getStudentCrossNotice(item.nama, 'MC');
+                  const notice2 = isDuet ? getStudentCrossNotice(item.nama2, 'MC') : null;
+
                   return (
-                    <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900">Slot MC #{idx + 1}</span>
-                        <select
-                          value={item.bahasa}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setMcSantri(prev => {
-                              const arr = [...prev];
-                              arr[idx] = { ...arr[idx], bahasa: val };
-                              return arr;
-                            });
-                          }}
-                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#075B45] outline-none"
-                        >
-                          {PILIHAN_BAHASA.map(b => (
-                            <option key={b} value={b}>{b}</option>
-                          ))}
-                        </select>
+                    <div key={idx} className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3">
+                      {/* Baris kontrol slot: judul, format (perorangan/duet), dan bahasa */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                        <span className="text-xs font-bold text-slate-900">
+                          Slot MC #{idx + 1}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {/* Segmented button format: Perorangan / Duet */}
+                          <div className="inline-flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-200">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMcSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], jenis: 'perorangan' };
+                                  return arr;
+                                });
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
+                                !isDuet
+                                  ? 'bg-[#075B45] text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Perorangan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMcSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], jenis: 'duet' };
+                                  return arr;
+                                });
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
+                                isDuet
+                                  ? 'bg-[#075B45] text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Duet
+                            </button>
+                          </div>
+
+                          {/* Pilihan Bahasa */}
+                          <select
+                            value={item.bahasa}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMcSantri(prev => {
+                                const arr = [...prev];
+                                arr[idx] = { ...arr[idx], bahasa: val };
+                                return arr;
+                              });
+                            }}
+                            className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-[#075B45] outline-none"
+                          >
+                            {PILIHAN_BAHASA.map(b => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <input
-                        type="text"
-                        placeholder={`Nama santri pembawa acara (${item.bahasa})...`}
-                        value={item.nama}
-                        onChange={(e) => {
-                          const val = e.target.value.toUpperCase();
-                          setMcSantri(prev => {
-                            const arr = [...prev];
-                            arr[idx] = { ...arr[idx], nama: val };
-                            return arr;
-                          });
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
-                      />
-                      {notice && (
-                        <p className={`text-[11px] font-semibold ${notice.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
-                          {notice.text}
-                        </p>
+
+                      {/* Input Santri */}
+                      {!isDuet ? (
+                        <div className="space-y-1">
+                          <input
+                            type="text"
+                            placeholder={`Nama santri pembawa acara (${item.bahasa})...`}
+                            value={item.nama}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setMcSantri(prev => {
+                                const arr = [...prev];
+                                arr[idx] = { ...arr[idx], nama: val };
+                                return arr;
+                              });
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                          />
+                          {notice1 && (
+                            <p className={`text-[11px] font-semibold ${notice1.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                              {notice1.text}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700 block">
+                              Santri 1 (Duet {item.bahasa})
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={`Nama pembawa acara pertama (${item.bahasa})...`}
+                              value={item.nama}
+                              onChange={(e) => {
+                                const val = e.target.value.toUpperCase();
+                                setMcSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], nama: val };
+                                  return arr;
+                                });
+                              }}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                            />
+                            {notice1 && (
+                              <p className={`text-[11px] font-semibold ${notice1.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                                {notice1.text}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700 block">
+                              Santri 2 (Duet {item.bahasa})
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={`Nama pembawa acara kedua (${item.bahasa})...`}
+                              value={item.nama2 || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.toUpperCase();
+                                setMcSantri(prev => {
+                                  const arr = [...prev];
+                                  arr[idx] = { ...arr[idx], nama2: val };
+                                  return arr;
+                                });
+                              }}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-[#075B45] focus:ring-2 focus:ring-[#075B45]/15 outline-none text-xs sm:text-sm font-semibold uppercase text-slate-900 bg-white"
+                            />
+                            {notice2 && (
+                              <p className={`text-[11px] font-semibold ${notice2.isDanger ? 'text-rose-600' : 'text-blue-600'}`}>
+                                {notice2.text}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   );
